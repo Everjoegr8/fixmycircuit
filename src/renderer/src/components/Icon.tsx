@@ -1,0 +1,40 @@
+// Small inline stroke icons so the app has no runtime dependency on an icon CDN.
+const paths: Record<string, string> = {
+  chip: 'M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3M7 6h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1zM10 10h4v4h-4z',
+  search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4',
+  chevRight: 'M9 6l6 6-6 6',
+  chevDown: 'M6 9l6 6 6-6',
+  plus: 'M12 5v14M5 12h14',
+  inbox: 'M4 13l2-7h12l2 7v5H4zM4 13h5l1 2h4l1-2h5',
+  upload: 'M12 16V4M7 9l5-5 5 5M4 20h16',
+  gear: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7.5 19.8l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3.6 14H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 10 3.6V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1.3z',
+  wrench: 'M14.7 6.3a4 4 0 0 0-5.4 5.2L3 17.8V21h3.2l6.3-6.3a4 4 0 0 0 5.2-5.4l-2.6 2.6-2.4-.6-.6-2.4z',
+  meter: 'M4 18a8 8 0 1 1 16 0M12 18l4-6M8 18h8',
+  doc: 'M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7zM14 3v4h4M9 13h6M9 17h6',
+  board: 'M3 5h18v14H3zM7 9h4v4H7zM15 9h2M15 13h2M7 16h10',
+  camera: 'M4 8h3l2-3h6l2 3h3v11H4zM12 11a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
+  x: 'M6 6l12 12M18 6L6 18',
+  panel: 'M3 4h18v16H3zM15 4v16',
+  flip: 'M12 3v18M8 7l-4 5 4 5M16 7l4 5-4 5',
+  zoomIn: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4M11 8v6M8 11h6',
+  zoomOut: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4M8 11h6',
+  fit: 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',
+  rotate: 'M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5',
+  pin: 'M12 21s-6-5.5-6-11a6 6 0 1 1 12 0c0 5.5-6 11-6 11zM12 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4z',
+  line: 'M5 19L19 5M5 19a2 2 0 1 0 0-.01M19 5a2 2 0 1 0 0-.01',
+  cursor: 'M5 3l14 7-6 2-2 6z',
+  trash: 'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3',
+  folder: 'M3 6h6l2 2h10v11H3z',
+  edit: 'M4 20h4L19 9l-4-4L4 16zM14 6l4 4',
+  link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
+  download: 'M12 4v12M7 11l5 5 5-5M4 20h16',
+  key: 'M14 10a4 4 0 1 0-3.9 4.9L8 17H6v2H4v2H2v-3l6.1-6.1A4 4 0 0 0 14 10zM16 8h.01',
+};
+
+export function Icon({ name, size = 16, className = '' }: { name: keyof typeof paths | string; size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <path d={paths[name] || ''} />
+    </svg>
+  );
+}

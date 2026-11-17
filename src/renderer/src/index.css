@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+body { margin: 0; font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif; font-size: 13px; overflow: hidden; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #333d4b; border-radius: 6px; border: 2px solid #11151b; }
+::-webkit-scrollbar-track { background: transparent; }
+
+@layer components {
+  .btn { @apply inline-flex items-center gap-1.5 rounded-md border border-bench-600 bg-bench-800 px-2.5 py-1 text-slate-200 hover:bg-bench-700 disabled:opacity-40 disabled:cursor-not-allowed; }
+  .btn-primary { @apply btn border-amber-500/60 bg-amber-500/15 text-amber-200 hover:bg-amber-500/25; }
+  .btn-danger { @apply btn border-red-500/50 text-red-300 hover:bg-red-500/15; }
+  .btn-ghost { @apply inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-slate-400 hover:bg-bench-700 hover:text-slate-100; }
+  .btn-on { @apply border-amber-500/70 bg-amber-500/20 text-amber-100; }
+  .input { @apply w-full rounded-md border border-bench-600 bg-bench-900 px-2 py-1 text-slate-100 placeholder:text-slate-500 focus:border-amber-500/70 focus:outline-none; }
+  .label { @apply mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-400; }
+  .card { @apply rounded-lg border border-bench-700 bg-bench-850; }
+  .chip { @apply inline-flex items-center rounded border border-bench-600 bg-bench-800 px-1.5 py-px font-mono text-[11px] text-slate-300; }
+}
+
+/* pdf.js viewer pieces we use */
+.pdfViewerHost { position: absolute; inset: 0; overflow: auto; background: #0b0e12; }
+.pdfViewerHost .pdfViewer .page { margin: 8px auto; border: none; box-shadow: 0 2px 10px #0008; }
