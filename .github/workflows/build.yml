@@ -35,9 +35,19 @@ jobs:
       - run: npm ci
       - name: Bundle scrcpy (Apache-2.0) for the phone mirror tab
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           $v = '3.1'
           Invoke-WebRequest "https://github.com/Genymobile/scrcpy/releases/download/v$v/scrcpy-win64-v$v.zip" -OutFile scrcpy.zip
+          # Verify against the SHA-256 GitHub publishes for the official release file.
+          $rel = Invoke-RestMethod "https://api.github.com/repos/Genymobile/scrcpy/releases/tags/v$v" -Headers @{ 'User-Agent' = 'fixmycircuit-ci'; 'Authorization' = "Bearer $env:GH_TOKEN" }
+          $asset = $rel.assets | Where-Object { $_.name -eq "scrcpy-win64-v$v.zip" }
+          $hash = (Get-FileHash scrcpy.zip -Algorithm SHA256).Hash.ToLower()
+          $want = if ($asset.digest) { $asset.digest -replace '^sha256:', '' } else { $i = $rel.body.IndexOf("scrcpy-win64-v$v.zip"); if ($i -ge 0) { ([regex]::Match($rel.body.Substring($i, [Math]::Min(500, $rel.body.Length - $i)), '\b[0-9a-fA-F]{64}\b')).Value } }
+          if (-not $want) { throw "No published checksum found for scrcpy v$v" }
+          if ($want.ToLower() -ne $hash) { throw "scrcpy checksum mismatch: got $hash, expected $want" }
+          Write-Host "scrcpy v$v SHA-256 verified: $hash"
           Expand-Archive scrcpy.zip -DestinationPath scrcpy-tmp
           Copy-Item "scrcpy-tmp/scrcpy-win64-v$v/*" vendor/scrcpy/ -Recurse
           if (!(Test-Path vendor/scrcpy/scrcpy.exe)) { throw 'scrcpy.exe missing' }

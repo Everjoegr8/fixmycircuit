@@ -462,7 +462,7 @@ async function formatsRun() {
   assert.match(await page.textContent('[data-testid="about"] >> xpath=..'), /ERA Technologiz and Engineering Services/);
   await shot(page, '34-about');
   await page.keyboard.press('Escape');
-  assert.match(await page.textContent('[data-testid="statusbar"]'), /Ready.*FixMyCircuit v0\.3/);
+  assert.match(await page.textContent('[data-testid="statusbar"]'), /Ready.*FixMyCircuit v0\.4/);
   await app.close();
 }
 

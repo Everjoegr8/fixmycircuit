@@ -13,6 +13,22 @@ is the only feature that goes online, and only with your own API key).
 
 ## Features
 
+### New in 0.4: real copper, licence keys, your own AI
+
+- **Real copper traces, not just computed lines.** Boardview files only hold pins and nets, so the lines between pins are computed. Now you can see the real routing:
+  - open a **KiCad layout** (`.kicad_pcb`) or an **ODB++ job** (`.tgz`, `.tar`, `.zip`, including `.Z`-compressed layers) as a board, with every track, arc and via and its net;
+  - add **Gerber copper layers** (`.gtl`, `.gbl`, `.g1`…) to any boardview from the new **Copper** panel. Gerber X2 files line up on the part pads automatically; older Gerbers are fitted to the board outline and say so;
+  - **trace copper yourself** on a board photo in Contributor mode (Trace tool, `T`), give it a net, and align the photo with two reading pins. It shows on the boardview in green as shop-verified copper.
+  - Real copper is drawn solid; computed connections are dashed, and the net panel says which you are looking at. All parsers are built in (no extra software).
+- **Licence keys locked to one PC.** Each PC shows its machine ID with a Copy button and a **Request key on WhatsApp** button (to +234 810 251 4461). Keys are signed offline (Ed25519) with an expiry date; there is a 7-day trial, a warning in the last 7 days and a 3-day grace period. Turning the PC clock back does not extend a key.
+- **Bring your own AI.** Besides Claude, the assistant can use OpenAI, Google Gemini, OpenRouter, any OpenAI-compatible server, or **Ollama running offline on the PC**. Pick it in Settings.
+- **Tool manager.** Settings, Tools and components shows scrcpy, adb, UxPlay and Ollama. Missing scrcpy/adb install with one click from the official GitHub release into `%APPDATA%\FixMyCircuit\tools`, only after the download matches GitHub's published SHA-256.
+- **iPhone AirPlay.** The mirror tab can start an AirPlay receiver (UxPlay, if installed) and says plainly what iOS allows: view only, same Wi-Fi, a working screen to start mirroring.
+- **IC list verification.** Mark an IC entry as verified after checking it on a real board (your name and the date are saved), and filter verified / to verify.
+- **Microscope.** Clear messages when the camera is busy, blocked by Windows privacy settings or unplugged, automatic fallback, actual resolution shown, and a self-check.
+- **Faster start.** Heavy views load on first use and the splash is shorter. A 25,000-pin board parses and indexes in about 0.15 s.
+- The official **ERA Technologiz** logo throughout.
+
 ### New in 0.3: every node known, AI assistant, new look
 
 - **Full netlist index.** Every part, pin and net in the boardview is indexed.

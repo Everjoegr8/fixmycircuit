@@ -1,29 +1,32 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Brand, LibraryFile } from '@shared/types';
 import { api, type TreeModel } from './api';
 import Sidebar from './components/Sidebar';
 import SplitPane from './components/SplitPane';
-import ImportDialog from './components/ImportDialog';
-import SettingsDialog from './components/SettingsDialog';
 import TabBar from './components/TabBar';
 import ModelView from './views/ModelView';
 import Home from './views/Home';
-import PdfViewer from './views/PdfViewer';
-import BoardViewer from './views/BoardViewer';
-import PhotoEditor from './views/PhotoEditor';
 import RepairPanel from './views/RepairPanel';
-import KnowledgeView from './views/tools/KnowledgeView';
-import CalculatorsView from './views/tools/CalculatorsView';
-import IcXrefView from './views/tools/IcXrefView';
-import MicroscopeView from './views/tools/MicroscopeView';
-import MirrorView from './views/tools/MirrorView';
 import { Icon } from './components/Icon';
-import AboutDialog from './components/AboutDialog';
 import { ActivationScreen, LicenseBanner, useLicense } from './components/License';
-import AiToolView from './views/tools/AiToolView';
 import { Splash , EraMark } from './brand/Logo';
 import { forgetSession, saveSession } from './lib/session';
 import { TOOLS, categoryLabel, type Doc, type Focus, type Nav } from './types';
+
+// Heavy views load on first use so the app starts fast.
+const ImportDialog = lazy(() => import('./components/ImportDialog'));
+const SettingsDialog = lazy(() => import('./components/SettingsDialog'));
+const PdfViewer = lazy(() => import('./views/PdfViewer'));
+const BoardViewer = lazy(() => import('./views/BoardViewer'));
+const PhotoEditor = lazy(() => import('./views/PhotoEditor'));
+const KnowledgeView = lazy(() => import('./views/tools/KnowledgeView'));
+const CalculatorsView = lazy(() => import('./views/tools/CalculatorsView'));
+const IcXrefView = lazy(() => import('./views/tools/IcXrefView'));
+const MicroscopeView = lazy(() => import('./views/tools/MicroscopeView'));
+const MirrorView = lazy(() => import('./views/tools/MirrorView'));
+const AboutDialog = lazy(() => import('./components/AboutDialog'));
+const AiToolView = lazy(() => import('./views/tools/AiToolView'));
+const Loading = () => <div className="grid h-full place-items-center text-slate-500" data-testid="view-loading"><span className="fmc-spin inline-block h-5 w-5 rounded-full border-2 border-amber-400 border-t-transparent" /></div>;
 
 export default function App() {
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -44,7 +47,7 @@ export default function App() {
   const lic = useLicense();
   useEffect(() => {
     api.dataInfo().then((i) => setVersion(i.version));
-    const t = setTimeout(() => setSplash(false), 2100);
+    const t = setTimeout(() => setSplash(false), 1300);
     return () => clearTimeout(t);
   }, []);
   const [rev, setRev] = useState(0); // bump to make views reload data
@@ -276,7 +279,7 @@ export default function App() {
             const shown = isActive || isSecond;
             const sync = splitMode && syncOn && shown;
             const onFocusFrom = (f: Focus) => { if (isActive || isSecond) setFocus({ ...f, src: d.key }); };
-            const body =
+            const body = <Suspense fallback={<Loading />}>{
               d.type === 'pdf' ? (
                 <PdfViewer
                   fileId={String(d.id)}
@@ -301,7 +304,7 @@ export default function App() {
                 />
               ) : (
                 <PhotoEditor photoId={Number(d.id)} active={isActive} onChanged={reload} onFocus={onFocusFrom} focus={focus} syncKey={d.key} sync={sync} />
-              );
+              )}</Suspense>;
             const pos = !splitMode || !shown ? 'inset-0' : isActive ? 'inset-y-0 left-0 right-1/2 border-r-2 border-sky-500/40' : 'inset-y-0 left-1/2 right-0';
             return (
               <div key={d.key} className={`absolute ${pos}`} style={{ visibility: shown ? 'visible' : 'hidden' }}>
@@ -352,14 +355,14 @@ export default function App() {
                   }}
                   rev={rev}
                 />
-              ) : nav.kind === 'tool' ? (
+              ) : nav.kind === 'tool' ? (<Suspense fallback={<Loading />}>{
                 nav.tool === 'ai' ? <AiToolView models={models} brands={brands} onOpenSettings={() => setSettingsOpen(true)} onFindOnBoard={(q, id) => findOnBoard(q, id)} />
                 : nav.tool === 'knowledge' ? <KnowledgeView models={models} brands={brands} onChanged={reload} />
                 : nav.tool === 'calculators' ? <CalculatorsView />
                 : nav.tool === 'ics' ? <IcXrefView />
                 : nav.tool === 'microscope' ? <MicroscopeView models={models} brands={brands} onChanged={reload} onOpenPhoto={openPhoto} />
                 : <MirrorView />
-              ) : (
+              }</Suspense>) : (
                 <ModelView
                   key={`${nav.kind}-${navModelId}`}
                   modelId={navModelId ?? null}
@@ -382,6 +385,7 @@ export default function App() {
           )}
         </div>
       </div>
+      <Suspense fallback={null}>
       {importOpen && (
         <ImportDialog
           brands={brands}
@@ -400,8 +404,11 @@ export default function App() {
           onReloadTree={reload}
         />
       )}
-      {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} onReload={reload} />}
-      {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
+      </Suspense>
+      <Suspense fallback={null}>
+        {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} onReload={reload} />}
+        {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
+      </Suspense>
       {toast && (
         <div className="fmc-rise fixed bottom-10 left-1/2 z-50 -translate-x-1/2 rounded-md border border-amber-500/50 bg-bench-800 px-4 py-2 text-amber-100 shadow-xl">{toast}</div>
       )}

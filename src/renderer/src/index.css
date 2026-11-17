@@ -124,7 +124,7 @@ body {
 @keyframes fmc-shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
 .fmc-shimmer { background: linear-gradient(90deg, transparent, rgb(var(--c-amber-500) / .18), transparent); background-size: 200% 100%; animation: fmc-shimmer 1.6s linear infinite; }
 @keyframes fmc-splash-out { to { opacity: 0; visibility: hidden; } }
-.fmc-splash { animation: fmc-splash-out .45s ease 1.5s forwards; }
+.fmc-splash { animation: fmc-splash-out .4s ease .9s forwards; }
 @keyframes fmc-spin { to { transform: rotate(360deg); } }
 .fmc-spin { animation: fmc-spin 14s linear infinite; transform-origin: center; transform-box: fill-box; }
 @media (prefers-reduced-motion: reduce) {

@@ -115,7 +115,8 @@ export async function installTool(id: ToolId, onProgress?: (msg: string) => void
   if (!want) {
     const body = String(release.body || '');
     const i = body.indexOf(asset.name);
-    want = i >= 0 ? /\b([0-9a-f]{64})\b/i.exec(body.slice(Math.max(0, i - 120), i + asset.name.length + 120))?.[1] : undefined;
+    // scrcpy writes "SHA-256: <hash>" just after each file name.
+    want = i >= 0 ? /\b([0-9a-f]{64})\b/i.exec(body.slice(i, i + 500))?.[1] : undefined;
   }
   if (!want) throw new Error('GitHub did not publish a checksum for this file, so it was not installed.');
   onProgress?.(`Downloading ${asset.name}…`);
