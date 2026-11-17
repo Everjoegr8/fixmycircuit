@@ -10,6 +10,8 @@ interface Props {
   libraryLabel: string;
   showPanel: boolean;
   onTogglePanel: () => void;
+  split: boolean;
+  onSplit: () => void;
 }
 
 const typeIcon = { pdf: 'doc', board: 'board', photo: 'camera' } as const;
@@ -41,6 +43,11 @@ export default function TabBar(p: Props) {
         ))}
       </div>
       {p.activeKey && (
+        <button className={`flex items-center gap-1.5 border-l border-bench-700 px-3 ${p.split ? 'text-sky-300' : 'text-slate-400 hover:text-slate-200'}`} onClick={p.onSplit} title="Show two documents side by side (for example board photo and schematic)" data-testid="split-btn">
+          <Icon name="split" size={14} /> Split
+        </button>
+      )}
+      {p.activeKey && !p.split && (
         <button className={`flex items-center gap-1.5 px-3 ${p.showPanel ? 'text-amber-300' : 'text-slate-400'}`} onClick={p.onTogglePanel} title="Show or hide the repair panel">
           <Icon name="panel" size={14} /> Repair panel
         </button>

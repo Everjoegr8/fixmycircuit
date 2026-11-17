@@ -4,7 +4,7 @@ import { api } from '../api';
 import Modal from './Modal';
 import { Icon } from './Icon';
 
-export default function SettingsDialog({ onClose }: { onClose: () => void }) {
+export default function SettingsDialog({ onClose, onReload }: { onClose: () => void; onReload?: () => void }) {
   const [s, setS] = useState<Settings | null>(null);
   const [info, setInfo] = useState<{ dataDir: string; dbFile: string; version: string } | null>(null);
   const [msg, setMsg] = useState('');
@@ -46,6 +46,15 @@ export default function SettingsDialog({ onClose }: { onClose: () => void }) {
             <button className="btn" onClick={async () => { const p = await api.exportContent(); if (p) setMsg('Guides, readings and jumpers exported to ' + p); }}><Icon name="download" size={13} /> Export shop guides (JSON)</button>
           </div>
           <p className="mt-2 text-[11px] text-slate-500">Everything (library files, fault solutions, readings, photos and jumpers) is stored in this folder. Copy it, or the backup, to another shop PC to share.</p>
+        </div>
+        <div className="card p-3">
+          <div className="label">Demo workshop</div>
+          <div className="flex flex-wrap gap-2">
+            <button className="btn" onClick={async () => { const r = await api.loadDemo(); setMsg(r.error || (r.added ? `Added ${r.added} demo models.` : 'Demo models are already loaded.')); onReload?.(); }}>Load demo models</button>
+            <button className="btn" onClick={async () => { const r = await api.removeDemo(); setMsg(`Removed ${r.removed} demo models.`); onReload?.(); }}>Remove demo models</button>
+            <button className="btn" onClick={async () => { const d = await api.saveSamples(); if (d) setMsg('Sample files saved to ' + d); }}><Icon name="download" size={13} /> Save sample files…</button>
+          </div>
+          <p className="mt-2 text-[11px] text-slate-500">The demo models share one synthetic board, schematic and photo made for testing. They are not real phone layouts.</p>
         </div>
         {msg && <div className="text-amber-200">{msg}</div>}
         <div className="flex items-center justify-between">

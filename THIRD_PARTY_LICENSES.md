@@ -43,3 +43,12 @@ https://github.com/mozilla/pdf.js.
 ## Other runtime dependencies
 
 React (MIT), better-sqlite3 (MIT), pako (MIT and Zlib), Electron (MIT).
+
+## scrcpy (Windows build only)
+
+The Windows installer bundles the unmodified official scrcpy release
+(https://github.com/Genymobile/scrcpy), which includes adb from the Android SDK
+platform tools. scrcpy is Copyright (C) 2018 Genymobile and Copyright (C)
+2018-2024 Romain Vimont, licensed under the Apache License, Version 2.0
+(https://www.apache.org/licenses/LICENSE-2.0). adb is part of the Android Open
+Source Project, also under the Apache License, Version 2.0.

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Brand, LibraryFile } from '@shared/types';
 import { api, type TreeModel } from '../api';
-import { CATEGORIES, categoryLabel, type Nav } from '../types';
+import { CATEGORIES, TOOLS, categoryLabel, type Nav } from '../types';
 import { Icon } from './Icon';
 
 interface Props {
@@ -101,6 +101,18 @@ export default function Sidebar(p: Props) {
         )}
       </div>
       <nav className="min-h-0 flex-1 overflow-auto px-1.5 pb-3">
+        <div className="px-2 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Workbench</div>
+        {TOOLS.map((t) => (
+          <button
+            key={t.id}
+            className={`flex w-full items-center gap-2 rounded px-2 py-1 text-left ${p.nav?.kind === 'tool' && p.nav.tool === t.id ? 'bg-amber-500/15 text-amber-200' : 'text-slate-300 hover:bg-bench-800'}`}
+            onClick={() => p.onNav({ kind: 'tool', tool: t.id })}
+            data-tool={t.id}
+          >
+            <Icon name={t.icon} size={13} /> {t.label}
+          </button>
+        ))}
+        <div className="px-2 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Library</div>
         {p.brands.map((b) => {
           const ms = p.models.filter((m) => m.brand_id === b.id);
           const isOpen = !!open[b.id];

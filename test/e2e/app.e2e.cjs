@@ -9,7 +9,7 @@ const S = process.env.E2E_OUT || fs.mkdtempSync(path.join(os.tmpdir(), 'fmc-e2e-
 const shot = (page, n) => page.screenshot({ path: `${S}/${n}.png` });
 (async () => {
   const data = path.join(S, 'data'); fs.rmSync(data, { recursive: true, force: true });
-  const app = await _electron.launch({ args: ['--no-sandbox', APP], env: { ...process.env, FMC_DATA_DIR: data } });
+  const app = await _electron.launch({ args: ['--no-sandbox', APP], env: { ...process.env, FMC_DATA_DIR: data, FMC_NO_DEMO: '1' } });
   const page = await app.firstWindow();
   page.on('pageerror', e => console.log('[pageerror]', e.message));
   page.on('console', m => m.type() === 'error' && console.log('[console]', m.text()));
@@ -22,7 +22,7 @@ const shot = (page, n) => page.screenshot({ path: `${S}/${n}.png` });
   await page.keyboard.press('Enter');
   await page.waitForSelector('h1:has-text("Spark 10 (KI5)")');
   const modelId = await page.evaluate(async () => (await window.fmc.tree()).models[0].id);
-  await page.evaluate(async ([paths, id]) => window.fmc.importFiles({ paths, model_id: id }), [[SM + 'demo-phone-schematic.pdf', SM + 'demo-phone.brd', SM + 'demo-board-photo.png'], modelId]);
+  await page.evaluate(async ([paths, id]) => window.fmc.importFiles({ paths, model_id: id }), [[SM + 'fmc-demo-x1-schematic.pdf', SM + 'fmc-demo-x1.brd', SM + 'fmc-demo-x1-top.jpg'], modelId]);
   await page.evaluate(() => window.fmc.setSettings({ author: 'Tunde' }));
   // Fault solution via UI
   await page.click('button[data-testid="new-guide"]');
@@ -58,14 +58,14 @@ const shot = (page, n) => page.screenshot({ path: `${S}/${n}.png` });
   await page.waitForSelector('[data-testid="board-canvas"]');
   await page.waitForTimeout(800);
   await shot(page, '05-board');
-  await page.fill('input[placeholder^="Find part or net"] >> visible=true', 'U2');
+  await page.fill('input[placeholder^="Find part or net"] >> visible=true', 'U3000');
   await page.keyboard.press('Enter');
   await page.waitForTimeout(500);
   await shot(page, '06-board-part');
   // click pin row VBUS
   await page.locator('[data-testid="board-info"] tr:has-text("VBUS")').first().click();
   await page.waitForTimeout(500);
-  const info = await page.textContent('[data-testid="board-info"]'); assert.match(info, /VBUS5 pins on 4 parts/);
+  const info = await page.textContent('[data-testid="board-info"]'); assert.match(info, /VBUS\S*\d+ pins on \d+ parts/);
   console.log('panel:', (await page.textContent('[data-testid="repair-panel"] >> visible=true')).slice(0, 300));
   await shot(page, '07-board-net');
   // Find in schematic
@@ -78,7 +78,7 @@ const shot = (page, n) => page.screenshot({ path: `${S}/${n}.png` });
   await page.click('button:has-text("Board Photos") >> nth=-1');
   await page.waitForTimeout(400);
   await shot(page, '09-photos');
-  await page.locator('img[alt="demo-board-photo"]').click();
+  await page.locator('img[alt="fmc-demo-x1-top"]').click();
   await page.waitForTimeout(800);
   const host = page.locator('[data-testid="photo-host"] >> visible=true');
   const bb = await host.boundingBox();
@@ -106,6 +106,138 @@ const shot = (page, n) => page.screenshot({ path: `${S}/${n}.png` });
   const jumpers = await page.evaluate(async (id) => window.fmc.listJumpers(id), db.r.find((r) => r.photo_id).photo_id);
   assert.equal(jumpers.length, 1, 'jumper saved');
   assert.equal(jumpers[0].points.length, 3);
-  console.log('E2E OK, screenshots in', S);
   await app.close();
+  await demoRun();
+  console.log('E2E OK, screenshots in', S);
 })().catch(e => { console.error(e); process.exit(1); });
+
+// Second launch: first-run demo workshop and the v0.2 workbench features.
+async function demoRun() {
+  const data = path.join(S, 'data-demo'); fs.rmSync(data, { recursive: true, force: true });
+  const app = await _electron.launch({ args: ['--no-sandbox', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', APP], env: { ...process.env, FMC_DATA_DIR: data } });
+  const page = await app.firstWindow();
+  await app.evaluate(({ BrowserWindow }) => { const w = BrowserWindow.getAllWindows()[0]; w.setSize(1600, 940); });
+  page.on('pageerror', e => console.log('[pageerror]', e.message));
+  page.on('console', m => m.type() === 'error' && console.log('[console]', m.text()));
+  await page.waitForSelector('[data-testid="demo-banner"]');
+  const tree = await page.evaluate(() => window.fmc.tree());
+  const demo = tree.models.filter((m) => m.demo);
+  console.log('demo models:', demo.map((m) => `${tree.brands.find((b) => b.id === m.brand_id).name} ${m.name} g${m.guides} r${m.readings} p${m.photos} f${m.files}`));
+  assert.equal(demo.length, 4);
+  for (const m of demo) { assert.ok(m.guides >= 4 && m.readings >= 20 && m.photos === 1 && m.files === 2); }
+  await page.waitForTimeout(300);
+  await shot(page, '20-home-dashboard');
+
+  // Board photo with trace layers, net lines and hover card
+  await page.click('button:has-text("Board photo + layers")');
+  await page.waitForSelector('[data-testid="netlines-toggle"]', { timeout: 15000 });
+  assert.equal(await page.locator('[data-netlines]').count(), 0, 'net lines off by default on photos');
+  await page.check('[data-testid="netlines-toggle"]');
+  await page.waitForSelector('[data-netlines]');
+  await shot(page, '21a-photo-netlines');
+  await page.uncheck('[data-testid="netlines-toggle"]');
+  const jumpersShown = () => page.locator('[data-jumper] >> visible=true').count();
+  const before = await jumpersShown();
+  assert.equal(before, 5, 'five non-GND demo jumpers visible by default');
+  await page.locator('[data-testid="layer-toggles"] >> visible=true').locator('input[data-layer="gnd"]').check();
+  assert.equal(await jumpersShown(), 6, 'GND jumper appears when its layer is on');
+  await page.locator('[data-testid="layer-toggles"] >> visible=true').locator('input[data-layer="charging"]').uncheck();
+  assert.equal(await jumpersShown(), 5, 'charging jumper hidden');
+  await page.locator('[data-testid="layer-toggles"] >> visible=true').locator('input[data-layer="charging"]').check();
+  await page.locator('[data-testid="layer-toggles"] >> visible=true').locator('input[data-layer="gnd"]').uncheck();
+  const pin = page.locator('[data-pin] >> visible=true').first();
+  await pin.hover({ force: true });
+  await page.waitForSelector('[data-testid="hover-card"]');
+  const card = await page.textContent('[data-testid="hover-card"]');
+  console.log('photo hover card:', card);
+  assert.match(card, /Diode/); assert.match(card, /Net/);
+  await shot(page, '21-photo-layers');
+
+  // Split view: photo + schematic, jump to a component, synced selection
+  await page.click('[data-testid="split-btn"]');
+  await page.waitForSelector('[data-testid="split-bar"]');
+  await page.waitForSelector('.pdfViewer .page canvas, .pdfViewer .page .canvasWrapper', { timeout: 15000 });
+  await page.waitForTimeout(1000);
+  await page.fill('[data-testid="jump-input"]', 'U3000');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(1500);
+  const pm = await page.locator('[data-testid="pdf-matches"] >> visible=true').first().textContent();
+  console.log('split jump pdf matches:', pm);
+  assert.match(pm, /of [1-9]/);
+  assert.ok(await page.locator('[data-focused] >> visible=true').count() > 0, 'photo pins on U3000 glow');
+  // synced zoom: wheel on the photo moves the pdf scale
+  const pdfScale = () => page.locator('text=/^\\d+%$/ >> visible=true').first().textContent();
+  const s0 = await pdfScale();
+  const host = await page.locator('[data-testid="photo-host"] >> visible=true').boundingBox();
+  await page.mouse.move(host.x + host.width / 2, host.y + host.height / 2);
+  await page.mouse.wheel(0, -400);
+  await page.waitForTimeout(800);
+  const s1 = await pdfScale();
+  console.log('pdf zoom follows photo:', s0, '->', s1);
+  assert.notEqual(s0, s1);
+  await page.locator('[data-testid="photo-host"] >> visible=true').hover();
+  await page.mouse.wheel(0, 400);
+  await page.waitForTimeout(800);
+  await shot(page, '22-split-photo-schematic');
+
+  // Boardview with layers + hover card, split with the photo (zoom/pan sync)
+  await page.click('button[title="Close split view"]');
+  await page.click('button:has-text("Home")');
+  await page.click('button:has-text("Boardview")');
+  await page.waitForSelector('[data-testid="board-canvas"] >> visible=true');
+  await page.waitForTimeout(800);
+  const cv = await page.locator('[data-testid="board-canvas"] >> visible=true').boundingBox();
+  let found = '';
+  for (let gy = 0.3; gy < 0.9 && !found; gy += 0.02) for (let gx = 0.3; gx < 0.7 && !found; gx += 0.01) {
+    await page.mouse.move(cv.x + cv.width * gx, cv.y + cv.height * gy);
+    if (await page.locator('[data-testid="hover-card"]').count()) found = await page.textContent('[data-testid="hover-card"]');
+  }
+  console.log('board hover card:', found);
+  assert.ok(found, 'hover card on a board pin');
+  await shot(page, '23-board-layers-hover');
+
+  // Workbench tools
+  await page.click('[data-tool="calculators"]');
+  await page.fill('[data-testid="res-code"]', '4702');
+  assert.match(await page.textContent('[data-testid="res-result"]'), /47 kΩ/);
+  await page.fill('[data-testid="res-code"]', '01C');
+  assert.match(await page.textContent('[data-testid="res-result"]'), /10 kΩ/);
+  assert.match(await page.textContent('[data-testid="dv-result"]'), /2\.5 V/);
+  await shot(page, '24-calculators');
+  await page.click('[data-tool="knowledge"]');
+  await page.waitForSelector('[data-testid="kb-guide"]');
+  await page.fill('[data-testid="kb-search"]', 'backlight');
+  await page.waitForTimeout(200);
+  await shot(page, '25-knowledge');
+  await page.click('[data-tool="ics"]');
+  await page.fill('[data-testid="ic-search"]', 'MT6358');
+  await page.waitForSelector('td:has-text("MT6358")');
+  await shot(page, '26-ic-xref');
+  await page.click('[data-tool="mirror"]');
+  await page.waitForSelector('text=scrcpy');
+  await shot(page, '27-mirror');
+  await page.click('[data-tool="microscope"]');
+  await page.click('[data-testid="cam-start"]');
+  await page.waitForSelector('button:has-text("Capture"):not([disabled])', { timeout: 10000 });
+  await page.waitForTimeout(800);
+  await page.click('button:has-text("Freeze")');
+  await shot(page, '28-microscope');
+  await page.click('button:has-text("Capture")');
+  await page.waitForSelector('[data-testid="capture-dialog"]');
+  await page.locator('[data-testid="capture-dialog"] select').first().selectOption({ index: 1 });
+  await page.waitForTimeout(300);
+  await page.locator('[data-testid="capture-dialog"] select').nth(1).selectOption({ index: 1 });
+  await page.click('[data-testid="capture-dialog"] button:has-text("Save and add readings")');
+  await page.waitForSelector('[data-testid="photo-host"] >> visible=true');
+  const photos = await page.evaluate(() => window.fmc.listPhotos());
+  assert.equal(photos.length, 5, 'microscope capture saved as a photo');
+  const withPhoto = (await page.evaluate(() => window.fmc.listGuides())).filter((g) => g.photo_ids.includes(','));
+  assert.equal(withPhoto.length, 1, 'capture attached to a fault solution');
+
+  // Remove and reload the demo
+  const removed = await page.evaluate(() => window.fmc.removeDemo());
+  assert.equal(removed.removed, 4);
+  const again = await page.evaluate(() => window.fmc.loadDemo());
+  assert.equal(again.added, 4);
+  await app.close();
+}

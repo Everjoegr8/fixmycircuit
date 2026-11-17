@@ -33,6 +33,17 @@ const api = {
   saveJumper: call('jumpers:save'),
   deleteJumper: call('jumpers:delete'),
 
+  addPhotoFromData: call('photos:addFromData'),
+  listIcs: call('ics:list'),
+  saveIc: call('ics:save'),
+  deleteIc: call('ics:delete'),
+  loadDemo: call('demo:load'),
+  removeDemo: call('demo:remove'),
+  saveSamples: call('samples:save'),
+  mirrorStatus: call('mirror:status'),
+  mirrorStart: call('mirror:start'),
+  mirrorBackup: call('mirror:backup'),
+
   search: call('search'),
   getSettings: call('settings:get'),
   setSettings: call('settings:set'),

@@ -2,7 +2,16 @@ export type Category = 'faults' | 'readings' | 'schematics' | 'boardview' | 'pho
 
 export const CATEGORIES: Category[] = ['faults', 'readings', 'schematics', 'boardview', 'photos'];
 
-export type Nav = { kind: 'home' } | { kind: 'unsorted' } | { kind: 'model'; modelId: number; category: Category };
+export type ToolKind = 'knowledge' | 'calculators' | 'ics' | 'microscope' | 'mirror';
+export type Nav = { kind: 'home' } | { kind: 'unsorted' } | { kind: 'model'; modelId: number; category: Category } | { kind: 'tool'; tool: ToolKind };
+
+export const TOOLS: { id: ToolKind; label: string; icon: string }[] = [
+  { id: 'knowledge', label: 'Repair knowledge', icon: 'book' },
+  { id: 'calculators', label: 'Calculators', icon: 'calc' },
+  { id: 'ics', label: 'IC cross-reference', icon: 'chip' },
+  { id: 'microscope', label: 'USB microscope', icon: 'scope' },
+  { id: 'mirror', label: 'Phone mirror & backup', icon: 'phone' },
+];
 
 export interface Doc {
   key: string;

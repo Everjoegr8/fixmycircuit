@@ -2,12 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import { Icon } from '../components/Icon';
 import { loadPdfJs } from './pdf/loadPdfJs';
+import { syncBus } from '../lib/sync';
 
 interface Props {
   fileId: string;
   active: boolean;
   searchRequest?: { q: string; n: number };
   onFindOnBoard: (q: string) => void;
+  syncKey?: string;
+  sync?: boolean;
 }
 
 export default function PdfViewer(p: Props) {
@@ -94,10 +97,26 @@ export default function PdfViewer(p: Props) {
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  const zoom = (f: number) => {
+  const syncRef = useRef(p);
+  syncRef.current = p;
+  const zoom = (f: number, emit = true) => {
     const v = ctx.current?.viewer;
     if (v) v.currentScale = Math.min(Math.max(v.currentScale * f, 0.1), 16);
+    const sp = syncRef.current;
+    if (emit && sp.sync && sp.syncKey) syncBus.emit({ type: 'zoom', source: sp.syncKey, factor: f, pdf: true });
   };
+  useEffect(() => {
+    if (!p.sync) return;
+    // Pending small wheel steps are batched so pdf.js re-renders at most once a frame.
+    let acc = 1, raf = 0;
+    const off = syncBus.on((e) => {
+      if (e.type !== 'zoom' || e.source === p.syncKey) return;
+      acc *= e.factor;
+      if (!raf) raf = requestAnimationFrame(() => { zoom(acc, false); acc = 1; raf = 0; });
+    });
+    return () => { off(); cancelAnimationFrame(raf); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.sync, p.syncKey]);
 
   // Ctrl+wheel zoom and drag-to-pan on empty page areas (text stays selectable).
   useEffect(() => {

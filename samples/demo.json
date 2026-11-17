@@ -1,0 +1,1809 @@
+{
+  "note": "Synthetic demo data for FixMyCircuit. One invented board is shared by all demo models; it is not the layout of any real phone.",
+  "files": {
+    "schematic": "fmc-demo-x1-schematic.pdf",
+    "boardview": "fmc-demo-x1.brd",
+    "photo": "fmc-demo-x1-top.jpg"
+  },
+  "photoTitle": "Top side (demo photo)",
+  "photoAlign": {
+    "x0": 0,
+    "y0": 0,
+    "x1": 2400,
+    "y1": 5200
+  },
+  "models": [
+    {
+      "brand": "Tecno",
+      "model": "Camon 20 Pro (demo)",
+      "guides": [
+        {
+          "title": "Stuck on logo or restarting after a drop",
+          "symptom": "Logo shows, then restarts. Ammeter climbs to about 300 mA, drops to 0 and repeats.",
+          "steps": "1. Charge or replace the battery first; a weak battery causes the same loop.\n2. Measure the PMIC rails with the phone trying to boot: PP1V8, PP_VDD_CPU, PP1V2 and PP3V0_NAND.\n3. A missing PP3V0_NAND or PP1V2 points at the storage area (U7000, bottom side).\n4. Check SYS_RST_L stays high once the logo shows.\n5. If rails are good, re-flash the firmware before any board work.",
+          "parts": "U2000, U7000, U1000",
+          "nets": "PP1V8, PP3V0_NAND, PP1V2, SYS_RST_L"
+        },
+        {
+          "title": "Not charging, VBUS missing after the port",
+          "symptom": "No charging icon. USB ammeter shows 0.00 A. Charge port flex tested good.",
+          "steps": "1. Open the boardview and search VBUS_IN: it runs J3000 > F3000 / D3000 > U3100 (OVP).\n2. Diode-measure VBUS_IN at J3000 and compare with the readings table.\n3. Check F3000 for continuity. Open fuse = replace it (the red charging jumper on the photo is only a test).\n4. If VBUS_IN reads near 0: suspect D3000 (TVS) shorted. Lift it and measure again.\n5. With 5 V present on VBUS, check U3000 (charger) input and its I2C lines (I2C0_SCL / SDA pulled up to PP1V8).",
+          "parts": "J3000, F3000, D3000, U3100, U3000",
+          "nets": "VBUS_IN, VBUS, I2C0_SCL"
+        },
+        {
+          "title": "No backlight, image faint with a torch",
+          "symptom": "Picture visible with a torch, screen dark.",
+          "steps": "1. Test a known-good screen first.\n2. In the boardview click BL_LED_A: J1000 pins, D4000 and the output caps light up.\n3. Diode-measure BL_LED_A at J1000. Near 0 = shorted output cap on BL_LED_A.\n4. Check L4000 continuity and D4000 in diode mode.\n5. Check BL_EN from the SoC goes high with the screen on.",
+          "parts": "U4000, L4000, D4000, J1000",
+          "nets": "BL_LED_A, BL_LX, BL_EN"
+        },
+        {
+          "title": "Dead, power supply hits current limit",
+          "symptom": "On the DC supply the current jumps to the limit as soon as the battery connector is powered.",
+          "steps": "1. Diode-measure VBAT and PP_VDD_MAIN at J2000 / U3000. Near 0.000 = short.\n2. Click PP_VDD_MAIN in the boardview: every decoupling cap on it is a candidate.\n3. Inject 1 V at 2 A limit into PP_VDD_MAIN and find the hot part with a thermal camera or rosin.\n4. Remove the hot cap and re-measure against the readings table.",
+          "parts": "J2000, U2000, U3000",
+          "nets": "PP_VDD_MAIN, VBAT"
+        }
+      ],
+      "readings": [
+        {
+          "part": "J3000",
+          "pin": "2",
+          "net": "VBUS_IN",
+          "value": "0.559",
+          "type": "diode",
+          "note": "Red probe on GND, black on the pin. Synthetic demo value, not measured on a real phone.",
+          "x": 0.46625,
+          "y": 0.04230769230769227
+        },
+        {
+          "part": "F3000",
+          "pin": "2",
+          "net": "VBUS_IN_F",
+          "value": "0.555",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.5583333333333333,
+          "y": 0.11538461538461542
+        },
+        {
+          "part": "U3000",
+          "pin": "1",
+          "net": "VBUS",
+          "value": "0.514",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.6970833333333334,
+          "y": 0.17211538461538467
+        },
+        {
+          "part": "U3000",
+          "pin": "7",
+          "net": "PP_VDD_MAIN",
+          "value": "0.361",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.70625,
+          "y": 0.1975
+        },
+        {
+          "part": "J2000",
+          "pin": "1",
+          "net": "VBAT",
+          "value": "0.376",
+          "type": "diode",
+          "note": "Battery connector, any VBAT pin. Synthetic demo value, not measured on a real phone.",
+          "x": 0.795,
+          "y": 0.35961538461538467
+        },
+        {
+          "part": "J2000",
+          "pin": "4",
+          "net": "BATT_NTC",
+          "value": "0.599",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.83,
+          "y": 0.35961538461538467
+        },
+        {
+          "part": "L2001",
+          "pin": "2",
+          "net": "PP_VDD_CPU",
+          "value": "0.105",
+          "type": "diode",
+          "note": "Low reading is normal on a CPU core rail. Synthetic demo value, not measured on a real phone.",
+          "x": 0.125,
+          "y": 0.1807692307692308
+        },
+        {
+          "part": "L2004",
+          "pin": "2",
+          "net": "PP1V8",
+          "value": "0.425",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.275,
+          "y": 0.1807692307692308
+        },
+        {
+          "part": "J1000",
+          "pin": "15",
+          "net": "BL_LED_A",
+          "value": "0.675",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.53,
+          "y": 0.8692307692307693
+        },
+        {
+          "part": "J1000",
+          "pin": "2",
+          "net": "PP2V8_LCM",
+          "value": "0.476",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.44333333333333336,
+          "y": 0.8692307692307693
+        },
+        {
+          "part": "J1000",
+          "pin": "4",
+          "net": "LCM_BIAS_P",
+          "value": "0.488",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.45666666666666667,
+          "y": 0.8692307692307693
+        },
+        {
+          "part": "J1000",
+          "pin": "20",
+          "net": "I2C1_SCL",
+          "value": "0.558",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.5633333333333334,
+          "y": 0.8692307692307693
+        },
+        {
+          "part": "J1000",
+          "pin": "22",
+          "net": "PP3V0_TOUCH",
+          "value": "0.448",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.44333333333333336,
+          "y": 0.8807692307692307
+        },
+        {
+          "part": "J1000",
+          "pin": "18",
+          "net": "TOUCH_INT_L",
+          "value": "0.576",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.55,
+          "y": 0.8692307692307693
+        },
+        {
+          "part": "J6000",
+          "pin": "4",
+          "net": "PP_SIM",
+          "value": "0.549",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.8833333333333333,
+          "y": 0.8326923076923077
+        },
+        {
+          "part": "J6000",
+          "pin": "5",
+          "net": "SIM_DET",
+          "value": "0.614",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.8958333333333334,
+          "y": 0.8326923076923077
+        },
+        {
+          "part": "U5000",
+          "pin": "9",
+          "net": "SPK_P",
+          "value": "0.519",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.22375,
+          "y": 0.6886538461538462
+        },
+        {
+          "part": "U5000",
+          "pin": "16",
+          "net": "MIC_BIAS",
+          "value": "0.501",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.27625,
+          "y": 0.6886538461538462
+        },
+        {
+          "part": "U6000",
+          "pin": "A6",
+          "net": "RF_ANT_MAIN",
+          "value": "0.000",
+          "type": "diode",
+          "note": "Antenna feed reads near 0 to GND through the matching coil. Normal. Synthetic demo value, not measured on a real phone.",
+          "x": 0.76375,
+          "y": 0.5813461538461538
+        },
+        {
+          "part": "J3000",
+          "pin": "16",
+          "net": "PWR_KEY",
+          "value": "0.592",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.48125,
+          "y": 0.05384615384615388
+        },
+        {
+          "part": "J2000",
+          "pin": "1",
+          "net": "VBAT",
+          "value": "3.85",
+          "type": "voltage",
+          "note": "With battery connected. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "U3000",
+          "pin": "7",
+          "net": "PP_VDD_MAIN",
+          "value": "3.90",
+          "type": "voltage",
+          "note": "Phone on, charger off. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "J3000",
+          "pin": "2",
+          "net": "VBUS_IN",
+          "value": "5.00",
+          "type": "voltage",
+          "note": "Charger connected. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "L2004",
+          "pin": "2",
+          "net": "PP1V8",
+          "value": "1.80",
+          "type": "voltage",
+          "note": "Phone on. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "L2001",
+          "pin": "2",
+          "net": "PP_VDD_CPU",
+          "value": "0.80",
+          "type": "voltage",
+          "note": "Phone on, idle. Moves with load. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "J1000",
+          "pin": "2",
+          "net": "PP2V8_LCM",
+          "value": "2.80",
+          "type": "voltage",
+          "note": "Screen on. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "J1000",
+          "pin": "22",
+          "net": "PP3V0_TOUCH",
+          "value": "3.00",
+          "type": "voltage",
+          "note": "Screen on. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "J6000",
+          "pin": "4",
+          "net": "PP_SIM",
+          "value": "1.80",
+          "type": "voltage",
+          "note": "SIM inserted, phone on. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "F3000",
+          "pin": "2",
+          "net": "VBUS_IN_F",
+          "value": "0.0",
+          "type": "resistance",
+          "note": "Ohms across the fuse. A good fuse reads near 0. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        }
+      ],
+      "jumpers": [
+        {
+          "layer": "charging",
+          "color": "#ef4444",
+          "label": "Demo Charging: bypass F3000 to the OVP input",
+          "note": "Only as a test when the fuse is open; fit a new fuse for the final repair. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.5416666666666666,
+              "y": 0.11538461538461542
+            },
+            {
+              "x": 0.6058333333333333,
+              "y": 0.10461538461538461
+            },
+            {
+              "x": 0.61,
+              "y": 0.0938461538461538
+            }
+          ]
+        },
+        {
+          "layer": "display",
+          "color": "#facc15",
+          "label": "Demo Backlight: BL_LED_A from J1000 to D4000",
+          "note": "Use when the BL_LED_A trace is cut near the connector. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.53,
+              "y": 0.8692307692307693
+            },
+            {
+              "x": 0.7095833333333335,
+              "y": 0.7951923076923078
+            },
+            {
+              "x": 0.8291666666666667,
+              "y": 0.7211538461538461
+            }
+          ]
+        },
+        {
+          "layer": "touch",
+          "color": "#22d3ee",
+          "label": "Demo Touch: I2C1_SCL from J1000 toward the SoC",
+          "note": "Thin enamelled wire; keep it short and away from the coil. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.5633333333333334,
+              "y": 0.8692307692307693
+            },
+            {
+              "x": 0.545625,
+              "y": 0.6718269230769232
+            },
+            {
+              "x": 0.46791666666666665,
+              "y": 0.47442307692307695
+            }
+          ]
+        },
+        {
+          "layer": "audio",
+          "color": "#e879f9",
+          "label": "Demo Audio: SPK_P from the codec to the speaker pad",
+          "note": "Speaker lines carry current, use thicker wire. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.22375,
+              "y": 0.6886538461538462
+            },
+            {
+              "x": 0.37124999999999997,
+              "y": 0.37125
+            },
+            {
+              "x": 0.45875,
+              "y": 0.05384615384615388
+            }
+          ]
+        },
+        {
+          "layer": "rf",
+          "color": "#22c55e",
+          "label": "Demo RF: main antenna feed",
+          "note": "Keep RF jumpers as short as possible. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.76375,
+              "y": 0.5813461538461538
+            },
+            {
+              "x": 0.819375,
+              "y": 0.6341346153846155
+            },
+            {
+              "x": 0.815,
+              "y": 0.686923076923077
+            }
+          ]
+        },
+        {
+          "layer": "gnd",
+          "color": "#94a3b8",
+          "label": "Demo GND: battery connector to dock ground",
+          "note": "Reference ground for meter readings. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.8066666666666666,
+              "y": 0.37115384615384617
+            },
+            {
+              "x": 0.6627083333333333,
+              "y": 0.20673076923076922
+            },
+            {
+              "x": 0.45875,
+              "y": 0.04230769230769227
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "brand": "Infinix",
+      "model": "Note 30 (demo)",
+      "guides": [
+        {
+          "title": "No touch, display works",
+          "symptom": "Image is fine but touch does not respond, even with a new screen.",
+          "steps": "1. Fit a known-good screen and test again.\n2. Check PP3V0_TOUCH at J1000 with the screen on (3.0 V on the demo board).\n3. Diode-measure I2C1_SCL, I2C1_SDA, TOUCH_INT_L and TOUCH_RST_L at J1000 and compare with the readings table.\n4. An open line reads OL: follow it in the boardview and use the cyan touch jumper as a reference route.\n5. Inspect J1000 for bent pins or corrosion.",
+          "parts": "J1000, U1000",
+          "nets": "PP3V0_TOUCH, I2C1_SCL, I2C1_SDA, TOUCH_INT_L, TOUCH_RST_L"
+        },
+        {
+          "title": "Not charging, VBUS missing after the port",
+          "symptom": "No charging icon. USB ammeter shows 0.00 A. Charge port flex tested good.",
+          "steps": "1. Open the boardview and search VBUS_IN: it runs J3000 > F3000 / D3000 > U3100 (OVP).\n2. Diode-measure VBUS_IN at J3000 and compare with the readings table.\n3. Check F3000 for continuity. Open fuse = replace it (the red charging jumper on the photo is only a test).\n4. If VBUS_IN reads near 0: suspect D3000 (TVS) shorted. Lift it and measure again.\n5. With 5 V present on VBUS, check U3000 (charger) input and its I2C lines (I2C0_SCL / SDA pulled up to PP1V8).",
+          "parts": "J3000, F3000, D3000, U3100, U3000",
+          "nets": "VBUS_IN, VBUS, I2C0_SCL"
+        },
+        {
+          "title": "No backlight, image faint with a torch",
+          "symptom": "Picture visible with a torch, screen dark.",
+          "steps": "1. Test a known-good screen first.\n2. In the boardview click BL_LED_A: J1000 pins, D4000 and the output caps light up.\n3. Diode-measure BL_LED_A at J1000. Near 0 = shorted output cap on BL_LED_A.\n4. Check L4000 continuity and D4000 in diode mode.\n5. Check BL_EN from the SoC goes high with the screen on.",
+          "parts": "U4000, L4000, D4000, J1000",
+          "nets": "BL_LED_A, BL_LX, BL_EN"
+        },
+        {
+          "title": "Dead, power supply hits current limit",
+          "symptom": "On the DC supply the current jumps to the limit as soon as the battery connector is powered.",
+          "steps": "1. Diode-measure VBAT and PP_VDD_MAIN at J2000 / U3000. Near 0.000 = short.\n2. Click PP_VDD_MAIN in the boardview: every decoupling cap on it is a candidate.\n3. Inject 1 V at 2 A limit into PP_VDD_MAIN and find the hot part with a thermal camera or rosin.\n4. Remove the hot cap and re-measure against the readings table.",
+          "parts": "J2000, U2000, U3000",
+          "nets": "PP_VDD_MAIN, VBAT"
+        }
+      ],
+      "readings": [
+        {
+          "part": "J3000",
+          "pin": "2",
+          "net": "VBUS_IN",
+          "value": "0.553",
+          "type": "diode",
+          "note": "Red probe on GND, black on the pin. Synthetic demo value, not measured on a real phone.",
+          "x": 0.46625,
+          "y": 0.04230769230769227
+        },
+        {
+          "part": "F3000",
+          "pin": "2",
+          "net": "VBUS_IN_F",
+          "value": "0.549",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.5583333333333333,
+          "y": 0.11538461538461542
+        },
+        {
+          "part": "U3000",
+          "pin": "1",
+          "net": "VBUS",
+          "value": "0.508",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.6970833333333334,
+          "y": 0.17211538461538467
+        },
+        {
+          "part": "U3000",
+          "pin": "7",
+          "net": "PP_VDD_MAIN",
+          "value": "0.357",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.70625,
+          "y": 0.1975
+        },
+        {
+          "part": "J2000",
+          "pin": "1",
+          "net": "VBAT",
+          "value": "0.372",
+          "type": "diode",
+          "note": "Battery connector, any VBAT pin. Synthetic demo value, not measured on a real phone.",
+          "x": 0.795,
+          "y": 0.35961538461538467
+        },
+        {
+          "part": "J2000",
+          "pin": "4",
+          "net": "BATT_NTC",
+          "value": "0.629",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.83,
+          "y": 0.35961538461538467
+        },
+        {
+          "part": "L2001",
+          "pin": "2",
+          "net": "PP_VDD_CPU",
+          "value": "0.110",
+          "type": "diode",
+          "note": "Low reading is normal on a CPU core rail. Synthetic demo value, not measured on a real phone.",
+          "x": 0.125,
+          "y": 0.1807692307692308
+        },
+        {
+          "part": "L2004",
+          "pin": "2",
+          "net": "PP1V8",
+          "value": "0.421",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.275,
+          "y": 0.1807692307692308
+        },
+        {
+          "part": "J1000",
+          "pin": "15",
+          "net": "BL_LED_A",
+          "value": "0.668",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.53,
+          "y": 0.8692307692307693
+        },
+        {
+          "part": "J1000",
+          "pin": "2",
+          "net": "PP2V8_LCM",
+          "value": "0.471",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.44333333333333336,
+          "y": 0.8692307692307693
+        },
+        {
+          "part": "J1000",
+          "pin": "4",
+          "net": "LCM_BIAS_P",
+          "value": "0.483",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.45666666666666667,
+          "y": 0.8692307692307693
+        },
+        {
+          "part": "J1000",
+          "pin": "20",
+          "net": "I2C1_SCL",
+          "value": "0.552",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.5633333333333334,
+          "y": 0.8692307692307693
+        },
+        {
+          "part": "J1000",
+          "pin": "22",
+          "net": "PP3V0_TOUCH",
+          "value": "0.443",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.44333333333333336,
+          "y": 0.8807692307692307
+        },
+        {
+          "part": "J1000",
+          "pin": "18",
+          "net": "TOUCH_INT_L",
+          "value": "0.606",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.55,
+          "y": 0.8692307692307693
+        },
+        {
+          "part": "J6000",
+          "pin": "4",
+          "net": "PP_SIM",
+          "value": "0.543",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.8833333333333333,
+          "y": 0.8326923076923077
+        },
+        {
+          "part": "J6000",
+          "pin": "5",
+          "net": "SIM_DET",
+          "value": "0.608",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.8958333333333334,
+          "y": 0.8326923076923077
+        },
+        {
+          "part": "U5000",
+          "pin": "9",
+          "net": "SPK_P",
+          "value": "0.514",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.22375,
+          "y": 0.6886538461538462
+        },
+        {
+          "part": "U5000",
+          "pin": "16",
+          "net": "MIC_BIAS",
+          "value": "0.496",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.27625,
+          "y": 0.6886538461538462
+        },
+        {
+          "part": "U6000",
+          "pin": "A6",
+          "net": "RF_ANT_MAIN",
+          "value": "0.000",
+          "type": "diode",
+          "note": "Antenna feed reads near 0 to GND through the matching coil. Normal. Synthetic demo value, not measured on a real phone.",
+          "x": 0.76375,
+          "y": 0.5813461538461538
+        },
+        {
+          "part": "J3000",
+          "pin": "16",
+          "net": "PWR_KEY",
+          "value": "0.585",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.48125,
+          "y": 0.05384615384615388
+        },
+        {
+          "part": "J2000",
+          "pin": "1",
+          "net": "VBAT",
+          "value": "3.85",
+          "type": "voltage",
+          "note": "With battery connected. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "U3000",
+          "pin": "7",
+          "net": "PP_VDD_MAIN",
+          "value": "3.90",
+          "type": "voltage",
+          "note": "Phone on, charger off. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "J3000",
+          "pin": "2",
+          "net": "VBUS_IN",
+          "value": "5.00",
+          "type": "voltage",
+          "note": "Charger connected. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "L2004",
+          "pin": "2",
+          "net": "PP1V8",
+          "value": "1.80",
+          "type": "voltage",
+          "note": "Phone on. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "L2001",
+          "pin": "2",
+          "net": "PP_VDD_CPU",
+          "value": "0.80",
+          "type": "voltage",
+          "note": "Phone on, idle. Moves with load. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "J1000",
+          "pin": "2",
+          "net": "PP2V8_LCM",
+          "value": "2.80",
+          "type": "voltage",
+          "note": "Screen on. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "J1000",
+          "pin": "22",
+          "net": "PP3V0_TOUCH",
+          "value": "3.00",
+          "type": "voltage",
+          "note": "Screen on. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "J6000",
+          "pin": "4",
+          "net": "PP_SIM",
+          "value": "1.80",
+          "type": "voltage",
+          "note": "SIM inserted, phone on. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "F3000",
+          "pin": "2",
+          "net": "VBUS_IN_F",
+          "value": "0.0",
+          "type": "resistance",
+          "note": "Ohms across the fuse. A good fuse reads near 0. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        }
+      ],
+      "jumpers": [
+        {
+          "layer": "charging",
+          "color": "#ef4444",
+          "label": "Demo Charging: bypass F3000 to the OVP input",
+          "note": "Only as a test when the fuse is open; fit a new fuse for the final repair. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.5416666666666666,
+              "y": 0.11538461538461542
+            },
+            {
+              "x": 0.6058333333333333,
+              "y": 0.10461538461538461
+            },
+            {
+              "x": 0.61,
+              "y": 0.0938461538461538
+            }
+          ]
+        },
+        {
+          "layer": "display",
+          "color": "#facc15",
+          "label": "Demo Backlight: BL_LED_A from J1000 to D4000",
+          "note": "Use when the BL_LED_A trace is cut near the connector. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.53,
+              "y": 0.8692307692307693
+            },
+            {
+              "x": 0.7095833333333335,
+              "y": 0.7951923076923078
+            },
+            {
+              "x": 0.8291666666666667,
+              "y": 0.7211538461538461
+            }
+          ]
+        },
+        {
+          "layer": "touch",
+          "color": "#22d3ee",
+          "label": "Demo Touch: I2C1_SCL from J1000 toward the SoC",
+          "note": "Thin enamelled wire; keep it short and away from the coil. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.5633333333333334,
+              "y": 0.8692307692307693
+            },
+            {
+              "x": 0.545625,
+              "y": 0.6718269230769232
+            },
+            {
+              "x": 0.46791666666666665,
+              "y": 0.47442307692307695
+            }
+          ]
+        },
+        {
+          "layer": "audio",
+          "color": "#e879f9",
+          "label": "Demo Audio: SPK_P from the codec to the speaker pad",
+          "note": "Speaker lines carry current, use thicker wire. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.22375,
+              "y": 0.6886538461538462
+            },
+            {
+              "x": 0.37124999999999997,
+              "y": 0.37125
+            },
+            {
+              "x": 0.45875,
+              "y": 0.05384615384615388
+            }
+          ]
+        },
+        {
+          "layer": "rf",
+          "color": "#22c55e",
+          "label": "Demo RF: main antenna feed",
+          "note": "Keep RF jumpers as short as possible. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.76375,
+              "y": 0.5813461538461538
+            },
+            {
+              "x": 0.819375,
+              "y": 0.6341346153846155
+            },
+            {
+              "x": 0.815,
+              "y": 0.686923076923077
+            }
+          ]
+        },
+        {
+          "layer": "gnd",
+          "color": "#94a3b8",
+          "label": "Demo GND: battery connector to dock ground",
+          "note": "Reference ground for meter readings. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.8066666666666666,
+              "y": 0.37115384615384617
+            },
+            {
+              "x": 0.6627083333333333,
+              "y": 0.20673076923076922
+            },
+            {
+              "x": 0.45875,
+              "y": 0.04230769230769227
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "brand": "Samsung",
+      "model": "Galaxy A32 (demo)",
+      "guides": [
+        {
+          "title": "No sound from the loudspeaker, earpiece works",
+          "symptom": "Ringtone silent, calls are fine on the earpiece. Speaker tested good.",
+          "steps": "1. Test with a known-good speaker and clean the contacts.\n2. Diode-measure SPK_P and SPK_N at the codec (U5000) and at the speaker pads.\n3. Check the filter parts on SPK_FILT_P / SPK_FILT_N for cracks or liquid residue.\n4. Check the I2S lines and AUDIO_RST_L to U5000.\n5. The purple audio jumper on the photo shows the route used on this demo board.",
+          "parts": "U5000",
+          "nets": "SPK_P, SPK_N, SPK_FILT_P, SPK_FILT_N, AUDIO_RST_L"
+        },
+        {
+          "title": "Not charging, VBUS missing after the port",
+          "symptom": "No charging icon. USB ammeter shows 0.00 A. Charge port flex tested good.",
+          "steps": "1. Open the boardview and search VBUS_IN: it runs J3000 > F3000 / D3000 > U3100 (OVP).\n2. Diode-measure VBUS_IN at J3000 and compare with the readings table.\n3. Check F3000 for continuity. Open fuse = replace it (the red charging jumper on the photo is only a test).\n4. If VBUS_IN reads near 0: suspect D3000 (TVS) shorted. Lift it and measure again.\n5. With 5 V present on VBUS, check U3000 (charger) input and its I2C lines (I2C0_SCL / SDA pulled up to PP1V8).",
+          "parts": "J3000, F3000, D3000, U3100, U3000",
+          "nets": "VBUS_IN, VBUS, I2C0_SCL"
+        },
+        {
+          "title": "No backlight, image faint with a torch",
+          "symptom": "Picture visible with a torch, screen dark.",
+          "steps": "1. Test a known-good screen first.\n2. In the boardview click BL_LED_A: J1000 pins, D4000 and the output caps light up.\n3. Diode-measure BL_LED_A at J1000. Near 0 = shorted output cap on BL_LED_A.\n4. Check L4000 continuity and D4000 in diode mode.\n5. Check BL_EN from the SoC goes high with the screen on.",
+          "parts": "U4000, L4000, D4000, J1000",
+          "nets": "BL_LED_A, BL_LX, BL_EN"
+        },
+        {
+          "title": "Dead, power supply hits current limit",
+          "symptom": "On the DC supply the current jumps to the limit as soon as the battery connector is powered.",
+          "steps": "1. Diode-measure VBAT and PP_VDD_MAIN at J2000 / U3000. Near 0.000 = short.\n2. Click PP_VDD_MAIN in the boardview: every decoupling cap on it is a candidate.\n3. Inject 1 V at 2 A limit into PP_VDD_MAIN and find the hot part with a thermal camera or rosin.\n4. Remove the hot cap and re-measure against the readings table.",
+          "parts": "J2000, U2000, U3000",
+          "nets": "PP_VDD_MAIN, VBAT"
+        }
+      ],
+      "readings": [
+        {
+          "part": "J3000",
+          "pin": "2",
+          "net": "VBUS_IN",
+          "value": "0.547",
+          "type": "diode",
+          "note": "Red probe on GND, black on the pin. Synthetic demo value, not measured on a real phone.",
+          "x": 0.46625,
+          "y": 0.04230769230769227
+        },
+        {
+          "part": "F3000",
+          "pin": "2",
+          "net": "VBUS_IN_F",
+          "value": "0.543",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.5583333333333333,
+          "y": 0.11538461538461542
+        },
+        {
+          "part": "U3000",
+          "pin": "1",
+          "net": "VBUS",
+          "value": "0.503",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.6970833333333334,
+          "y": 0.17211538461538467
+        },
+        {
+          "part": "U3000",
+          "pin": "7",
+          "net": "PP_VDD_MAIN",
+          "value": "0.353",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.70625,
+          "y": 0.1975
+        },
+        {
+          "part": "J2000",
+          "pin": "1",
+          "net": "VBAT",
+          "value": "0.391",
+          "type": "diode",
+          "note": "Battery connector, any VBAT pin. Synthetic demo value, not measured on a real phone.",
+          "x": 0.795,
+          "y": 0.35961538461538467
+        },
+        {
+          "part": "J2000",
+          "pin": "4",
+          "net": "BATT_NTC",
+          "value": "0.623",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.83,
+          "y": 0.35961538461538467
+        },
+        {
+          "part": "L2001",
+          "pin": "2",
+          "net": "PP_VDD_CPU",
+          "value": "0.109",
+          "type": "diode",
+          "note": "Low reading is normal on a CPU core rail. Synthetic demo value, not measured on a real phone.",
+          "x": 0.125,
+          "y": 0.1807692307692308
+        },
+        {
+          "part": "L2004",
+          "pin": "2",
+          "net": "PP1V8",
+          "value": "0.416",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.275,
+          "y": 0.1807692307692308
+        },
+        {
+          "part": "J1000",
+          "pin": "15",
+          "net": "BL_LED_A",
+          "value": "0.661",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.53,
+          "y": 0.8692307692307693
+        },
+        {
+          "part": "J1000",
+          "pin": "2",
+          "net": "PP2V8_LCM",
+          "value": "0.466",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.44333333333333336,
+          "y": 0.8692307692307693
+        },
+        {
+          "part": "J1000",
+          "pin": "4",
+          "net": "LCM_BIAS_P",
+          "value": "0.478",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.45666666666666667,
+          "y": 0.8692307692307693
+        },
+        {
+          "part": "J1000",
+          "pin": "20",
+          "net": "I2C1_SCL",
+          "value": "0.546",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.5633333333333334,
+          "y": 0.8692307692307693
+        },
+        {
+          "part": "J1000",
+          "pin": "22",
+          "net": "PP3V0_TOUCH",
+          "value": "0.466",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.44333333333333336,
+          "y": 0.8807692307692307
+        },
+        {
+          "part": "J1000",
+          "pin": "18",
+          "net": "TOUCH_INT_L",
+          "value": "0.599",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.55,
+          "y": 0.8692307692307693
+        },
+        {
+          "part": "J6000",
+          "pin": "4",
+          "net": "PP_SIM",
+          "value": "0.537",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.8833333333333333,
+          "y": 0.8326923076923077
+        },
+        {
+          "part": "J6000",
+          "pin": "5",
+          "net": "SIM_DET",
+          "value": "0.601",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.8958333333333334,
+          "y": 0.8326923076923077
+        },
+        {
+          "part": "U5000",
+          "pin": "9",
+          "net": "SPK_P",
+          "value": "0.508",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.22375,
+          "y": 0.6886538461538462
+        },
+        {
+          "part": "U5000",
+          "pin": "16",
+          "net": "MIC_BIAS",
+          "value": "0.490",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.27625,
+          "y": 0.6886538461538462
+        },
+        {
+          "part": "U6000",
+          "pin": "A6",
+          "net": "RF_ANT_MAIN",
+          "value": "0.000",
+          "type": "diode",
+          "note": "Antenna feed reads near 0 to GND through the matching coil. Normal. Synthetic demo value, not measured on a real phone.",
+          "x": 0.76375,
+          "y": 0.5813461538461538
+        },
+        {
+          "part": "J3000",
+          "pin": "16",
+          "net": "PWR_KEY",
+          "value": "0.615",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.48125,
+          "y": 0.05384615384615388
+        },
+        {
+          "part": "J2000",
+          "pin": "1",
+          "net": "VBAT",
+          "value": "3.85",
+          "type": "voltage",
+          "note": "With battery connected. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "U3000",
+          "pin": "7",
+          "net": "PP_VDD_MAIN",
+          "value": "3.90",
+          "type": "voltage",
+          "note": "Phone on, charger off. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "J3000",
+          "pin": "2",
+          "net": "VBUS_IN",
+          "value": "5.00",
+          "type": "voltage",
+          "note": "Charger connected. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "L2004",
+          "pin": "2",
+          "net": "PP1V8",
+          "value": "1.80",
+          "type": "voltage",
+          "note": "Phone on. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "L2001",
+          "pin": "2",
+          "net": "PP_VDD_CPU",
+          "value": "0.80",
+          "type": "voltage",
+          "note": "Phone on, idle. Moves with load. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "J1000",
+          "pin": "2",
+          "net": "PP2V8_LCM",
+          "value": "2.80",
+          "type": "voltage",
+          "note": "Screen on. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "J1000",
+          "pin": "22",
+          "net": "PP3V0_TOUCH",
+          "value": "3.00",
+          "type": "voltage",
+          "note": "Screen on. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "J6000",
+          "pin": "4",
+          "net": "PP_SIM",
+          "value": "1.80",
+          "type": "voltage",
+          "note": "SIM inserted, phone on. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "F3000",
+          "pin": "2",
+          "net": "VBUS_IN_F",
+          "value": "0.0",
+          "type": "resistance",
+          "note": "Ohms across the fuse. A good fuse reads near 0. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        }
+      ],
+      "jumpers": [
+        {
+          "layer": "charging",
+          "color": "#ef4444",
+          "label": "Demo Charging: bypass F3000 to the OVP input",
+          "note": "Only as a test when the fuse is open; fit a new fuse for the final repair. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.5416666666666666,
+              "y": 0.11538461538461542
+            },
+            {
+              "x": 0.6058333333333333,
+              "y": 0.10461538461538461
+            },
+            {
+              "x": 0.61,
+              "y": 0.0938461538461538
+            }
+          ]
+        },
+        {
+          "layer": "display",
+          "color": "#facc15",
+          "label": "Demo Backlight: BL_LED_A from J1000 to D4000",
+          "note": "Use when the BL_LED_A trace is cut near the connector. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.53,
+              "y": 0.8692307692307693
+            },
+            {
+              "x": 0.7095833333333335,
+              "y": 0.7951923076923078
+            },
+            {
+              "x": 0.8291666666666667,
+              "y": 0.7211538461538461
+            }
+          ]
+        },
+        {
+          "layer": "touch",
+          "color": "#22d3ee",
+          "label": "Demo Touch: I2C1_SCL from J1000 toward the SoC",
+          "note": "Thin enamelled wire; keep it short and away from the coil. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.5633333333333334,
+              "y": 0.8692307692307693
+            },
+            {
+              "x": 0.545625,
+              "y": 0.6718269230769232
+            },
+            {
+              "x": 0.46791666666666665,
+              "y": 0.47442307692307695
+            }
+          ]
+        },
+        {
+          "layer": "audio",
+          "color": "#e879f9",
+          "label": "Demo Audio: SPK_P from the codec to the speaker pad",
+          "note": "Speaker lines carry current, use thicker wire. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.22375,
+              "y": 0.6886538461538462
+            },
+            {
+              "x": 0.37124999999999997,
+              "y": 0.37125
+            },
+            {
+              "x": 0.45875,
+              "y": 0.05384615384615388
+            }
+          ]
+        },
+        {
+          "layer": "rf",
+          "color": "#22c55e",
+          "label": "Demo RF: main antenna feed",
+          "note": "Keep RF jumpers as short as possible. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.76375,
+              "y": 0.5813461538461538
+            },
+            {
+              "x": 0.819375,
+              "y": 0.6341346153846155
+            },
+            {
+              "x": 0.815,
+              "y": 0.686923076923077
+            }
+          ]
+        },
+        {
+          "layer": "gnd",
+          "color": "#94a3b8",
+          "label": "Demo GND: battery connector to dock ground",
+          "note": "Reference ground for meter readings. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.8066666666666666,
+              "y": 0.37115384615384617
+            },
+            {
+              "x": 0.6627083333333333,
+              "y": 0.20673076923076922
+            },
+            {
+              "x": 0.45875,
+              "y": 0.04230769230769227
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "brand": "iPhone",
+      "model": "12 Pro (demo)",
+      "guides": [
+        {
+          "title": "No service or no SIM detected",
+          "symptom": "Searching or No SIM, IMEI shows. SIM works in another phone.",
+          "steps": "1. Clean the SIM tray and check J6000 pins.\n2. Check PP_SIM at J6000 with a SIM inserted (1.8 V on the demo board) and diode-measure SIM_CLK, SIM_IO, SIM_RST, SIM_DET.\n3. For no service with SIM detected: check the RF_ANT_MAIN feed and the antenna flex.\n4. Check PA_EN and the PA (U6100) supply.\n5. Compare every reading with the readings table before replacing ICs.",
+          "parts": "J6000, U6000, U6100",
+          "nets": "PP_SIM, SIM_DET, SIM_CLK, RF_ANT_MAIN, PA_EN"
+        },
+        {
+          "title": "Not charging, VBUS missing after the port",
+          "symptom": "No charging icon. USB ammeter shows 0.00 A. Charge port flex tested good.",
+          "steps": "1. Open the boardview and search VBUS_IN: it runs J3000 > F3000 / D3000 > U3100 (OVP).\n2. Diode-measure VBUS_IN at J3000 and compare with the readings table.\n3. Check F3000 for continuity. Open fuse = replace it (the red charging jumper on the photo is only a test).\n4. If VBUS_IN reads near 0: suspect D3000 (TVS) shorted. Lift it and measure again.\n5. With 5 V present on VBUS, check U3000 (charger) input and its I2C lines (I2C0_SCL / SDA pulled up to PP1V8).",
+          "parts": "J3000, F3000, D3000, U3100, U3000",
+          "nets": "VBUS_IN, VBUS, I2C0_SCL"
+        },
+        {
+          "title": "No backlight, image faint with a torch",
+          "symptom": "Picture visible with a torch, screen dark.",
+          "steps": "1. Test a known-good screen first.\n2. In the boardview click BL_LED_A: J1000 pins, D4000 and the output caps light up.\n3. Diode-measure BL_LED_A at J1000. Near 0 = shorted output cap on BL_LED_A.\n4. Check L4000 continuity and D4000 in diode mode.\n5. Check BL_EN from the SoC goes high with the screen on.",
+          "parts": "U4000, L4000, D4000, J1000",
+          "nets": "BL_LED_A, BL_LX, BL_EN"
+        },
+        {
+          "title": "Dead, power supply hits current limit",
+          "symptom": "On the DC supply the current jumps to the limit as soon as the battery connector is powered.",
+          "steps": "1. Diode-measure VBAT and PP_VDD_MAIN at J2000 / U3000. Near 0.000 = short.\n2. Click PP_VDD_MAIN in the boardview: every decoupling cap on it is a candidate.\n3. Inject 1 V at 2 A limit into PP_VDD_MAIN and find the hot part with a thermal camera or rosin.\n4. Remove the hot cap and re-measure against the readings table.",
+          "parts": "J2000, U2000, U3000",
+          "nets": "PP_VDD_MAIN, VBAT"
+        }
+      ],
+      "readings": [
+        {
+          "part": "J3000",
+          "pin": "2",
+          "net": "VBUS_IN",
+          "value": "0.541",
+          "type": "diode",
+          "note": "Red probe on GND, black on the pin. Synthetic demo value, not measured on a real phone.",
+          "x": 0.46625,
+          "y": 0.04230769230769227
+        },
+        {
+          "part": "F3000",
+          "pin": "2",
+          "net": "VBUS_IN_F",
+          "value": "0.536",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.5583333333333333,
+          "y": 0.11538461538461542
+        },
+        {
+          "part": "U3000",
+          "pin": "1",
+          "net": "VBUS",
+          "value": "0.497",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.6970833333333334,
+          "y": 0.17211538461538467
+        },
+        {
+          "part": "U3000",
+          "pin": "7",
+          "net": "PP_VDD_MAIN",
+          "value": "0.371",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.70625,
+          "y": 0.1975
+        },
+        {
+          "part": "J2000",
+          "pin": "1",
+          "net": "VBAT",
+          "value": "0.387",
+          "type": "diode",
+          "note": "Battery connector, any VBAT pin. Synthetic demo value, not measured on a real phone.",
+          "x": 0.795,
+          "y": 0.35961538461538467
+        },
+        {
+          "part": "J2000",
+          "pin": "4",
+          "net": "BATT_NTC",
+          "value": "0.616",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.83,
+          "y": 0.35961538461538467
+        },
+        {
+          "part": "L2001",
+          "pin": "2",
+          "net": "PP_VDD_CPU",
+          "value": "0.108",
+          "type": "diode",
+          "note": "Low reading is normal on a CPU core rail. Synthetic demo value, not measured on a real phone.",
+          "x": 0.125,
+          "y": 0.1807692307692308
+        },
+        {
+          "part": "L2004",
+          "pin": "2",
+          "net": "PP1V8",
+          "value": "0.412",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.275,
+          "y": 0.1807692307692308
+        },
+        {
+          "part": "J1000",
+          "pin": "15",
+          "net": "BL_LED_A",
+          "value": "0.653",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.53,
+          "y": 0.8692307692307693
+        },
+        {
+          "part": "J1000",
+          "pin": "2",
+          "net": "PP2V8_LCM",
+          "value": "0.461",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.44333333333333336,
+          "y": 0.8692307692307693
+        },
+        {
+          "part": "J1000",
+          "pin": "4",
+          "net": "LCM_BIAS_P",
+          "value": "0.502",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.45666666666666667,
+          "y": 0.8692307692307693
+        },
+        {
+          "part": "J1000",
+          "pin": "20",
+          "net": "I2C1_SCL",
+          "value": "0.574",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.5633333333333334,
+          "y": 0.8692307692307693
+        },
+        {
+          "part": "J1000",
+          "pin": "22",
+          "net": "PP3V0_TOUCH",
+          "value": "0.461",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.44333333333333336,
+          "y": 0.8807692307692307
+        },
+        {
+          "part": "J1000",
+          "pin": "18",
+          "net": "TOUCH_INT_L",
+          "value": "0.593",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.55,
+          "y": 0.8692307692307693
+        },
+        {
+          "part": "J6000",
+          "pin": "4",
+          "net": "PP_SIM",
+          "value": "0.531",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.8833333333333333,
+          "y": 0.8326923076923077
+        },
+        {
+          "part": "J6000",
+          "pin": "5",
+          "net": "SIM_DET",
+          "value": "0.594",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.8958333333333334,
+          "y": 0.8326923076923077
+        },
+        {
+          "part": "U5000",
+          "pin": "9",
+          "net": "SPK_P",
+          "value": "0.502",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.22375,
+          "y": 0.6886538461538462
+        },
+        {
+          "part": "U5000",
+          "pin": "16",
+          "net": "MIC_BIAS",
+          "value": "0.485",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.27625,
+          "y": 0.6886538461538462
+        },
+        {
+          "part": "U6000",
+          "pin": "A6",
+          "net": "RF_ANT_MAIN",
+          "value": "0.000",
+          "type": "diode",
+          "note": "Antenna feed reads near 0 to GND through the matching coil. Normal. Synthetic demo value, not measured on a real phone.",
+          "x": 0.76375,
+          "y": 0.5813461538461538
+        },
+        {
+          "part": "J3000",
+          "pin": "16",
+          "net": "PWR_KEY",
+          "value": "0.609",
+          "type": "diode",
+          "note": "Synthetic demo value, not measured on a real phone.",
+          "x": 0.48125,
+          "y": 0.05384615384615388
+        },
+        {
+          "part": "J2000",
+          "pin": "1",
+          "net": "VBAT",
+          "value": "3.85",
+          "type": "voltage",
+          "note": "With battery connected. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "U3000",
+          "pin": "7",
+          "net": "PP_VDD_MAIN",
+          "value": "3.90",
+          "type": "voltage",
+          "note": "Phone on, charger off. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "J3000",
+          "pin": "2",
+          "net": "VBUS_IN",
+          "value": "5.00",
+          "type": "voltage",
+          "note": "Charger connected. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "L2004",
+          "pin": "2",
+          "net": "PP1V8",
+          "value": "1.80",
+          "type": "voltage",
+          "note": "Phone on. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "L2001",
+          "pin": "2",
+          "net": "PP_VDD_CPU",
+          "value": "0.80",
+          "type": "voltage",
+          "note": "Phone on, idle. Moves with load. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "J1000",
+          "pin": "2",
+          "net": "PP2V8_LCM",
+          "value": "2.80",
+          "type": "voltage",
+          "note": "Screen on. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "J1000",
+          "pin": "22",
+          "net": "PP3V0_TOUCH",
+          "value": "3.00",
+          "type": "voltage",
+          "note": "Screen on. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "J6000",
+          "pin": "4",
+          "net": "PP_SIM",
+          "value": "1.80",
+          "type": "voltage",
+          "note": "SIM inserted, phone on. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        },
+        {
+          "part": "F3000",
+          "pin": "2",
+          "net": "VBUS_IN_F",
+          "value": "0.0",
+          "type": "resistance",
+          "note": "Ohms across the fuse. A good fuse reads near 0. Synthetic demo value, not measured on a real phone.",
+          "x": null,
+          "y": null
+        }
+      ],
+      "jumpers": [
+        {
+          "layer": "charging",
+          "color": "#ef4444",
+          "label": "Demo Charging: bypass F3000 to the OVP input",
+          "note": "Only as a test when the fuse is open; fit a new fuse for the final repair. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.5416666666666666,
+              "y": 0.11538461538461542
+            },
+            {
+              "x": 0.6058333333333333,
+              "y": 0.10461538461538461
+            },
+            {
+              "x": 0.61,
+              "y": 0.0938461538461538
+            }
+          ]
+        },
+        {
+          "layer": "display",
+          "color": "#facc15",
+          "label": "Demo Backlight: BL_LED_A from J1000 to D4000",
+          "note": "Use when the BL_LED_A trace is cut near the connector. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.53,
+              "y": 0.8692307692307693
+            },
+            {
+              "x": 0.7095833333333335,
+              "y": 0.7951923076923078
+            },
+            {
+              "x": 0.8291666666666667,
+              "y": 0.7211538461538461
+            }
+          ]
+        },
+        {
+          "layer": "touch",
+          "color": "#22d3ee",
+          "label": "Demo Touch: I2C1_SCL from J1000 toward the SoC",
+          "note": "Thin enamelled wire; keep it short and away from the coil. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.5633333333333334,
+              "y": 0.8692307692307693
+            },
+            {
+              "x": 0.545625,
+              "y": 0.6718269230769232
+            },
+            {
+              "x": 0.46791666666666665,
+              "y": 0.47442307692307695
+            }
+          ]
+        },
+        {
+          "layer": "audio",
+          "color": "#e879f9",
+          "label": "Demo Audio: SPK_P from the codec to the speaker pad",
+          "note": "Speaker lines carry current, use thicker wire. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.22375,
+              "y": 0.6886538461538462
+            },
+            {
+              "x": 0.37124999999999997,
+              "y": 0.37125
+            },
+            {
+              "x": 0.45875,
+              "y": 0.05384615384615388
+            }
+          ]
+        },
+        {
+          "layer": "rf",
+          "color": "#22c55e",
+          "label": "Demo RF: main antenna feed",
+          "note": "Keep RF jumpers as short as possible. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.76375,
+              "y": 0.5813461538461538
+            },
+            {
+              "x": 0.819375,
+              "y": 0.6341346153846155
+            },
+            {
+              "x": 0.815,
+              "y": 0.686923076923077
+            }
+          ]
+        },
+        {
+          "layer": "gnd",
+          "color": "#94a3b8",
+          "label": "Demo GND: battery connector to dock ground",
+          "note": "Reference ground for meter readings. Synthetic demo value, not measured on a real phone.",
+          "points": [
+            {
+              "x": 0.8066666666666666,
+              "y": 0.37115384615384617
+            },
+            {
+              "x": 0.6627083333333333,
+              "y": 0.20673076923076922
+            },
+            {
+              "x": 0.45875,
+              "y": 0.04230769230769227
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

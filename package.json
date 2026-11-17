@@ -1,6 +1,6 @@
 {
   "name": "fixmycircuit",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Free offline schematic, boardview and repair-guide workbench for phone repair technicians",
   "main": "out/main/index.js",
   "scripts": {
@@ -79,6 +79,16 @@
             "x64"
           ]
         }
+      ],
+      "extraResources": [
+        {
+          "from": "vendor/scrcpy",
+          "to": "scrcpy",
+          "filter": [
+            "**/*",
+            "!README.md"
+          ]
+        }
       ]
     },
     "nsis": {
@@ -109,6 +119,12 @@
           "pcb"
         ],
         "name": "Boardview file"
+      }
+    ],
+    "extraResources": [
+      {
+        "from": "samples",
+        "to": "samples"
       }
     ]
   }

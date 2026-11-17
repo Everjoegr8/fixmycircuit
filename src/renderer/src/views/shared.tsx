@@ -1,7 +1,9 @@
 // Fault-solution and reading widgets shared by the model pages and the repair panel.
 import { useState } from 'react';
 import type { Guide, Reading, ReadingType } from '@shared/types';
-import { api } from '../api';
+import { useEffect } from 'react';
+import type { Photo } from '@shared/types';
+import { api, fileUrl } from '../api';
 import { Icon } from '../components/Icon';
 
 export const READING_TYPES: { value: ReadingType; label: string; unit: string }[] = [
@@ -76,6 +78,7 @@ export function GuideCard({ g, onEdit, onDelete, onPart, onNet, defaultOpen = fa
           {splitList(g.nets).map((x) => <button key={'n' + x} className="chip text-amber-300 hover:border-amber-400" title="Find on board" onClick={() => onNet?.(x)}>{x}</button>)}
         </div>
       )}
+      {open && g.photo_ids && <GuidePhotos ids={g.photo_ids} />}
       {g.author && <div className="mt-1.5 text-[10px] text-slate-500">by {g.author} · {g.updated_at.slice(0, 10)}</div>}
     </div>
   );
@@ -167,4 +170,22 @@ export function ReadingsTable({ readings, modelId, onChanged, compact = false, p
 
 function FragmentRow({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
+}
+
+/** Thumbnails of photos attached to a fault solution; click opens the photo. */
+function GuidePhotos({ ids }: { ids: string }) {
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  useEffect(() => {
+    Promise.all(ids.split(',').filter(Boolean).map((i) => api.getPhoto(Number(i)))).then((ps) => setPhotos(ps.filter(Boolean) as Photo[]));
+  }, [ids]);
+  if (!photos.length) return null;
+  return (
+    <div className="mt-2 flex flex-wrap gap-2">
+      {photos.map((ph) => (
+        <button key={ph.id} title={`Open ${ph.title}`} onClick={() => window.dispatchEvent(new CustomEvent('fmc-open-photo', { detail: ph }))}>
+          <img src={fileUrl(ph.file_id)} className="h-20 rounded border border-bench-600 object-cover hover:border-amber-400" alt={ph.title} />
+        </button>
+      ))}
+    </div>
+  );
 }

@@ -10,6 +10,43 @@ No account, no licence server, no internet needed.
 
 ## Features
 
+### New in 0.2: workbench tools and a demo workshop
+
+- **Demo workshop on first launch.** Four sample models (Tecno Camon 20 Pro,
+  Infinix Note 30, Samsung Galaxy A32, iPhone 12 Pro, all marked "(demo)") open
+  ready to try: schematic, boardview, board photo, fault solutions, diode and
+  voltage readings and colour-coded jumpers. They all share one invented board
+  made for this app: it is not the layout of any real phone and the readings are
+  synthetic. Remove or reload them from Home or Settings.
+- **Colour-coded trace layers.** Charging / VBUS, Display / Backlight,
+  Touch / I2C, Audio / Mic, Network / RF and GND, with checkboxes. On a
+  boardview each layer colours its pins and draws its nets as lines; on a board
+  photo it shows or hides that layer's jumper wires (and, for photos aligned to
+  the boardview, the board's net lines).
+- **Hover reference card.** Hover any pin on a boardview or photo to see the pin,
+  net, layer, the shop's diode and voltage readings for that net, and the ICs on it.
+- **Split-screen sync.** Show two documents side by side (for example board photo
+  and schematic). A jump bar finds a component or net in both panes, picking a
+  part in one pane finds it in the other, and zoom follows between panes (pan as
+  well between a boardview and an aligned photo).
+- **USB microscope tab.** Live view from any USB microscope or webcam, zoom,
+  rotate, mirror, crosshair, freeze frame, and capture straight into a model's
+  board photos or onto a fault solution.
+- **Calculators.** SMD resistor codes (3-digit, 4-digit, R notation, EIA-96),
+  capacitor codes, voltage divider (both ways), Ohm's law and power,
+  series/parallel.
+- **IC cross-reference.** Searchable table of charging, power and audio ICs with
+  platforms, phones and known alternatives. Starter entries are marked to verify;
+  the shop adds its own.
+- **Repair knowledge.** 15 step-by-step fault guides with tick-off steps,
+  reference tables (diode mode, rails, bench supply current patterns, solder
+  temperatures) and brand notes. Copy any guide into a model as a fault solution.
+- **Phone mirror & backup.** Mirror and control an Android phone with a broken
+  screen (scrcpy, bundled in the Windows build) and copy photos and files off it
+  with adb before board work.
+
+### Core
+
 - **Brand → Model → Category library.** The sidebar groups everything per
   phone model under Fault Solutions, Diode Readings, Schematics/PDF, BoardView
   and Board Photos. Files you import are copied into the app's data folder so
