@@ -213,7 +213,7 @@ function PhotosSection(p: Props) {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
         {photos.map((ph) => (
           <div key={ph.id} className="card group overflow-hidden">
-            <button className="block aspect-[4/3] w-full overflow-hidden bg-bench-950" onClick={() => p.onOpenPhoto(ph.id, ph.title, ph.model_id)}>
+            <button data-testid="photo-open" className="block aspect-[4/3] w-full overflow-hidden bg-bench-950" onClick={() => p.onOpenPhoto(ph.id, ph.title, ph.model_id)}>
               <img src={fileUrl(ph.file_id)} alt={ph.title} className="h-full w-full object-cover transition group-hover:scale-105" />
             </button>
             <div className="flex items-center gap-2 px-2 py-1.5">

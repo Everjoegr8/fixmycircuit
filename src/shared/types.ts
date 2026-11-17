@@ -112,6 +112,9 @@ export interface Settings {
   fzKey: string;
   xzzKey: string;
   author: string;
+  /** Optional AI assistant: the user's own Claude API key (stored only on this PC). */
+  anthropicKey?: string;
+  aiModel?: string;
 }
 
 export const BRAND_SEED = ['iPhone', 'Samsung', 'Tecno', 'Infinix', 'Itel', 'Xiaomi'];

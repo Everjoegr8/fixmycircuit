@@ -6,6 +6,7 @@ import { api } from '../api';
 import { Icon } from '../components/Icon';
 import type { Focus } from '../types';
 import { GuideCard, GuideEditor, ReadingsTable } from './shared';
+import AiAssistant from '../components/AiAssistant';
 
 interface Props {
   modelId: number | null;
@@ -15,6 +16,8 @@ interface Props {
   onChanged: () => void;
   onFindInSchematic: (q: string) => void;
   onFindOnBoard: (q: string) => void;
+  demo?: boolean;
+  onOpenSettings?: () => void;
 }
 
 export default function RepairPanel(p: Props) {
@@ -23,6 +26,8 @@ export default function RepairPanel(p: Props) {
   const [useFocus, setUseFocus] = useState(true);
   const [editing, setEditing] = useState<Guide | 'new' | null>(null);
   const [n, setN] = useState(0);
+  const [tab, setTab] = useState<'bench' | 'ai'>(() => (localStorage.getItem('fmc.panelTab') === 'ai' ? 'ai' : 'bench'));
+  useEffect(() => { try { localStorage.setItem('fmc.panelTab', tab); } catch { /* ignore */ } }, [tab]);
 
   useEffect(() => {
     (async () => {
@@ -57,7 +62,16 @@ export default function RepairPanel(p: Props) {
           )}
           {!p.focus.part && !p.focus.net && <span className="text-[11px] text-slate-500">Click a part or net to filter readings</span>}
         </div>
+        <div className="mt-2 flex overflow-hidden rounded-md border border-bench-600 text-[12px]">
+          <button className={`flex flex-1 items-center justify-center gap-1 py-1 ${tab === 'bench' ? 'bg-amber-500/20 text-amber-200' : 'text-slate-400 hover:bg-bench-800'}`} onClick={() => setTab('bench')}><Icon name="wrench" size={12} /> Readings &amp; fixes</button>
+          <button className={`flex flex-1 items-center justify-center gap-1 py-1 ${tab === 'ai' ? 'bg-amber-500/20 text-amber-200' : 'text-slate-400 hover:bg-bench-800'}`} onClick={() => setTab('ai')} data-testid="panel-ai-tab"><Icon name="sparkle" size={12} /> AI assistant</button>
+        </div>
       </div>
+      {tab === 'ai' ? (
+        <div className="min-h-0 flex-1">
+          <AiAssistant ctx={{ modelId: p.modelId, modelLabel: p.modelLabel, demo: !!p.demo, focus: p.focus }} onFindOnBoard={p.onFindOnBoard} onOpenSettings={p.onOpenSettings} />
+        </div>
+      ) : (
       <div className="min-h-0 flex-1 space-y-4 overflow-auto p-3">
         {p.modelId == null && (
           <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-[12px] text-amber-100">
@@ -107,6 +121,7 @@ export default function RepairPanel(p: Props) {
           </div>
         </section>
       </div>
+      )}
     </div>
   );
 }

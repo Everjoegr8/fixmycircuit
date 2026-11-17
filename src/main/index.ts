@@ -1,4 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, net, protocol, session, shell } from 'electron';
+import { aiStep, type AiStepReq } from './ai';
 import { spawn, execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
@@ -140,7 +141,7 @@ function createWindow() {
     height: 900,
     minWidth: 960,
     minHeight: 600,
-    backgroundColor: '#0b0e12',
+    backgroundColor: '#0b0f14',
     title: 'FixMyCircuit',
     autoHideMenuBar: true,
     webPreferences: {
@@ -313,6 +314,16 @@ function registerIpc() {
   });
 
   handle('search', (q: string) => db.search(q));
+  handle('ai:step', (req: AiStepReq) => {
+    const st = db.getSettings() as any;
+    return aiStep(req, st.anthropicKey || '', st.aiModel || 'claude-opus-5-5');
+  });
+  handle('ai:status', () => {
+    const st = db.getSettings() as any;
+    return { configured: !!st.anthropicKey || process.env.FMC_AI_MOCK === '1', model: st.aiModel || 'claude-opus-5-5', mock: process.env.FMC_AI_MOCK === '1' };
+  });
+  handle('stats:activity', (days?: number) => db.activity(days || 14));
+  handle('stats:recent', (limit?: number) => db.recentActivity(limit || 10));
   handle('settings:get', () => db.getSettings());
   handle('settings:set', (patch: any) => db.setSettings(patch));
 
@@ -335,6 +346,8 @@ function registerIpc() {
   });
 }
 
+// Tests and portable setups: keep browser storage (theme, layout) with the data.
+if (process.env.FMC_DATA_DIR) app.setPath('userData', path.join(process.env.FMC_DATA_DIR, 'profile'));
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   app.quit();

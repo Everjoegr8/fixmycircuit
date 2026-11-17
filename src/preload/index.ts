@@ -45,6 +45,10 @@ const api = {
   mirrorBackup: call('mirror:backup'),
 
   search: call('search'),
+  activity: call('stats:activity'),
+  aiStep: call('ai:step'),
+  aiStatus: call('ai:status'),
+  recentActivity: call('stats:recent'),
   getSettings: call('settings:get'),
   setSettings: call('settings:set'),
 
