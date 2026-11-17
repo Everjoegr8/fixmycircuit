@@ -11,6 +11,16 @@ interface Props {
   onOpenPhoto: (id: number, title: string, modelId: number | null) => void;
 }
 
+/** Plain-language reasons for camera failures (getUserMedia error names). */
+export function cameraError(e: any): string {
+  const n = e?.name || '';
+  if (n === 'NotReadableError' || n === 'TrackStartError' || n === 'AbortError') return 'The camera is busy. Close any other program using it (Camera app, Zoom, WhatsApp, another microscope viewer), unplug and replug the microscope, then press Start camera again.';
+  if (n === 'NotAllowedError' || n === 'SecurityError' || n === 'PermissionDeniedError') return 'Windows is blocking the camera. Open Windows Settings, Privacy & security, Camera, and turn on "Let desktop apps access your camera". Then press Start camera again.';
+  if (n === 'NotFoundError' || n === 'DevicesNotFoundError') return 'No camera found. Plug in the USB microscope (it shows up as a webcam), wait a few seconds and press Refresh.';
+  if (n === 'OverconstrainedError') return 'This camera does not support that setting. Pick a lower resolution and try again.';
+  return e?.message || String(e);
+}
+
 export default function MicroscopeView(p: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -26,6 +36,8 @@ export default function MicroscopeView(p: Props) {
   const [cross, setCross] = useState(true);
   const [shots, setShots] = useState<string[]>([]);
   const [saveFor, setSaveFor] = useState<string | null>(null);
+  const [actual, setActual] = useState('');
+  const [check, setCheck] = useState<{ ok: boolean; lines: string[] } | null>(null);
 
   const listDevices = async () => {
     try {
@@ -46,14 +58,54 @@ export default function MicroscopeView(p: Props) {
     setFrozen(null);
     const [w, h] = res.split('x').map(Number);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: id ? { exact: id } : undefined, width: { ideal: w }, height: { ideal: h } }, audio: false });
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: id ? { exact: id } : undefined, width: { ideal: w }, height: { ideal: h } }, audio: false });
+      } catch (e: any) {
+        // The saved camera was unplugged, or it refuses the size: fall back to any camera at its own size.
+        if (e?.name !== 'OverconstrainedError' && e?.name !== 'NotFoundError') throw e;
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      }
       streamRef.current = stream;
       if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play().catch(() => undefined); }
       setLive(true);
+      const st = stream.getVideoTracks()[0]?.getSettings?.() || {};
+      setActual(st.width ? `${st.width}×${st.height}${st.frameRate ? ` · ${Math.round(st.frameRate)} fps` : ''}` : '');
+      stream.getVideoTracks()[0]?.addEventListener('ended', () => { setLive(false); setError('The camera was disconnected. Plug it back in and press Start camera.'); });
       listDevices();
     } catch (e: any) {
-      setError(e?.name === 'NotFoundError' || e?.name === 'OverconstrainedError' ? 'No camera found. Plug in the USB microscope (it shows up as a webcam) and press Refresh.' : e?.message || String(e));
+      setError(cameraError(e));
     }
+  };
+
+  /** Self-check: is the camera delivering real, changing frames, and does capture work? */
+  const selfCheck = async () => {
+    const lines: string[] = [];
+    let ok = true;
+    const v = videoRef.current;
+    if (!live || !v) { setCheck({ ok: false, lines: ['Start the camera first.'] }); return; }
+    lines.push(`Camera: ${devices.find((d) => d.deviceId === deviceId)?.label || 'default camera'}${actual ? `, ${actual}` : ''}`);
+    const sample = () => {
+      const c = document.createElement('canvas'); c.width = 64; c.height = 48;
+      const ctx = c.getContext('2d', { willReadFrequently: true })!; ctx.drawImage(v, 0, 0, 64, 48);
+      return ctx.getImageData(0, 0, 64, 48).data;
+    };
+    const t0 = v.currentTime;
+    const a = sample();
+    await new Promise((r) => setTimeout(r, 700));
+    const b = sample();
+    const moving = v.currentTime > t0;
+    let mean = 0, diff = 0;
+    for (let i = 0; i < a.length; i += 4) { mean += (b[i] + b[i + 1] + b[i + 2]) / 3; diff += Math.abs(a[i] - b[i]); }
+    mean /= a.length / 4;
+    if (moving) lines.push('Frames: arriving'); else { ok = false; lines.push('Frames: not arriving. Replug the microscope or try a different USB port.'); }
+    if (mean < 6) { ok = false; lines.push('Picture: black. Check the microscope light and lens cap, or another program may hold the camera.'); }
+    else if (mean > 250) { ok = false; lines.push('Picture: completely white. Turn the microscope light down or the exposure is wrong.'); }
+    else lines.push(`Picture: OK (brightness ${Math.round(mean)})`);
+    if (diff === 0 && moving) lines.push('Note: two frames were identical; fine for a still board.');
+    const g = grab();
+    if (g && g.length > 1000) lines.push('Capture: OK'); else { ok = false; lines.push('Capture: failed'); }
+    setCheck({ ok, lines });
   };
 
   useEffect(() => {
@@ -108,6 +160,8 @@ export default function MicroscopeView(p: Props) {
           <button className="btn" onClick={stop}>Stop</button>
         )}
         <button className="btn" onClick={listDevices} title="Look for cameras again">Refresh</button>
+        <button className="btn" disabled={!live} onClick={selfCheck} title="Check the camera delivers a real picture and capture works" data-testid="cam-check">Self-check</button>
+        {live && actual && <span className="text-[11px] text-slate-500" data-testid="cam-actual">{actual}</span>}
         <div className="mx-1 h-5 w-px bg-bench-600" />
         <button className={`btn ${frozen ? 'btn-on' : ''}`} disabled={!live} onClick={freeze} title="Freeze the frame (Space)">{frozen ? 'Unfreeze' : 'Freeze'}</button>
         <button className="btn-primary" disabled={!live} onClick={capture}><Icon name="download" size={13} /> Capture</button>
@@ -138,6 +192,14 @@ export default function MicroscopeView(p: Props) {
               </div>
             </div>
           )}
+          {check && (
+            <div className={`absolute bottom-3 left-3 z-10 max-w-md rounded border p-2 text-[12px] ${check.ok ? 'border-green-500/50 bg-green-950/80 text-green-100' : 'border-amber-500/50 bg-amber-950/80 text-amber-100'}`} data-testid="cam-check-result">
+              <div className="mb-0.5 font-semibold">{check.ok ? 'Self-check passed' : 'Self-check found a problem'}</div>
+              {check.lines.map((l) => <div key={l}>{l}</div>)}
+              <button className="mt-1 text-[11px] underline opacity-80" onClick={() => setCheck(null)}>Close</button>
+            </div>
+          )}
+          {live && error && <div className="absolute right-3 top-3 max-w-sm rounded border border-red-500/40 bg-red-500/10 p-2 text-[12px] text-red-200">{error}</div>}
           {frozen && <div className="absolute left-3 top-3 rounded bg-sky-500/80 px-2 py-0.5 text-[11px] font-semibold text-white">FROZEN</div>}
         </div>
         {shots.length > 0 && (

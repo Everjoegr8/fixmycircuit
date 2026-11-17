@@ -250,6 +250,13 @@ async function demoRun() {
   await page.click('[data-testid="cam-start"]');
   await page.waitForSelector('button:has-text("Capture"):not([disabled])', { timeout: 10000 });
   await page.waitForTimeout(800);
+  await page.click('[data-testid="cam-check"]');
+  await page.waitForSelector('[data-testid="cam-check-result"]');
+  const chk = await page.textContent('[data-testid="cam-check-result"]');
+  console.log('microscope self-check:', chk);
+  assert.match(chk, /Self-check passed.*Frames: arriving.*Capture: OK/);
+  assert.match(await page.textContent('[data-testid="cam-actual"]'), /\d+×\d+/);
+  await page.click('[data-testid="cam-check-result"] button');
   await page.click('button:has-text("Freeze")');
   await shot(page, '28-microscope');
   await page.click('button:has-text("Capture")');
