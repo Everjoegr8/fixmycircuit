@@ -118,6 +118,15 @@ export async function installTool(id: ToolId, onProgress?: (msg: string) => void
     // scrcpy writes "SHA-256: <hash>" just after each file name.
     want = i >= 0 ? /\b([0-9a-f]{64})\b/i.exec(body.slice(i, i + 500))?.[1] : undefined;
   }
+  if (!want) {
+    // Some projects publish a SHA256SUMS file instead.
+    const sums = (release.assets || []).find((a: any) => /sha256/i.test(a.name));
+    if (sums) {
+      const t = await (await fetch(sums.browser_download_url, { headers: { 'user-agent': 'FixMyCircuit' } })).text();
+      const esc = asset.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      want = new RegExp(`^([0-9a-f]{64})\\s+\\*?${esc}\\s*$`, 'im').exec(t)?.[1];
+    }
+  }
   if (!want) throw new Error('GitHub did not publish a checksum for this file, so it was not installed.');
   onProgress?.(`Downloading ${asset.name}…`);
   const d = await fetch(asset.browser_download_url, { headers: { 'user-agent': 'FixMyCircuit' } });
