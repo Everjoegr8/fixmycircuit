@@ -243,3 +243,179 @@ export function writeXZZ(b, keyHex = TEST_XZZ_KEY) {
   out.splice(0x28, 4, ...u32(netStart - 0x20));
   return Uint8Array.from(out);
 }
+
+// --- Layout formats with real copper (KiCad .kicad_pcb, Gerber X2) ----------
+// Synthetic routing: each net's pins on one side are chained with L-shaped tracks.
+export function demoRoutes(b) {
+  const out = [];
+  const byNet = new Map();
+  for (const p of b.pins) {
+    if (!p.net || /^(GND|UNCONNECTED)$/.test(p.net)) continue;
+    const k = p.net + '|' + p.side;
+    if (!byNet.has(k)) byNet.set(k, []);
+    byNet.get(k).push(p);
+  }
+  for (const [k, ps] of byNet) {
+    const [net, side] = k.split('|');
+    ps.sort((a, c) => a.x - c.x || a.y - c.y);
+    for (let i = 1; i < ps.length; i++) {
+      const a = ps[i - 1], c = ps[i];
+      out.push({ net, side, x1: a.x, y1: a.y, x2: c.x, y2: a.y });
+      if (c.y !== a.y) out.push({ net, side, x1: c.x, y1: a.y, x2: c.x, y2: c.y });
+    }
+  }
+  return out;
+}
+
+const mm = (mil) => +(mil * 0.0254).toFixed(4);
+
+export function writeKiCad(b) {
+  const nets = [...new Set(b.pins.map((p) => p.net).filter((n) => n && n !== 'UNCONNECTED'))];
+  const nid = (n) => (n && n !== 'UNCONNECTED' ? nets.indexOf(n) + 1 : 0);
+  const L = ['(kicad_pcb (version 20240108) (generator "fmc_synthetic")', '  (net 0 "")'];
+  nets.forEach((n, i) => L.push(`  (net ${i + 1} "${n}")`));
+  b.parts.forEach((part, pi) => {
+    const ps = b.pins.filter((p) => p.part === pi);
+    const cx = ps.reduce((s, p) => s + p.x, 0) / ps.length, cy = ps.reduce((s, p) => s + p.y, 0) / ps.length;
+    const rot = part.name === 'R1' ? 90 : part.name === 'L1' ? 30 : 0; // exercise rotation
+    const r = (rot * Math.PI) / 180, c = Math.cos(r), s = Math.sin(r);
+    const layer = part.side === 'bottom' ? 'B.Cu' : 'F.Cu';
+    L.push(`  (footprint "Synthetic:${part.name}" (layer "${layer}") (at ${mm(cx)} ${-mm(cy)} ${rot})`);
+    L.push(`    (property "Reference" "${part.name}" (at 0 0 0) (layer "${part.side === 'bottom' ? 'B' : 'F'}.SilkS"))`);
+    L.push(`    (property "Value" "SYN-${part.name}" (at 0 0 0) (layer "F.Fab"))`);
+    for (const p of ps) {
+      const dx = mm(p.x) - mm(cx), dy = -mm(p.y) + mm(cy); // KiCad Y down
+      const rx = dx * c - dy * s, ry = dx * s + dy * c; // undo the footprint rotation
+      L.push(`    (pad "${p.snum}" smd roundrect (at ${rx.toFixed(4)} ${ry.toFixed(4)} ${rot}) (size 0.35 0.35) (layers "${layer}" "${layer[0]}.Paste" "${layer[0]}.Mask") (net ${nid(p.net)} "${p.net === 'UNCONNECTED' ? '' : p.net}"))`);
+    }
+    L.push('  )');
+  });
+  for (const t of demoRoutes(b)) {
+    L.push(`  (segment (start ${mm(t.x1)} ${-mm(t.y1)}) (end ${mm(t.x2)} ${-mm(t.y2)}) (width 0.15) (layer "${t.side === 'bottom' ? 'B.Cu' : 'F.Cu'}") (net ${nid(t.net)}) (uuid "00000000-0000-0000-0000-000000000000"))`);
+  }
+  L.push(`  (arc (start ${mm(600)} ${-mm(1400)}) (mid ${mm(650)} ${-mm(1450)}) (end ${mm(700)} ${-mm(1400)}) (width 0.15) (layer "In1.Cu") (net ${nid('VBAT')}))`);
+  L.push(`  (via (at ${mm(1000)} ${-mm(1250)}) (size 0.45) (drill 0.2) (layers "F.Cu" "B.Cu") (net ${nid('VBAT')}))`);
+  L.push(`  (gr_rect (start ${mm(400)} ${-mm(200)}) (end ${mm(1600)} ${-mm(3400)}) (layer "Edge.Cuts") (width 0.1))`);
+  L.push(')');
+  return new TextEncoder().encode(L.join('\n') + '\n');
+}
+
+/** Top copper as Gerber X2, in mm, shifted so it does not share the board origin. */
+export function writeGerberTop(b, off = { x: 5, y: 7 }) {
+  const g = (v) => Math.round(v * 1e6);
+  const X = (mil) => g(mm(mil) + off.x), Y = (mil) => g(mm(mil) + off.y);
+  const L = ['%TF.GenerationSoftware,FixMyCircuit,synthetic*%', '%TF.FileFunction,Copper,L1,Top*%', '%FSLAX46Y46*%', '%MOMM*%', '%LPD*%', '%ADD10C,0.150000*%', '%ADD11R,0.350000X0.350000*%', 'G04 synthetic demo copper*'];
+  L.push('D11*');
+  b.pins.forEach((p) => {
+    if (p.side !== 'top') return;
+    const part = b.parts[p.part];
+    L.push(`%TO.P,${part.name},${p.snum}*%`, `%TO.N,${p.net}*%`, `X${X(p.x)}Y${Y(p.y)}D03*`, '%TD*%');
+  });
+  L.push('D10*', 'G01*');
+  for (const t of demoRoutes(b)) {
+    if (t.side !== 'top') continue;
+    L.push(`%TO.N,${t.net}*%`, `X${X(t.x1)}Y${Y(t.y1)}D02*`, `X${X(t.x2)}Y${Y(t.y2)}D01*`, '%TD*%');
+  }
+  L.push('M02*');
+  return new TextEncoder().encode(L.join('\n') + '\n');
+}
+
+// --- ODB++ job (tar.gz), with one features file in Unix .Z form ---------------
+/** LZW "compress" (.Z), 16 bits, block mode, with the group padding of ncompress. */
+export function compressZ(input) {
+  const out = [0x1f, 0x9d, 0x90];
+  let nbits = 9, maxcode = 511, free = 257;
+  const table = new Map();
+  let acc = 0, accBits = 0, groupBits = 0;
+  const bits = [];
+  const put = (code) => {
+    acc |= code << accBits; accBits += nbits; groupBits += nbits;
+    while (accBits >= 8) { bits.push(acc & 0xff); acc >>>= 8; accBits -= 8; }
+    if (groupBits === nbits * 8) groupBits = 0;
+  };
+  const pad = () => {
+    if (groupBits > 0) {
+      let left = nbits * 8 - groupBits;
+      while (left > 0) { const n = Math.min(left, 8 - (accBits % 8 || 0) || 8); accBits += n; left -= n; while (accBits >= 8) { bits.push(acc & 0xff); acc >>>= 8; accBits -= 8; } }
+      groupBits = 0;
+    }
+  };
+  if (!input.length) return Uint8Array.from(out);
+  let ent = input[0];
+  for (let i = 1; i < input.length; i++) {
+    const c = input[i];
+    const key = ent * 256 + c;
+    const hit = table.get(key);
+    if (hit !== undefined) { ent = hit; continue; }
+    put(ent);
+    if (free > maxcode) { pad(); nbits++; maxcode = nbits === 16 ? 65536 : (1 << nbits) - 1; }
+    if (free < 65536) table.set(key, free++);
+    ent = c;
+  }
+  put(ent);
+  if (accBits > 0) bits.push(acc & 0xff);
+  return Uint8Array.from([...out, ...bits]);
+}
+
+function tar(files) {
+  const blocks = [];
+  for (const [name, data] of Object.entries(files)) {
+    const h = new Uint8Array(512);
+    const w = (s, o) => { for (let i = 0; i < s.length; i++) h[o + i] = s.charCodeAt(i); };
+    w(name, 0); w('0000644\0', 100); w('0000000\0', 108); w('0000000\0', 116);
+    w(data.length.toString(8).padStart(11, '0') + '\0', 124); w('00000000000\0', 136);
+    w('        ', 148); h[156] = 48; w('ustar\0', 257); w('00', 263);
+    const sum = h.reduce((a, b) => a + b, 0);
+    w(sum.toString(8).padStart(6, '0') + '\0 ', 148);
+    blocks.push(h, data, new Uint8Array((512 - (data.length % 512)) % 512));
+  }
+  blocks.push(new Uint8Array(1024));
+  const outLen = blocks.reduce((a, b) => a + b.length, 0);
+  const out = new Uint8Array(outLen);
+  let o = 0;
+  for (const b of blocks) { out.set(b, o); o += b.length; }
+  return out;
+}
+
+export function writeODB(b, { gzip = true } = {}) {
+  const te = new TextEncoder();
+  const nets = [...new Set(b.pins.map((p) => p.net).filter((n) => n && n !== 'UNCONNECTED'))];
+  const inch = (mil) => (mil / 1000).toFixed(6);
+  const files = {};
+  const J = 'demo_job/';
+  files[J + 'matrix/matrix'] = te.encode(`STEP {\n   COL=1\n   NAME=PCB\n}\n\nLAYER {\n   ROW=1\n   CONTEXT=BOARD\n   TYPE=COMPONENT\n   NAME=COMP_+_TOP\n}\nLAYER {\n   ROW=2\n   CONTEXT=BOARD\n   TYPE=SIGNAL\n   NAME=TOP\n}\nLAYER {\n   ROW=3\n   CONTEXT=BOARD\n   TYPE=SIGNAL\n   NAME=BOTTOM\n}\nLAYER {\n   ROW=4\n   CONTEXT=BOARD\n   TYPE=COMPONENT\n   NAME=COMP_+_BOT\n}\n`);
+  // Copper features per layer, remembering each feature's net for eda/data.
+  const fids = new Map(nets.map((n) => [n, []]));
+  const feat = (side, li) => {
+    const L = ['UNITS=INCH', '#', '$0 r6', '$1 r14', '#'];
+    let idx = 0;
+    for (const p of b.pins) {
+      if (p.side !== side || !p.net || p.net === 'UNCONNECTED') continue;
+      L.push(`P ${inch(p.x)} ${inch(p.y)} 1 P 0 0`); fids.get(p.net).push(`FID C ${li} ${idx++}`);
+    }
+    for (const t of demoRoutes(b)) {
+      if (t.side !== side) continue;
+      L.push(`L ${inch(t.x1)} ${inch(t.y1)} ${inch(t.x2)} ${inch(t.y2)} 0 P 0`); fids.get(t.net).push(`FID C ${li} ${idx++}`);
+    }
+    if (side === 'top') { L.push(`A ${inch(600)} ${inch(1400)} ${inch(700)} ${inch(1400)} ${inch(650)} ${inch(1400)} 0 P 0 N`); fids.get('VBAT').push(`FID C ${li} ${idx++}`); }
+    return L.join('\n') + '\n';
+  };
+  files[J + 'steps/pcb/layers/top/features'] = te.encode(feat('top', 0));
+  files[J + 'steps/pcb/layers/bottom/features.Z'] = compressZ(te.encode(feat('bottom', 1)));
+  const eda = ['HDR synthetic', 'LYR top bottom'];
+  for (const n of nets) { eda.push(`NET ${n};;ID=1`, 'SNT TRC'); for (const f of fids.get(n)) eda.push(f); }
+  files[J + 'steps/pcb/eda/data'] = te.encode(eda.join('\n') + '\n');
+  for (const [layer, side] of [['comp_+_top', 'top'], ['comp_+_bot', 'bottom']]) {
+    const L = ['UNITS=MM'];
+    b.parts.forEach((part, pi) => {
+      if (part.side !== side) return;
+      const ps = b.pins.filter((p) => p.part === pi);
+      L.push(`CMP ${pi} 0 0 0 N ${part.name} SYN-${part.name} ;`);
+      ps.forEach((p, i) => L.push(`TOP ${i} ${(p.x * 0.0254).toFixed(4)} ${(p.y * 0.0254).toFixed(4)} 0 N ${p.net === 'UNCONNECTED' ? -1 : nets.indexOf(p.net)} 0 ${p.snum}`));
+    });
+    files[J + `steps/pcb/layers/${layer}/components`] = te.encode(L.join('\n') + '\n');
+  }
+  files[J + 'steps/pcb/profile'] = te.encode(`UNITS=INCH\nS P 0\nOB 0 0 I\nOS 2 0\nOS 2 4\nOS 0 4\nOS 0 0\nOE\nSE\n`);
+  const t = tar(files);
+  return gzip ? deflate(t, { gzip: true }) : t;
+}

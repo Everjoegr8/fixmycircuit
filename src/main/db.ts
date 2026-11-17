@@ -72,6 +72,15 @@ CREATE TABLE IF NOT EXISTS jumpers (
   author TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS copper_layers (
+  id INTEGER PRIMARY KEY,
+  file_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  side TEXT NOT NULL DEFAULT 'top',
+  method TEXT NOT NULL DEFAULT '',
+  traces TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
@@ -106,9 +115,13 @@ export function openDb(file: string) {
     if (!cols.some((c) => c.name === col)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${def}`);
   };
   addCol('jumpers', 'layer', "TEXT NOT NULL DEFAULT ''");
+  addCol('jumpers', 'kind', "TEXT NOT NULL DEFAULT 'jumper'");
+  addCol('jumpers', 'net', "TEXT NOT NULL DEFAULT ''");
   addCol('guides', 'photo_ids', "TEXT NOT NULL DEFAULT ''");
   addCol('photos', 'align', "TEXT NOT NULL DEFAULT ''");
   addCol('models', 'demo', 'INTEGER NOT NULL DEFAULT 0');
+  addCol('ic_xref', 'verified_by', "TEXT NOT NULL DEFAULT ''");
+  addCol('ic_xref', 'verified_at', "TEXT NOT NULL DEFAULT ''");
   if (!(db.prepare('SELECT COUNT(*) AS n FROM ic_xref').get() as { n: number }).n) {
     const ins = db.prepare("INSERT INTO ic_xref(ic, function, platform, used_in, alternatives, notes, source) VALUES (@ic, @function, @platform, @used_in, @alternatives, @notes, 'starter')");
     for (const r of IC_XREF_STARTER) ins.run({ platform: '', used_in: '', alternatives: '', notes: '', ...r });
@@ -278,15 +291,26 @@ export function openDb(file: string) {
       return (db.prepare('SELECT * FROM jumpers WHERE photo_id = ? ORDER BY id').all(photoId) as any[]).map((j) => ({ ...j, points: JSON.parse(j.points) }));
     },
     saveJumper(j: Partial<Jumper> & { photo_id: number; points: { x: number; y: number }[] }) {
-      const row = { color: '#ef4444', label: '', note: '', author: '', layer: '', ...j, points: JSON.stringify(j.points) };
+      const row = { color: '#ef4444', label: '', note: '', author: '', layer: '', kind: 'jumper', net: '', ...j, points: JSON.stringify(j.points) };
       let id = j.id;
-      if (id) db.prepare('UPDATE jumpers SET points=@points, color=@color, label=@label, note=@note, author=@author, layer=@layer WHERE id=@id').run(row);
-      else id = Number(db.prepare('INSERT INTO jumpers(photo_id, points, color, label, note, author, layer) VALUES (@photo_id, @points, @color, @label, @note, @author, @layer)').run(row).lastInsertRowid);
+      if (id) db.prepare('UPDATE jumpers SET points=@points, color=@color, label=@label, note=@note, author=@author, layer=@layer, kind=@kind, net=@net WHERE id=@id').run(row);
+      else id = Number(db.prepare('INSERT INTO jumpers(photo_id, points, color, label, note, author, layer, kind, net) VALUES (@photo_id, @points, @color, @label, @note, @author, @layer, @kind, @net)').run(row).lastInsertRowid);
       const out = db.prepare('SELECT * FROM jumpers WHERE id = ?').get(id) as any;
       return { ...out, points: JSON.parse(out.points) } as Jumper;
     },
     deleteJumper(id: number) {
       db.prepare('DELETE FROM jumpers WHERE id = ?').run(id);
+    },
+    // --- copper layers (Gerber) placed on a boardview -----------------------
+    listCopper(fileId: string) {
+      return (db.prepare('SELECT * FROM copper_layers WHERE file_id = ? ORDER BY id').all(fileId) as any[]).map((r) => ({ ...r, traces: JSON.parse(r.traces) }));
+    },
+    addCopper(c: { file_id: string; name: string; side: string; method: string; traces: unknown[] }) {
+      const id = Number(db.prepare('INSERT INTO copper_layers(file_id, name, side, method, traces) VALUES (@file_id, @name, @side, @method, @traces)').run({ ...c, traces: JSON.stringify(c.traces) }).lastInsertRowid);
+      return { id };
+    },
+    deleteCopper(id: number) {
+      db.prepare('DELETE FROM copper_layers WHERE id = ?').run(id);
     },
 
     // --- IC cross-reference ------------------------------------------------
@@ -300,6 +324,12 @@ export function openDb(file: string) {
       if (r.id) db.prepare('UPDATE ic_xref SET ic=@ic, function=@function, platform=@platform, used_in=@used_in, alternatives=@alternatives, notes=@notes, source=@source WHERE id=@id').run(row);
       else row.id = Number(db.prepare('INSERT INTO ic_xref(ic, function, platform, used_in, alternatives, notes, source) VALUES (@ic, @function, @platform, @used_in, @alternatives, @notes, @source)').run(row).lastInsertRowid);
       return db.prepare('SELECT * FROM ic_xref WHERE id = ?').get(row.id);
+    },
+    /** A technician confirms (or un-confirms) an IC entry from a real board. */
+    verifyIc(id: number, by: string, on: boolean) {
+      if (on) db.prepare("UPDATE ic_xref SET verified_by = ?, verified_at = datetime('now') WHERE id = ?").run(by || 'technician', id);
+      else db.prepare("UPDATE ic_xref SET verified_by = '', verified_at = '' WHERE id = ?").run(id);
+      return db.prepare('SELECT * FROM ic_xref WHERE id = ?').get(id);
     },
     deleteIc(id: number) {
       db.prepare('DELETE FROM ic_xref WHERE id = ?').run(id);

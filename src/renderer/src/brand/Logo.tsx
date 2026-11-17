@@ -1,5 +1,6 @@
-// Original logo artwork for FixMyCircuit and ERA Technologiz and Engineering Services.
+// FixMyCircuit app mark (original artwork) and the official ERA Technologiz mark.
 // Pure SVG so it is crisp at any size and works offline.
+import { ERA_GOLD, ERA_NAVY, ERA_PATH, ERA_TRANSFORM, ERA_VIEWBOX } from './eraLogo';
 
 /** FixMyCircuit app mark: a chip with pins whose core holds a "found it" pulse trace. */
 export function AppMark({ size = 32, animated = false, className = '' }: { size?: number; animated?: boolean; className?: string }) {
@@ -41,26 +42,15 @@ export function AppMark({ size = 32, animated = false, className = '' }: { size?
   );
 }
 
-/** ERA Technologiz mark: an "E" drawn as three circuit traces joined by a bus with solder nodes. */
-export function EraMark({ size = 28, className = '', animated = false }: { size?: number; className?: string; animated?: boolean }) {
+/** The official ERA Technologiz mark (from eratechnologiz.com.ng) on the brand's gold tile. */
+export function EraMark({ size = 28, className = '', animated = false, tile = true }: { size?: number; className?: string; animated?: boolean; tile?: boolean }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 48 48" className={className} aria-label="ERA Technologiz logo" role="img">
-      <defs>
-        <linearGradient id="era-g" gradientUnits="userSpaceOnUse" x1="4" y1="4" x2="44" y2="44">
-          <stop offset="0" stopColor="#37C9E8" />
-          <stop offset="1" stopColor="#2563eb" />
-        </linearGradient>
-      </defs>
-      <circle cx="24" cy="24" r="22" fill="none" stroke="url(#era-g)" strokeWidth="2.5" strokeDasharray="110 20" transform="rotate(-60 24 24)" className={animated ? 'fmc-spin' : ''} />
-      <g stroke="url(#era-g)" strokeWidth="4" strokeLinecap="round" fill="none">
-        <path d="M15 13 V35" />
-        <path d="M15 13 H33" />
-        <path d="M15 24 H28" />
-        <path d="M15 35 H33" />
+    <svg width={size} height={size} viewBox={ERA_VIEWBOX} className={`${className} ${animated ? 'fmc-era-pop' : ''}`} aria-label="ERA Technologiz logo" role="img" data-testid="era-logo">
+      {tile && <rect x="0" y="0" width="108" height="108" rx="24" fill={ERA_GOLD} />}
+      <g transform={tile ? 'translate(14 14) scale(0.74)' : undefined}>
+        <path fillRule="evenodd" transform={ERA_TRANSFORM} d={ERA_PATH} fill={tile ? ERA_NAVY : 'currentColor'} />
       </g>
-      <circle cx="33" cy="13" r="3" fill="#F2B544" />
-      <circle cx="28" cy="24" r="3" fill="#F2B544" />
-      <circle cx="33" cy="35" r="3" fill="#F2B544" />
+      {animated && tile && <rect x="2" y="2" width="104" height="104" rx="23" fill="none" stroke="#fff" strokeOpacity="0.55" strokeWidth="3" strokeDasharray="60 360" className="fmc-era-shine" />}
     </svg>
   );
 }

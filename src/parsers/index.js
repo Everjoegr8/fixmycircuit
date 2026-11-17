@@ -5,11 +5,15 @@ import { isBVR1, parseBVR1, isBVR3, parseBVR3 } from './bvr.js';
 import { parseCST } from './cst.js';
 import { parseFZ } from './fz.js';
 import { isXZZ, parseXZZ } from './xzz.js';
+import { isKiCad, parseKiCad } from './kicad.js';
+import { parseODB } from './odb.js';
 import { SIDE } from './util.js';
 
 export { SIDE };
 
-export const BOARD_EXTENSIONS = ['brd', 'bdv', 'bv', 'bvr', 'cst', 'fz', 'asc', 'pcb'];
+export const BOARD_EXTENSIONS = ['brd', 'bdv', 'bv', 'bvr', 'cst', 'fz', 'asc', 'pcb', 'kicad_pcb', 'tgz', 'zip'];
+/** ODB++ jobs come as archives. */
+export const ODB_EXTENSIONS = ['tgz', 'gz', 'tar', 'zip'];
 
 export function extOf(name) {
   const m = /\.([^./\\]+)$/.exec(name || '');
@@ -28,6 +32,8 @@ export function parseRawBoard(bytes, fileName, opts = {}) {
   if (ext === 'fz') return parseFZ(bytes, opts.fzKey);
   if (ext === 'asc') return parseASC(opts.ascFiles || { [String(fileName).split(/[\\/]/).pop().toLowerCase()]: bytes });
   if (ext === 'cst') return parseCST(bytes);
+  if (ext === 'kicad_pcb' || isKiCad(bytes)) return parseKiCad(bytes);
+  if (ODB_EXTENSIONS.includes(ext)) return parseODB(bytes);
   if (isBRD(bytes)) return parseBRD(bytes);
   if (isBRD2(bytes)) return parseBRD2(bytes);
   if (isBDV(bytes)) return parseBDV(bytes);
@@ -71,6 +77,9 @@ export function buildBoard(raw) {
   for (const p of outline) grow(p.x, p.y);
   for (const [a, b] of segs) { grow(a.x, a.y); grow(b.x, b.y); }
   for (const p of pins) grow(p.x, p.y);
+  const traces = raw.traces || [];
+  const vias = raw.vias || [];
+  if (!raw.outline.length && !segs.length) for (const t of traces) { grow(t.x1, t.y1); grow(t.x2, t.y2); }
   if (!Number.isFinite(minx)) { minx = miny = 0; maxx = maxy = 100; }
   const size = Math.max(maxx - minx, maxy - miny, 1);
 
@@ -94,7 +103,7 @@ export function buildBoard(raw) {
       }
     }
     const r = Number.isFinite(minD) ? Math.min(minD * 0.4, defaultR * 4) : defaultR;
-    for (const p of ps) p.r = p.radius && p.radius > 0.5 && raw.format === 'BVR3' ? p.radius : r;
+    for (const p of ps) p.r = p.radius && p.radius > 0.5 && (raw.format === 'BVR3' || raw.format === 'KiCad') ? p.radius : r;
     if (ps.length) {
       let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
       for (const p of ps) {
@@ -114,6 +123,9 @@ export function buildBoard(raw) {
     nets,
     outline,
     outlineSegments: segs,
+    /** Real copper from a layout file (KiCad) or an added Gerber layer; empty for boardviews. */
+    traces,
+    vias,
     bounds: { minx, miny, maxx, maxy },
     stats: { parts: parts.filter((p) => !p.testpoint && !p.name.startsWith('...')).length, pins: pins.length, nets: nets.size },
   };

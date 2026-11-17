@@ -121,8 +121,8 @@ export default function AiAssistant(p: Props) {
       <div className="p-3" data-testid="ai-setup">
         <div className="card p-3">
           <div className="flex items-center gap-2 font-semibold text-slate-100"><Icon name="sparkle" size={15} className="text-amber-300" /> AI assistant (optional)</div>
-          <p className="mt-1 text-[12.5px] text-slate-400">Ask in plain words, like “not charging, where do I start?”. It reads this board's netlist, your readings and fixes, then suggests what to measure. It uses the Claude API with your own key and needs internet; everything else in FixMyCircuit stays offline.</p>
-          <button className="btn-primary mt-2" onClick={p.onOpenSettings}><Icon name="key" size={13} /> Add API key in Settings</button>
+          <p className="mt-1 text-[12.5px] text-slate-400">Ask in plain words, like “not charging, where do I start?”. It reads this board's netlist, your readings and fixes, then suggests what to measure. Use Claude with your own key, or plug in your own AI: OpenAI, Gemini, OpenRouter, or Ollama running offline on this PC. Everything else in FixMyCircuit stays offline.</p>
+          <button className="btn-primary mt-2" onClick={p.onOpenSettings}><Icon name="key" size={13} /> Set up AI in Settings</button>
         </div>
       </div>
     );
@@ -177,7 +177,7 @@ export default function AiAssistant(p: Props) {
           />
           <button className="btn-primary self-stretch" disabled={!!busy || !q.trim()} onClick={() => ask(q)} title="Ask" data-testid="ai-send"><Icon name="send" size={14} /></button>
         </div>
-        <div className="mt-1 text-[10.5px] text-slate-500">Sends your question and the looked-up board data to the Claude API. AI can be wrong; measure before replacing parts.</div>
+        <div className="mt-1 text-[10.5px] text-slate-500">Sends your question and the looked-up board data to {status?.model?.startsWith('ollama') ? 'Ollama on this PC' : 'your AI provider'} ({status?.model}). AI can be wrong; measure before replacing parts.</div>
       </div>
     </div>
   );

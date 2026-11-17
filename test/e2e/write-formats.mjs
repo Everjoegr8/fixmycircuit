@@ -18,8 +18,11 @@ const files = {
   'demo-cst.cst': W.writeCST(b),
   'demo-fz.fz': W.writeFZPlain(b),
   'demo-xzz.pcb': W.writeXZZ(b),
+  'demo-kicad.kicad_pcb': W.writeKiCad(b),
+  'demo-odb.tgz': W.writeODB(b),
 };
 for (const [n, bytes] of Object.entries(files)) fs.writeFileSync(path.join(dir, n), bytes);
+fs.writeFileSync(path.join(dir, 'demo-top.gtl'), W.writeGerberTop(b));
 for (const [n, bytes] of Object.entries(W.writeASC(b))) fs.writeFileSync(path.join(dir, 'asc', n), bytes);
 
 // A small real PNG (gradient) to test PNG photo import.

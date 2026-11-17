@@ -26,7 +26,7 @@ export default function AboutDialog({ onClose }: { onClose: () => void }) {
       </div>
       <div className="mt-4 space-y-2 text-[12.5px] text-slate-300">
         <p>FixMyCircuit is a repair workbench for phone technicians: schematics, boardviews, board photos, readings and fault guides in one place, all stored on this PC.</p>
-        <p className="text-slate-400">Boardview readers are ported from OpenBoardView (MIT). Screen mirroring uses scrcpy (Apache 2.0). The optional AI assistant uses the Claude API with your own key; nothing else leaves this PC.</p>
+        <p className="text-slate-400">Boardview readers are ported from OpenBoardView (MIT). Screen mirroring uses scrcpy (Apache 2.0). The optional AI assistant uses your own AI key (Claude, OpenAI, Gemini, OpenRouter) or Ollama on this PC; nothing else leaves this PC. The ERA Technologiz logo is a trademark of ERA Technologiz and Engineering Services.</p>
       </div>
       <div className="mt-4">
         <div className="label">Photo credits</div>

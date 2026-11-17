@@ -72,6 +72,21 @@ export interface Jumper {
   author: string;
   /** Circuit layer (see shared/layers.ts), '' = guess from label. */
   layer: string;
+  /** 'jumper' = a repair wire; 'trace' = real copper the shop traced on the photo (verified). */
+  kind?: 'jumper' | 'trace';
+  /** Net the traced copper belongs to. */
+  net?: string;
+  created_at: string;
+}
+
+export interface CopperLayer {
+  id: number;
+  file_id: string;
+  name: string;
+  side: string;
+  /** 'pins' = lined up exactly on part pads (Gerber X2), 'extent' = stretched to the board outline. */
+  method: string;
+  traces: { x1: number; y1: number; x2: number; y2: number; w: number; net: string; side: string }[];
   created_at: string;
 }
 
@@ -95,6 +110,9 @@ export interface IcXref {
   alternatives: string;
   notes: string;
   source: 'starter' | 'shop';
+  /** Technician who confirmed this entry on a real board, and when ('' = not yet). */
+  verified_by?: string;
+  verified_at?: string;
 }
 
 export interface Tree {
@@ -115,6 +133,11 @@ export interface Settings {
   /** Optional AI assistant: the user's own Claude API key (stored only on this PC). */
   anthropicKey?: string;
   aiModel?: string;
+  /** Bring your own AI: 'claude' (default), 'openai', 'gemini', 'openrouter', 'ollama' or 'custom'. */
+  aiProvider?: string;
+  aiBaseUrl?: string;
+  aiApiKey?: string;
+  aiCustomModel?: string;
 }
 
 export const BRAND_SEED = ['iPhone', 'Samsung', 'Tecno', 'Infinix', 'Itel', 'Xiaomi'];
@@ -134,7 +157,7 @@ export function guessBrand(fileName: string): string | null {
 export function kindForExt(ext: string): FileKind {
   const e = ext.toLowerCase();
   if (e === 'pdf') return 'schematic';
-  if (['brd', 'bdv', 'bv', 'bvr', 'cst', 'fz', 'asc', 'pcb'].includes(e)) return 'boardview';
+  if (['brd', 'bdv', 'bv', 'bvr', 'cst', 'fz', 'asc', 'pcb', 'kicad_pcb', 'tgz', 'gz', 'tar', 'zip'].includes(e)) return 'boardview';
   if (['jpg', 'jpeg', 'png', 'webp', 'bmp'].includes(e)) return 'photo';
   return 'other';
 }

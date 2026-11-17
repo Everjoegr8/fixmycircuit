@@ -1,4 +1,6 @@
-import type { Brand, Guide, IcXref, Jumper, LibraryFile, Model, Photo, Reading, Settings, ImportRequest } from '@shared/types';
+import type { ToolInfo } from '../../main/tools';
+import type { LicenseStatus } from '@shared/license';
+import type { Brand, CopperLayer, Guide, IcXref, Jumper, LibraryFile, Model, Photo, Reading, Settings, ImportRequest } from '@shared/types';
 
 export type TreeModel = Model & {
   demo?: number; files: number; guides: number; readings: number; photos: number;
@@ -33,6 +35,19 @@ export interface FmcApi {
   listJumpers(photoId: number): Promise<Jumper[]>;
   saveJumper(j: Partial<Jumper> & { photo_id: number; points: { x: number; y: number }[] }): Promise<Jumper>;
   deleteJumper(id: number): Promise<void>;
+  listCopper(fileId: string): Promise<CopperLayer[]>;
+  addCopper(c: Omit<CopperLayer, 'id' | 'created_at'>): Promise<{ id: number }>;
+  deleteCopper(id: number): Promise<void>;
+  readGerbers(paths?: string[]): Promise<{ name: string; text: string }[]>;
+  verifyIc(id: number, on: boolean): Promise<IcXref>;
+  listTools(): Promise<ToolInfo[]>;
+  installTool(id: string): Promise<{ path: string; version: string; sha256: string }>;
+  openToolsFolder(): Promise<string>;
+  openUrl(url: string): Promise<void>;
+  onToolProgress(f: (e: { id: string; msg: string }) => void): () => void;
+  airplayStatus(): Promise<{ uxplay: string | null; running: boolean }>;
+  airplayStart(opts?: { name?: string; pin?: boolean }): Promise<{ running: boolean }>;
+  airplayStop(): Promise<{ running: boolean }>;
   addPhotoFromData(req: { model_id: number | null; dataUrl: string; title: string; guide_id?: number | null }): Promise<Photo>;
   listIcs(q?: string): Promise<IcXref[]>;
   saveIc(r: Partial<IcXref> & { ic: string }): Promise<IcXref>;
@@ -47,6 +62,9 @@ export interface FmcApi {
   activity(days?: number): Promise<{ files: DayCount[]; guides: DayCount[]; readings: DayCount[]; photos: DayCount[] }>;
   recentActivity(limit?: number): Promise<ActivityItem[]>;
   aiStep(req: { system: string; messages: any[]; tools: any[] }): Promise<{ content: any[]; stop_reason: string | null; refusal?: string; model: string; usage?: { input_tokens: number; output_tokens: number } }>;
+  licenseStatus(): Promise<LicenseStatus>;
+  licenseActivate(key: string): Promise<{ ok: boolean; reason?: string; status: LicenseStatus }>;
+  licenseWhatsApp(text: string): Promise<void>;
   aiStatus(): Promise<{ configured: boolean; model: string; mock: boolean }>;
   getSettings(): Promise<Settings>;
   setSettings(patch: Partial<Settings>): Promise<Settings>;

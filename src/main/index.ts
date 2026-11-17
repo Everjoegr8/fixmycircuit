@@ -1,11 +1,14 @@
 import { app, BrowserWindow, dialog, ipcMain, net, protocol, session, shell } from 'electron';
-import { aiStep, type AiStepReq } from './ai';
+import { aiStepWith, type AiStepReq } from './ai';
+import { activate, licenseStatus, SUPPORT_WHATSAPP } from './license';
+import { whatsappLink } from '../shared/license';
 import { spawn, execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { openDb, type DB } from './db';
+import { findTool as findToolAt, installTool, listTools, toolsDir, type ToolId } from './tools';
 import { kindForExt, guessBrand, type FileKind, type ImportRequest } from '../shared/types';
 
 protocol.registerSchemesAsPrivileged([
@@ -114,18 +117,8 @@ function removeDemo() {
 }
 
 // --- phone mirror (scrcpy + adb) ---------------------------------------------------
-function findTool(name: 'scrcpy' | 'adb') {
-  const exe = process.platform === 'win32' ? `${name}.exe` : name;
-  const dirs = [
-    app.isPackaged ? path.join(process.resourcesPath, 'scrcpy') : path.join(app.getAppPath(), 'vendor', 'scrcpy'),
-    ...(process.env.PATH || '').split(path.delimiter),
-  ];
-  for (const d of dirs) {
-    const p = path.join(d, exe);
-    if (d && fs.existsSync(p)) return p;
-  }
-  return null;
-}
+const findTool = (name: 'scrcpy' | 'adb' | 'uxplay') => findToolAt(name)?.path || null;
+let airplay: ReturnType<typeof spawn> | null = null;
 
 function run(cmd: string, args: string[], timeout = 0): Promise<{ ok: boolean; out: string }> {
   return new Promise((resolve) => {
@@ -176,8 +169,25 @@ function collectArgvFiles(argv: string[]) {
   }
 }
 
+// While the licence is locked only these channels answer.
+const OPEN_CHANNELS = new Set(['license:status', 'license:activate', 'license:whatsapp', 'data:info', 'settings:get']);
+let licenseLocked = false;
 function handle(channel: string, fn: (...args: any[]) => unknown) {
-  ipcMain.handle(channel, async (_e, ...args) => fn(...args));
+  ipcMain.handle(channel, async (_e, ...args) => {
+    if (licenseLocked && !OPEN_CHANNELS.has(channel)) throw new Error('FixMyCircuit needs a licence key. Enter it on the activation screen.');
+    return fn(...args);
+  });
+}
+
+const PRIVATE_SETTINGS = ['licenseKey', 'trialStart', 'licLastSeen'];
+const licStore = () => ({
+  get: (k: string) => (db.getSettings() as any)[k] as string | undefined,
+  set: (k: string, v: string) => { db.setSettings({ [k]: v } as any); },
+});
+function currentLicense() {
+  const st = licenseStatus(licStore());
+  licenseLocked = st.locked;
+  return st;
 }
 
 function registerIpc() {
@@ -192,7 +202,7 @@ function registerIpc() {
     const r = await dialog.showOpenDialog(win!, {
       properties: ['openFile', 'multiSelections'],
       filters: filters || [
-        { name: 'Schematics, boardviews and photos', extensions: ['pdf', 'brd', 'bdv', 'bv', 'bvr', 'cst', 'fz', 'asc', 'pcb', 'jpg', 'jpeg', 'png', 'webp'] },
+        { name: 'Schematics, boardviews and photos', extensions: ['pdf', 'brd', 'bdv', 'bv', 'bvr', 'cst', 'fz', 'asc', 'pcb', 'kicad_pcb', 'tgz', 'tar', 'zip', 'jpg', 'jpeg', 'png', 'webp'] },
         { name: 'All files', extensions: ['*'] },
       ],
     });
@@ -238,6 +248,23 @@ function registerIpc() {
   handle('jumpers:list', (photoId: number) => db.listJumpers(photoId));
   handle('jumpers:save', (j: any) => db.saveJumper(j));
   handle('jumpers:delete', (id: number) => db.deleteJumper(id));
+  handle('copper:list', (fileId: string) => db.listCopper(String(fileId)));
+  handle('copper:add', (c: any) => db.addCopper(c));
+  handle('copper:delete', (id: number) => db.deleteCopper(Number(id)));
+  /** Read Gerber files as text: from given paths (tests, drag and drop) or a file dialog. */
+  handle('copper:read', async (paths?: string[]) => {
+    let list = Array.isArray(paths) ? paths : [];
+    if (!list.length) {
+      const r = await dialog.showOpenDialog(win!, {
+        title: 'Add Gerber copper layers',
+        properties: ['openFile', 'multiSelections'],
+        filters: [{ name: 'Gerber copper (RS-274X)', extensions: ['gbr', 'ger', 'gtl', 'gbl', 'g1', 'g2', 'g3', 'g4', 'art', 'pho', 'cmp', 'sol'] }, { name: 'All files', extensions: ['*'] }],
+      });
+      if (r.canceled) return [];
+      list = r.filePaths;
+    }
+    return list.map((f) => ({ name: path.basename(f), text: fs.readFileSync(f, 'utf8') }));
+  });
 
   handle('photos:addFromData', (req: { model_id: number | null; dataUrl: string; title: string; guide_id?: number | null }) => {
     const m = /^data:image\/(png|jpeg|webp);base64,(.+)$/.exec(req.dataUrl);
@@ -261,6 +288,7 @@ function registerIpc() {
   handle('ics:list', (q?: string) => db.listIcs(q));
   handle('ics:save', (r: any) => db.saveIc(r));
   handle('ics:delete', (id: number) => db.deleteIc(id));
+  handle('ics:verify', (id: number, on: boolean) => db.verifyIc(Number(id), (db.getSettings() as any).author || '', on !== false));
 
   handle('demo:load', () => seedDemo());
   handle('demo:remove', () => removeDemo());
@@ -289,7 +317,7 @@ function registerIpc() {
   });
   handle('mirror:start', (opts: { serial?: string; turnScreenOff?: boolean; stayAwake?: boolean; record?: boolean; maxSize?: number }) => {
     const scrcpy = findTool('scrcpy');
-    if (!scrcpy) throw new Error('scrcpy is not installed. The Windows build includes it; on other systems install scrcpy and adb.');
+    if (!scrcpy) throw new Error('scrcpy is missing. Open Settings, Tools and components, and press Install.');
     const args = ['--window-title', 'FixMyCircuit phone mirror'];
     if (opts.serial) args.push('--serial', opts.serial);
     if (opts.turnScreenOff) args.push('--turn-screen-off');
@@ -300,6 +328,26 @@ function registerIpc() {
     child.unref();
     return { started: true };
   });
+  handle('tools:list', () => listTools());
+  handle('tools:install', async (id: ToolId) => {
+    const r = await installTool(id, (msg) => win?.webContents.send('tools:progress', { id, msg }));
+    return r;
+  });
+  handle('tools:folder', () => { fs.mkdirSync(toolsDir(), { recursive: true }); shell.openPath(toolsDir()); return toolsDir(); });
+  handle('tools:open-url', (url: string) => { if (/^https:\/\//.test(url)) shell.openExternal(url); });
+  // iPhone / iPad mirroring through AirPlay (UxPlay). iOS only allows viewing, not control.
+  handle('airplay:status', () => ({ uxplay: findTool('uxplay'), running: !!airplay && airplay.exitCode == null }));
+  handle('airplay:start', (opts: { name?: string; pin?: boolean }) => {
+    const ux = findTool('uxplay');
+    if (!ux) throw new Error('UxPlay is not installed. See Settings, Tools and components.');
+    if (airplay && airplay.exitCode == null) return { running: true };
+    const args = ['-n', (opts?.name || 'FixMyCircuit').slice(0, 40), '-nh'];
+    if (opts?.pin) args.push('-pin');
+    airplay = spawn(ux, args, { cwd: path.dirname(ux), stdio: 'ignore', windowsHide: false });
+    airplay.on('exit', () => { airplay = null; });
+    return { running: true };
+  });
+  handle('airplay:stop', () => { airplay?.kill(); airplay = null; return { running: false }; });
   handle('mirror:backup', async (req: { serial?: string; remote: string }) => {
     const adb = findTool('adb');
     if (!adb) throw new Error('adb is not available.');
@@ -316,16 +364,21 @@ function registerIpc() {
   handle('search', (q: string) => db.search(q));
   handle('ai:step', (req: AiStepReq) => {
     const st = db.getSettings() as any;
-    return aiStep(req, st.anthropicKey || '', st.aiModel || 'claude-opus-5-5');
+    return aiStepWith(req, { provider: st.aiProvider, anthropicKey: st.anthropicKey, aiModel: st.aiModel, aiBaseUrl: st.aiBaseUrl, aiApiKey: st.aiApiKey, aiCustomModel: st.aiCustomModel });
   });
   handle('ai:status', () => {
     const st = db.getSettings() as any;
-    return { configured: !!st.anthropicKey || process.env.FMC_AI_MOCK === '1', model: st.aiModel || 'claude-opus-5-5', mock: process.env.FMC_AI_MOCK === '1' };
+    const provider = st.aiProvider || 'claude';
+    const configured = provider === 'claude' ? !!st.anthropicKey : !!st.aiCustomModel && (provider === 'ollama' || provider === 'custom' || !!st.aiApiKey);
+    return { configured: configured || process.env.FMC_AI_MOCK === '1', model: provider === 'claude' ? st.aiModel || 'claude-opus-5-5' : `${provider}: ${st.aiCustomModel || '?'}`, mock: process.env.FMC_AI_MOCK === '1' };
   });
   handle('stats:activity', (days?: number) => db.activity(days || 14));
   handle('stats:recent', (limit?: number) => db.recentActivity(limit || 10));
-  handle('settings:get', () => db.getSettings());
-  handle('settings:set', (patch: any) => db.setSettings(patch));
+  handle('settings:get', () => { const s: any = db.getSettings(); for (const k of PRIVATE_SETTINGS) delete s[k]; return s; });
+  handle('settings:set', (patch: any) => { const p = { ...patch }; for (const k of PRIVATE_SETTINGS) delete p[k]; db.setSettings(p); const s: any = db.getSettings(); for (const k of PRIVATE_SETTINGS) delete s[k]; return s; });
+  handle('license:status', () => currentLicense());
+  handle('license:activate', (key: string) => { const r = activate(licStore(), String(key || '')); return { ...r, status: currentLicense() }; });
+  handle('license:whatsapp', (text: string) => { shell.openExternal(whatsappLink(SUPPORT_WHATSAPP, String(text || ''))); });
 
   handle('data:info', () => ({ dataDir, libDir, dbFile: path.join(dataDir, 'fixmycircuit.db'), version: app.getVersion() }));
   handle('data:open', () => shell.openPath(dataDir));
@@ -387,6 +440,7 @@ if (!gotLock) {
     }
 
     registerIpc();
+    currentLicense();
     createWindow();
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

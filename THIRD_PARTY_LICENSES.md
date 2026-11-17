@@ -67,3 +67,15 @@ the list in the app's About box mirrors this one.
 
 The optional AI assistant uses `@anthropic-ai/sdk` (MIT License,
 https://github.com/anthropics/anthropic-sdk-typescript).
+
+## UxPlay (not included)
+
+FixMyCircuit can start UxPlay (https://github.com/FDH2/UxPlay, GPL-3.0) for iPhone AirPlay mirroring when the user has installed it. UxPlay is a separate program; it is not bundled or linked.
+
+## Ollama, OpenAI-compatible servers (not included)
+
+The AI assistant can talk to a server the user chooses over HTTP. No code from those projects is included.
+
+## ERA Technologiz logo
+
+The ERA Technologiz mark (src/renderer/src/brand/eraLogo.ts) is a trademark of ERA Technologiz and Engineering Services, used by its owner. It is not covered by the app's open-source licence.

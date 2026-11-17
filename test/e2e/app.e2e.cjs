@@ -8,6 +8,7 @@ const APP = path.resolve(__dirname, '../..'); const SM = path.join(APP, 'samples
 const S = process.env.E2E_OUT || fs.mkdtempSync(path.join(os.tmpdir(), 'fmc-e2e-'));
 const shot = (page, n) => page.screenshot({ path: `${S}/${n}.png` });
 (async () => {
+  if (process.env.E2E_ONLY) { await ({ license: licenseRun, tools: toolsRun, formats: formatsRun, demo: demoRun })[process.env.E2E_ONLY](); console.log('E2E OK (' + process.env.E2E_ONLY + ')'); return; }
   const data = path.join(S, 'data'); fs.rmSync(data, { recursive: true, force: true });
   const app = await _electron.launch({ args: ['--no-sandbox', APP], env: { ...process.env, FMC_DATA_DIR: data, FMC_NO_DEMO: '1' } });
   const page = await app.firstWindow();
@@ -110,6 +111,8 @@ const shot = (page, n) => page.screenshot({ path: `${S}/${n}.png` });
   await app.close();
   await demoRun();
   await formatsRun();
+  await licenseRun();
+  await toolsRun();
   console.log('E2E OK, screenshots in', S);
 })().catch(e => { console.error(e); process.exit(1); });
 
@@ -232,6 +235,13 @@ async function demoRun() {
   await page.click('[data-tool="ics"]');
   await page.fill('[data-testid="ic-search"]', 'MT6358');
   await page.waitForSelector('td:has-text("MT6358")');
+  await page.locator('[data-testid="ic-verify"]').first().click();
+  await page.locator('[data-testid="ic-verified"]').first().waitFor();
+  await page.click('[data-ic-filter="verified"]');
+  assert.ok(await page.locator('[data-testid="ic-row"]').count() >= 1, 'verified filter shows the verified entry');
+  await page.click('[data-ic-filter="unverified"]');
+  assert.equal(await page.locator('[data-testid="ic-verified"]').count(), 0, 'to-verify filter hides verified entries');
+  await page.click('[data-ic-filter="all"]');
   await shot(page, '26-ic-xref');
   await page.click('[data-tool="mirror"]');
   await page.waitForSelector('text=scrcpy');
@@ -240,6 +250,13 @@ async function demoRun() {
   await page.click('[data-testid="cam-start"]');
   await page.waitForSelector('button:has-text("Capture"):not([disabled])', { timeout: 10000 });
   await page.waitForTimeout(800);
+  await page.click('[data-testid="cam-check"]');
+  await page.waitForSelector('[data-testid="cam-check-result"]');
+  const chk = await page.textContent('[data-testid="cam-check-result"]');
+  console.log('microscope self-check:', chk);
+  assert.match(chk, /Self-check passed.*Frames: arriving.*Capture: OK/);
+  assert.match(await page.textContent('[data-testid="cam-actual"]'), /\d+×\d+/);
+  await page.click('[data-testid="cam-check-result"] button');
   await page.click('button:has-text("Freeze")');
   await shot(page, '28-microscope');
   await page.click('button:has-text("Capture")');
@@ -293,7 +310,7 @@ async function formatsRun() {
   const paths = [...info.files.map((f) => path.join(dir, f)), path.join(dir, 'asc', 'pins.asc'), path.join(dir, 'demo-photo.png'), SM + 'fmc-demo-x1-schematic.pdf', SM + 'fmc-demo-x1-top.jpg'];
   const imported = await page.evaluate(([paths, id]) => window.fmc.importFiles({ paths, model_id: id }), [paths, modelId]);
   console.log('imported:', imported.map((f) => `${f.name}:${f.kind}`).join(', '));
-  assert.equal(imported.filter((f) => f.kind === 'boardview').length, 10, 'ten boardview files');
+  assert.equal(imported.filter((f) => f.kind === 'boardview').length, 12, 'twelve boardview files (incl. KiCad and ODB++ layouts)');
   assert.equal(imported.filter((f) => f.kind === 'photo').length, 2, 'jpg and png photos');
   assert.equal(imported.filter((f) => f.kind === 'schematic').length, 1, 'pdf schematic');
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
@@ -327,6 +344,31 @@ async function formatsRun() {
       await page.waitForTimeout(500);
       await shot(page, '31-path-tracer-light');
       await page.click('[data-testid="theme-toggle"]');
+      await page.locator('[data-testid="netlist-btn"] >> visible=true').click();
+      // Boardview: computed lines only, until a Gerber copper layer is added.
+      assert.equal(await page.locator('[data-testid="copper-state"] >> visible=true').textContent(), 'COMPUTED');
+      await page.locator('[data-testid="copper-btn"] >> visible=true').click();
+      await app.evaluate(({ dialog }, p) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [p] }); }, path.join(dir, 'demo-top.gtl'));
+      await page.locator('[data-testid="copper-add"] >> visible=true').click();
+      const cm = await page.locator('[data-testid="copper-msg"] >> visible=true').textContent();
+      console.log('gerber:', cm);
+      assert.match(cm, /lined up on \d+ pads/);
+      await page.locator('[data-testid="copper-state"]:has-text("REAL") >> visible=true').waitFor();
+      await page.fill('input[placeholder^="Find part or net"] >> visible=true', 'VBUS');
+      await page.keyboard.press('Enter');
+      await page.locator('[data-testid="net-copper"]:has-text("Real copper") >> visible=true').waitFor();
+      await page.waitForTimeout(500);
+      await shot(page, '35-gerber-copper');
+    }
+    if (f.name === 'demo-kicad.kicad_pcb') {
+      assert.equal(await page.locator('[data-testid="copper-state"] >> visible=true').textContent(), 'REAL');
+      await page.locator('[data-testid="copper-btn"] >> visible=true').click();
+      assert.match(await page.locator('[data-testid="copper-sources"] >> visible=true').textContent(), /This file\s*\d+ real tracks/);
+      await page.locator('[data-testid="copper-btn"] >> visible=true').click();
+      await page.click('[data-testid="theme-toggle"]');
+      await page.waitForTimeout(400);
+      await shot(page, '36-kicad-copper-light');
+      await page.click('[data-testid="theme-toggle"]');
     }
     await page.locator('[aria-label="Close tab"]').first().click();
   }
@@ -339,6 +381,44 @@ async function formatsRun() {
   const photos = await page.evaluate(() => window.fmc.listPhotos());
   assert.equal(photos.length, 2);
 
+  // Trace real copper on a photo, align the photo with two reading pins, see it on the boardview.
+  await page.locator('button:has-text("Board Photos") >> nth=-1').click();
+  await page.locator('img[alt="fmc-demo-x1-top"]').click();
+  const host = page.locator('[data-testid="photo-host"] >> visible=true');
+  await host.waitFor();
+  await page.waitForTimeout(600);
+  const bb = await page.locator('[data-testid="photo-host"] img >> visible=true').boundingBox();
+  const dropPin = async (fx, fy, part, pin) => {
+    await page.locator('button[data-tool="pin"] >> visible=true').click();
+    await page.mouse.click(bb.x + bb.width * fx, bb.y + bb.height * fy);
+    const ed = page.locator('[data-testid="pin-editor"] >> visible=true');
+    await ed.waitFor();
+    await ed.locator('input').nth(0).fill(part); await ed.locator('input').nth(1).fill(pin); await ed.locator('input').nth(1).blur();
+    await page.waitForTimeout(200);
+    await page.keyboard.press('Escape');
+  };
+  await dropPin(0.3, 0.3, 'U2', '1');
+  await dropPin(0.7, 0.7, 'J1', '1');
+  await page.locator('[data-testid="align-btn"] >> visible=true').click();
+  assert.match(await page.locator('[data-testid="align-msg"] >> visible=true').textContent(), /Photo aligned/);
+  await page.locator('button[data-tool="trace"] >> visible=true').click();
+  await page.mouse.click(bb.x + bb.width * 0.35, bb.y + bb.height * 0.5);
+  await page.mouse.click(bb.x + bb.width * 0.5, bb.y + bb.height * 0.5);
+  await page.mouse.click(bb.x + bb.width * 0.5, bb.y + bb.height * 0.62);
+  await page.keyboard.press('Enter');
+  await page.locator('[data-testid="trace-net"] >> visible=true').fill('VBUS');
+  await page.locator('[data-testid="trace-net"] >> visible=true').blur();
+  await page.waitForTimeout(300);
+  await shot(page, '37-photo-trace');
+  const jt = await page.evaluate(async () => { const ph = (await window.fmc.listPhotos()).find((x) => x.align); return ph ? (await window.fmc.listJumpers(ph.id)) : []; });
+  assert.ok(jt.some((j) => j.kind === 'trace' && j.net === 'VBUS' && j.points.length === 3), 'shop trace saved with its net');
+  await page.locator('[aria-label="Close tab"]').first().click();
+  await page.locator('button:has-text("BoardView") >> nth=-1').click();
+  await page.locator('button[title="Open"]:has-text("demo-brd.brd")').click();
+  await page.locator('[data-testid="copper-btn"] >> visible=true').click();
+  await page.locator('[data-testid="copper-sources"]:has-text("1 from 1 aligned photo") >> visible=true').waitFor();
+  await page.locator('[aria-label="Close tab"]').first().click();
+
   // Themes: light persists across a reload, dark comes back
   await page.click('[data-testid="brand-home"]');
   await page.click('[data-testid="theme-toggle"]');
@@ -349,9 +429,9 @@ async function formatsRun() {
   await page.waitForSelector('[data-testid="splash"]', { state: 'detached', timeout: 10000 });
   await page.waitForTimeout(900);
   await shot(page, '32-home-light');
-  assert.ok((await page.textContent('[data-testid="continue-card"]')).includes('schematic'), 'continue card shows the last document');
+  assert.ok((await page.textContent('[data-testid="continue-card"]')).includes('demo-brd.brd'), 'continue card shows the last document');
   await page.locator('[data-testid="continue-card"] button').first().click();
-  await page.waitForSelector('.pdfViewer .page canvas, .pdfViewer .page .canvasWrapper', { timeout: 15000 });
+  await page.waitForSelector('[data-testid="board-canvas"] >> visible=true', { timeout: 15000 });
   await page.locator('[aria-label="Close tab"]').first().click();
   await page.click('[data-testid="view-list"]');
   assert.equal(await page.locator('[data-testid="device-row"]').count(), 1);
@@ -382,6 +462,132 @@ async function formatsRun() {
   assert.match(await page.textContent('[data-testid="about"] >> xpath=..'), /ERA Technologiz and Engineering Services/);
   await shot(page, '34-about');
   await page.keyboard.press('Escape');
-  assert.match(await page.textContent('[data-testid="statusbar"]'), /Ready.*FixMyCircuit v0\.3/);
+  assert.match(await page.textContent('[data-testid="statusbar"]'), /Ready.*FixMyCircuit v0\.4/);
   await app.close();
+}
+
+// Fourth part: offline licence keys. Uses a throwaway signing key, a fixed
+// machine ID and a moved clock (all honoured only when running from source).
+async function licenseRun() {
+  const crypto = require('crypto');
+  const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
+  const pub = publicKey.export({ type: 'spki', format: 'der' }).toString('base64');
+  const b64u = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const mkKey = (m, e, n = 'Test Shop') => {
+    const pl = b64u(JSON.stringify({ v: 1, m, n, p: '30 days', i: '2026-01-01', e }));
+    return `FMC1-${pl}.${b64u(crypto.sign(null, Buffer.from(pl), privateKey))}`;
+  };
+  const data = path.join(S, 'data-lic'); fs.rmSync(data, { recursive: true, force: true });
+  const open = async (now) => {
+    const app = await _electron.launch({ args: ['--no-sandbox', APP], env: { ...process.env, FMC_DATA_DIR: data, FMC_NO_DEMO: '1', FMC_LICENSE_PUBKEY: pub, FMC_MACHINE_ID: 'e2e-pc', FMC_NOW: now } });
+    const page = await app.firstWindow();
+    page.on('pageerror', e => console.log('[pageerror]', e.message));
+    await page.waitForSelector('[data-testid="home"], [data-testid="activation"]');
+    return { app, page };
+  };
+  // Day 1 of the trial.
+  let { app, page } = await open('2026-01-01T09:00:00Z');
+  await page.waitForSelector('[data-testid="license-banner"]');
+  assert.match(await page.textContent('[data-testid="license-banner"]'), /Free trial: 7 days left/);
+  assert.match(await page.textContent('[data-testid="status-license"]'), /Trial · 7d left/);
+  await app.close();
+  // Trial over: the app locks and shows the activation screen.
+  ({ app, page } = await open('2026-01-20T09:00:00Z'));
+  await page.waitForSelector('[data-testid="activation"]');
+  const mid = (await page.textContent('[data-testid="machine-id"]')).trim();
+  assert.match(mid, /^[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/);
+  const blocked = await page.evaluate(async () => { try { await window.fmc.tree(); return 'open'; } catch (e) { return String(e.message || e); } });
+  assert.notEqual(blocked, 'open', 'data is locked while unlicensed');
+  await shot(page, '40-activation');
+  const tryKey = async (k) => { await page.fill('[data-testid="license-key"]', k); await page.click('[data-testid="license-activate"]'); await page.waitForSelector('[data-testid="license-msg"], [data-testid="home"]'); return page.locator('[data-testid="license-msg"]').count().then((n) => n ? page.textContent('[data-testid="license-msg"]') : 'home'); };
+  assert.match(await tryKey(mkKey('AAAA-BBBB-CCCC-DDDD', '2026-03-01')), /another computer/);
+  assert.match(await tryKey(mkKey(mid, '2026-01-10')), /already expired/);
+  assert.match(await tryKey(mkKey(mid, '2026-03-01').slice(0, -6) + 'AAAAAA'), /not valid/);
+  assert.match(await tryKey('hello'), /start with FMC1-/);
+  await tryKey(mkKey(mid, '2026-03-01'));
+  await page.waitForSelector('[data-testid="home"]');
+  assert.equal(await page.locator('[data-testid="license-banner"]').count(), 0, 'no banner when licensed');
+  assert.match(await page.textContent('[data-testid="status-license"]'), /Licensed · 40d left/);
+  const st = await page.evaluate(() => window.fmc.getSettings());
+  assert.equal(st.licenseKey, undefined, 'key is not readable through settings');
+  await app.close();
+  // Last week: warning banner. Then grace, then locked.
+  ({ app, page } = await open('2026-02-25T09:00:00Z'));
+  await page.waitForSelector('[data-testid="license-banner"]');
+  assert.match(await page.textContent('[data-testid="license-banner"]'), /expires on 2026-03-01 \(4 days left\)/);
+  await shot(page, '41-license-warning');
+  await page.click('[data-testid="license-banner"] button');
+  await page.waitForSelector('[data-testid="license-settings"]');
+  assert.match(await page.textContent('[data-testid="license-settings"]'), /Licensed · 4 days left/);
+  await shot(page, '42-license-settings');
+  await app.close();
+  ({ app, page } = await open('2026-03-03T09:00:00Z'));
+  await page.waitForSelector('[data-testid="license-banner"]');
+  assert.match(await page.textContent('[data-testid="license-banner"]'), /keeps working until 2026-03-04/);
+  await app.close();
+  ({ app, page } = await open('2026-03-10T09:00:00Z'));
+  await page.waitForSelector('[data-testid="activation"]');
+  assert.match(await page.textContent('[data-testid="activation"]'), /expired on 2026-03-01/);
+  await app.close();
+  // Turning the clock back does not unlock it.
+  ({ app, page } = await open('2026-02-01T09:00:00Z'));
+  await page.waitForSelector('[data-testid="activation"]');
+  assert.match(await page.textContent('[data-testid="activation"]'), /date looks wrong/);
+  // A renewal key unlocks it again.
+  await tryKey(mkKey(mid, '2026-06-30'));
+  await page.waitForSelector('[data-testid="home"]');
+  await app.close();
+  console.log('licence flow OK, machine', mid);
+}
+
+// Tool manager: a missing scrcpy is installed from a (local, mocked) GitHub
+// release, and only when the download matches the published SHA-256.
+async function toolsRun() {
+  const http = require('http'); const crypto = require('crypto');
+  const zip = (files) => { // stored (uncompressed) zip
+    const parts = [], central = []; let off = 0;
+    const crc32 = (buf) => { let c = ~0; for (const b of buf) { c ^= b; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; } return ~c >>> 0; };
+    for (const [name, text] of Object.entries(files)) {
+      const data = Buffer.from(text), nb = Buffer.from(name), crc = crc32(data);
+      const lh = Buffer.alloc(30); lh.writeUInt32LE(0x04034b50, 0); lh.writeUInt16LE(20, 4); lh.writeUInt32LE(crc, 14); lh.writeUInt32LE(data.length, 18); lh.writeUInt32LE(data.length, 22); lh.writeUInt16LE(nb.length, 26);
+      const ch = Buffer.alloc(46); ch.writeUInt32LE(0x02014b50, 0); ch.writeUInt16LE(20, 4); ch.writeUInt16LE(20, 6); ch.writeUInt32LE(crc, 16); ch.writeUInt32LE(data.length, 20); ch.writeUInt32LE(data.length, 24); ch.writeUInt16LE(nb.length, 28); ch.writeUInt32LE(off, 42);
+      parts.push(lh, nb, data); central.push(ch, nb); off += 30 + nb.length + data.length;
+    }
+    const cd = Buffer.concat(central); const end = Buffer.alloc(22); end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(central.length / 2, 8); end.writeUInt16LE(central.length / 2, 10); end.writeUInt32LE(cd.length, 12); end.writeUInt32LE(off, 16);
+    return Buffer.concat([...parts, cd, end]);
+  };
+  const pkg = zip({ 'scrcpy-win64-v9.9/scrcpy': '#!/bin/sh\necho scrcpy 9.9\n', 'scrcpy-win64-v9.9/adb': '#!/bin/sh\necho "List of devices attached"\n', 'scrcpy-win64-v9.9/README.txt': 'synthetic test package' });
+  let digest = 'sha256:' + '0'.repeat(64); // wrong at first
+  const srv = http.createServer((req, res) => {
+    const base = `http://127.0.0.1:${srv.address().port}`;
+    if (req.url === '/repos/Genymobile/scrcpy/releases/latest') { res.setHeader('content-type', 'application/json'); res.end(JSON.stringify({ tag_name: 'v9.9', body: '', assets: [{ name: 'scrcpy-win64-v9.9.zip', digest, browser_download_url: base + '/dl/scrcpy-win64-v9.9.zip' }] })); return; }
+    if (req.url === '/dl/scrcpy-win64-v9.9.zip') { res.end(pkg); return; }
+    res.statusCode = 404; res.end();
+  });
+  await new Promise((r) => srv.listen(0, '127.0.0.1', r));
+  const data = path.join(S, 'data-tools'); fs.rmSync(data, { recursive: true, force: true });
+  const app = await _electron.launch({ args: ['--no-sandbox', APP], env: { ...process.env, PATH: '/usr/bin:/bin', FMC_DATA_DIR: data, FMC_NO_DEMO: '1', FMC_GITHUB_API: `http://127.0.0.1:${srv.address().port}` } });
+  const page = await app.firstWindow();
+  page.on('pageerror', e => console.log('[pageerror]', e.message));
+  await page.waitForSelector('[data-testid="home"]');
+  await page.waitForSelector('[data-testid="splash"]', { state: 'detached', timeout: 10000 });
+  await page.click('[data-tool="mirror"]');
+  await page.waitForSelector('[data-testid="tools-missing"]');
+  await page.click('[data-testid="tools-install-missing"]');
+  await page.locator('[data-testid="tool-scrcpy"] [data-testid="tool-msg"]:has-text("checksum")').waitFor();
+  assert.match(await page.textContent('[data-testid="tool-scrcpy"] [data-testid="tool-msg"]'), /does not match the official checksum/);
+  assert.match(await page.textContent('[data-testid="tool-scrcpy"] [data-testid="tool-state"]'), /Missing/);
+  digest = 'sha256:' + crypto.createHash('sha256').update(pkg).digest('hex');
+  await page.click('[data-testid="tools-install-missing"]');
+  await page.locator('[data-testid="tool-scrcpy"] [data-testid="tool-state"]:has-text("Installed by FixMyCircuit")').waitFor();
+  assert.match(await page.textContent('[data-testid="tool-adb"] [data-testid="tool-state"]'), /Installed by FixMyCircuit/);
+  assert.ok(fs.existsSync(path.join(data, 'profile', 'tools', 'scrcpy', 'scrcpy')), 'unpacked into the tools folder');
+  assert.match(await page.textContent('[data-testid="ios-limits"]'), /View only/);
+  await shot(page, '43-tools-mirror');
+  await page.click('button[title="Settings and offline storage"]');
+  await page.waitForSelector('[data-testid="tools-settings"]');
+  assert.match(await page.textContent('[data-testid="tools-settings"]'), /Gerber, ODB\+\+ and KiCad import are built in/);
+  await app.close();
+  srv.close();
+  console.log('tool manager OK');
 }
