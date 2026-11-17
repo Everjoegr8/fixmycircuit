@@ -115,6 +115,11 @@ export interface Settings {
   /** Optional AI assistant: the user's own Claude API key (stored only on this PC). */
   anthropicKey?: string;
   aiModel?: string;
+  /** Bring your own AI: 'claude' (default), 'openai', 'gemini', 'openrouter', 'ollama' or 'custom'. */
+  aiProvider?: string;
+  aiBaseUrl?: string;
+  aiApiKey?: string;
+  aiCustomModel?: string;
 }
 
 export const BRAND_SEED = ['iPhone', 'Samsung', 'Tecno', 'Infinix', 'Itel', 'Xiaomi'];

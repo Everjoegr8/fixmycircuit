@@ -1,5 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, net, protocol, session, shell } from 'electron';
-import { aiStep, type AiStepReq } from './ai';
+import { aiStepWith, type AiStepReq } from './ai';
+import { activate, licenseStatus, SUPPORT_WHATSAPP } from './license';
+import { whatsappLink } from '../shared/license';
 import { spawn, execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
@@ -176,8 +178,25 @@ function collectArgvFiles(argv: string[]) {
   }
 }
 
+// While the licence is locked only these channels answer.
+const OPEN_CHANNELS = new Set(['license:status', 'license:activate', 'license:whatsapp', 'data:info', 'settings:get']);
+let licenseLocked = false;
 function handle(channel: string, fn: (...args: any[]) => unknown) {
-  ipcMain.handle(channel, async (_e, ...args) => fn(...args));
+  ipcMain.handle(channel, async (_e, ...args) => {
+    if (licenseLocked && !OPEN_CHANNELS.has(channel)) throw new Error('FixMyCircuit needs a licence key. Enter it on the activation screen.');
+    return fn(...args);
+  });
+}
+
+const PRIVATE_SETTINGS = ['licenseKey', 'trialStart', 'licLastSeen'];
+const licStore = () => ({
+  get: (k: string) => (db.getSettings() as any)[k] as string | undefined,
+  set: (k: string, v: string) => { db.setSettings({ [k]: v } as any); },
+});
+function currentLicense() {
+  const st = licenseStatus(licStore());
+  licenseLocked = st.locked;
+  return st;
 }
 
 function registerIpc() {
@@ -316,16 +335,21 @@ function registerIpc() {
   handle('search', (q: string) => db.search(q));
   handle('ai:step', (req: AiStepReq) => {
     const st = db.getSettings() as any;
-    return aiStep(req, st.anthropicKey || '', st.aiModel || 'claude-opus-5-5');
+    return aiStepWith(req, { provider: st.aiProvider, anthropicKey: st.anthropicKey, aiModel: st.aiModel, aiBaseUrl: st.aiBaseUrl, aiApiKey: st.aiApiKey, aiCustomModel: st.aiCustomModel });
   });
   handle('ai:status', () => {
     const st = db.getSettings() as any;
-    return { configured: !!st.anthropicKey || process.env.FMC_AI_MOCK === '1', model: st.aiModel || 'claude-opus-5-5', mock: process.env.FMC_AI_MOCK === '1' };
+    const provider = st.aiProvider || 'claude';
+    const configured = provider === 'claude' ? !!st.anthropicKey : !!st.aiCustomModel && (provider === 'ollama' || provider === 'custom' || !!st.aiApiKey);
+    return { configured: configured || process.env.FMC_AI_MOCK === '1', model: provider === 'claude' ? st.aiModel || 'claude-opus-5-5' : `${provider}: ${st.aiCustomModel || '?'}`, mock: process.env.FMC_AI_MOCK === '1' };
   });
   handle('stats:activity', (days?: number) => db.activity(days || 14));
   handle('stats:recent', (limit?: number) => db.recentActivity(limit || 10));
-  handle('settings:get', () => db.getSettings());
-  handle('settings:set', (patch: any) => db.setSettings(patch));
+  handle('settings:get', () => { const s: any = db.getSettings(); for (const k of PRIVATE_SETTINGS) delete s[k]; return s; });
+  handle('settings:set', (patch: any) => { const p = { ...patch }; for (const k of PRIVATE_SETTINGS) delete p[k]; db.setSettings(p); const s: any = db.getSettings(); for (const k of PRIVATE_SETTINGS) delete s[k]; return s; });
+  handle('license:status', () => currentLicense());
+  handle('license:activate', (key: string) => { const r = activate(licStore(), String(key || '')); return { ...r, status: currentLicense() }; });
+  handle('license:whatsapp', (text: string) => { shell.openExternal(whatsappLink(SUPPORT_WHATSAPP, String(text || ''))); });
 
   handle('data:info', () => ({ dataDir, libDir, dbFile: path.join(dataDir, 'fixmycircuit.db'), version: app.getVersion() }));
   handle('data:open', () => shell.openPath(dataDir));
@@ -387,6 +411,7 @@ if (!gotLock) {
     }
 
     registerIpc();
+    currentLicense();
     createWindow();
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

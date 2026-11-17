@@ -1,3 +1,4 @@
+import type { LicenseStatus } from '@shared/license';
 import type { Brand, Guide, IcXref, Jumper, LibraryFile, Model, Photo, Reading, Settings, ImportRequest } from '@shared/types';
 
 export type TreeModel = Model & {
@@ -47,6 +48,9 @@ export interface FmcApi {
   activity(days?: number): Promise<{ files: DayCount[]; guides: DayCount[]; readings: DayCount[]; photos: DayCount[] }>;
   recentActivity(limit?: number): Promise<ActivityItem[]>;
   aiStep(req: { system: string; messages: any[]; tools: any[] }): Promise<{ content: any[]; stop_reason: string | null; refusal?: string; model: string; usage?: { input_tokens: number; output_tokens: number } }>;
+  licenseStatus(): Promise<LicenseStatus>;
+  licenseActivate(key: string): Promise<{ ok: boolean; reason?: string; status: LicenseStatus }>;
+  licenseWhatsApp(text: string): Promise<void>;
   aiStatus(): Promise<{ configured: boolean; model: string; mock: boolean }>;
   getSettings(): Promise<Settings>;
   setSettings(patch: Partial<Settings>): Promise<Settings>;

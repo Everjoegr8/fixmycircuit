@@ -19,6 +19,7 @@ import MicroscopeView from './views/tools/MicroscopeView';
 import MirrorView from './views/tools/MirrorView';
 import { Icon } from './components/Icon';
 import AboutDialog from './components/AboutDialog';
+import { ActivationScreen, LicenseBanner, useLicense } from './components/License';
 import AiToolView from './views/tools/AiToolView';
 import { Splash } from './brand/Logo';
 import { forgetSession, saveSession } from './lib/session';
@@ -40,6 +41,7 @@ export default function App() {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [splash, setSplash] = useState(() => !(window as any).__fmcNoSplash);
   const [version, setVersion] = useState('');
+  const lic = useLicense();
   useEffect(() => {
     api.dataInfo().then((i) => setVersion(i.version));
     const t = setTimeout(() => setSplash(false), 2100);
@@ -56,9 +58,10 @@ export default function App() {
     setRev((r) => r + 1);
   }, []);
 
+  const unlocked = !!lic && !lic.locked;
   useEffect(() => {
-    reload();
-  }, [reload]);
+    if (unlocked) reload();
+  }, [reload, unlocked]);
 
   const modelLabel = useCallback(
     (id: number | null | undefined) => {
@@ -212,9 +215,13 @@ export default function App() {
     return active;
   }, [active]);
 
+  if (!lic) return <div className="h-full bg-bench-950">{splash && <Splash version={version} />}</div>;
+  if (lic.locked) return <div className="h-full">{splash && <Splash version={version} />}<ActivationScreen st={lic} /></div>;
+
   return (
     <div className="flex h-full flex-col">
     {splash && <Splash version={version} />}
+    {lic && <LicenseBanner st={lic} onOpen={() => setSettingsOpen(true)} />}
     <div className="flex min-h-0 flex-1">
       <Sidebar
         brands={brands}
@@ -399,12 +406,12 @@ export default function App() {
         <div className="fmc-rise fixed bottom-10 left-1/2 z-50 -translate-x-1/2 rounded-md border border-amber-500/50 bg-bench-800 px-4 py-2 text-amber-100 shadow-xl">{toast}</div>
       )}
     </div>
-    <StatusBar version={version} docs={docs.length} models={models.length} onAbout={() => setAboutOpen(true)} />
+    <StatusBar version={version} docs={docs.length} models={models.length} onAbout={() => setAboutOpen(true)} lic={lic ? (lic.state === 'trial' ? `Trial · ${lic.daysLeft + 1}d left` : lic.state === 'grace' ? 'Key expired · grace period' : `Licensed · ${lic.daysLeft}d left`) : ''} />
     </div>
   );
 }
 
-function StatusBar({ version, docs, models, onAbout }: { version: string; docs: number; models: number; onAbout: () => void }) {
+function StatusBar({ version, docs, models, onAbout, lic }: { version: string; docs: number; models: number; onAbout: () => void; lic: string }) {
   return (
     <footer className="flex h-6 shrink-0 items-center gap-3 border-t border-bench-700 bg-bench-900 px-3 text-[11px] text-slate-500" data-testid="statusbar">
       <span className="flex items-center gap-1.5 text-green-300"><span className="fmc-node-glow inline-block h-1.5 w-1.5 rounded-full bg-green-400" /> Ready</span>
@@ -412,6 +419,7 @@ function StatusBar({ version, docs, models, onAbout }: { version: string; docs: 
       <span className="hidden md:inline">·</span>
       <span className="hidden md:inline">{models} models · {docs} open</span>
       <span className="hidden md:inline">· Offline</span>
+      {lic && <span className="hidden md:inline" data-testid="status-license">· {lic}</span>}
       <span className="flex-1 text-center italic text-slate-500">Find the fault. Fix with confidence.</span>
       <button className="hover:text-amber-300" onClick={onAbout}>by ERA Technologiz</button>
     </footer>

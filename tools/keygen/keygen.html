@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FixMyCircuit Key Generator</title>
+<style>
+  :root { --bg:#0b0f14; --card:#171f29; --line:#283342; --text:#e9eef4; --muted:#8d99a9; --amber:#f2b544; --green:#4cc97e; --red:#e07474; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; } h1 span { color: var(--amber); }
+  p.sub { color: var(--muted); margin: 0 0 20px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  label { display:block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 10px 0 4px; }
+  input, textarea, select { width: 100%; background: #111821; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; font: inherit; }
+  textarea { font-family: Consolas, monospace; font-size: 12px; }
+  .row { display:flex; gap: 10px; } .row > * { flex: 1; }
+  button { background: var(--amber); color: #1a1203; border: 0; border-radius: 6px; padding: 9px 14px; font-weight: 600; cursor: pointer; font: inherit; font-weight: 600; }
+  button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); font-weight: 400; }
+  .chips button { background: #111821; color: var(--text); border: 1px solid var(--line); padding: 5px 10px; font-weight: 400; }
+  .chips button.on { border-color: var(--amber); color: var(--amber); }
+  .ok { color: var(--green); } .bad { color: var(--red); } .muted { color: var(--muted); font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; } td, th { border-bottom: 1px solid var(--line); padding: 5px 4px; text-align: left; }
+  code.big { display:block; word-break: break-all; background:#111821; border:1px dashed var(--amber); border-radius:6px; padding:10px; font-size:12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Fix<span>My</span>Circuit key generator</h1>
+  <p class="sub">For ERA Technologiz only. Do not share this page together with the private key. Works offline in Chrome or Edge.</p>
+
+  <div class="card">
+    <label>Private signing key (from PRIVATE-signing-key.txt)</label>
+    <textarea id="priv" rows="2" placeholder="MC4CAQAwBQYDK2VwBCIEI…"></textarea>
+    <div class="row" style="align-items:center;margin-top:8px">
+      <label style="margin:0;display:flex;gap:6px;align-items:center;text-transform:none;letter-spacing:0;font-size:13px;color:var(--text)"><input type="checkbox" id="remember" style="width:auto"> Remember on this computer</label>
+      <span id="privState" class="muted"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Customer machine ID (from their FixMyCircuit activation screen)</label>
+    <input id="mid" placeholder="XXXX-XXXX-XXXX-XXXX" style="font-family:Consolas,monospace;font-size:16px;letter-spacing:.1em">
+    <div class="row">
+      <div><label>Shop or customer name</label><input id="name" placeholder="e.g. Tunde Phone Clinic, Ikeja"></div>
+      <div><label>Start date</label><input id="start" type="date"></div>
+    </div>
+    <label>How long they paid for</label>
+    <div class="chips row" id="plans" style="flex-wrap:wrap;gap:6px">
+      <button data-d="30">1 month</button><button data-d="90">3 months</button><button data-d="180">6 months</button><button data-d="365">1 year</button>
+      <input id="days" type="number" min="1" value="30" style="max-width:110px" title="Days">
+    </div>
+    <p class="muted" id="expiry"></p>
+    <button id="gen">Generate key</button>
+    <div id="out" style="margin-top:14px"></div>
+  </div>
+
+  <div class="card">
+    <label>Check a key</label>
+    <textarea id="check" rows="3" placeholder="FMC1-…"></textarea>
+    <div id="checkOut" class="muted" style="margin-top:6px"></div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="align-items:center"><strong>Keys issued on this computer</strong><button class="ghost" id="csv" style="flex:0 0 auto">Export CSV</button></div>
+    <table><thead><tr><th>Issued</th><th>Shop</th><th>Machine</th><th>Expires</th><th></th></tr></thead><tbody id="log"></tbody></table>
+  </div>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const b64 = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes)));
+const b64url = (s) => s.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const fromB64url = (s) => s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4);
+const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+const norm = (s) => s.toUpperCase().replace(/[^0-9A-F]/g, '').replace(/(.{4})(?=.)/g, '$1-');
+const addDays = (ymd, n) => new Date(Date.parse(ymd + 'T00:00:00Z') + n * 86400000).toISOString().slice(0, 10);
+const today = () => new Date().toISOString().slice(0, 10);
+let log = []; try { log = JSON.parse(localStorage.getItem('fmc.keylog') || '[]'); } catch {}
+try { if (localStorage.getItem('fmc.priv')) { $('priv').value = localStorage.getItem('fmc.priv'); $('remember').checked = true; } } catch {}
+$('start').value = today();
+
+async function keys() {
+  const der = unb64($('priv').value.trim());
+  const priv = await crypto.subtle.importKey('pkcs8', der, { name: 'Ed25519' }, true, ['sign']);
+  // Derive the public key from the private key (last 32 bytes of the PKCS8 seed) via JWK.
+  const jwk = await crypto.subtle.exportKey('jwk', priv);
+  const pub = await crypto.subtle.importKey('jwk', { kty: 'OKP', crv: 'Ed25519', x: jwk.x }, { name: 'Ed25519' }, true, ['verify']);
+  return { priv, pub };
+}
+async function checkPriv() {
+  if (!$('priv').value.trim()) { $('privState').textContent = 'Paste the private key to start.'; return; }
+  try { await keys(); $('privState').innerHTML = '<span class="ok">Key loaded.</span>'; try { if ($('remember').checked) localStorage.setItem('fmc.priv', $('priv').value.trim()); else localStorage.removeItem('fmc.priv'); } catch {} }
+  catch (e) { $('privState').innerHTML = '<span class="bad">This is not a valid Ed25519 private key (or the browser is too old: use current Chrome or Edge).</span>'; }
+}
+$('priv').oninput = checkPriv; $('remember').onchange = checkPriv; checkPriv();
+
+function plan() { const d = Math.max(1, Number($('days').value) || 30); const e = addDays($('start').value || today(), d - 1); $('expiry').textContent = `${d} days: works from ${$('start').value} through ${e}.`; return { d, e }; }
+document.querySelectorAll('#plans button').forEach((b) => b.onclick = () => { $('days').value = b.dataset.d; document.querySelectorAll('#plans button').forEach((x) => x.classList.toggle('on', x === b)); plan(); });
+$('days').oninput = plan; $('start').oninput = plan; plan();
+
+$('gen').onclick = async () => {
+  const out = $('out');
+  try {
+    const m = norm($('mid').value);
+    if (!/^[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/.test(m)) throw new Error('Machine ID must look like XXXX-XXXX-XXXX-XXXX.');
+    const { d, e } = plan();
+    const payload = { v: 1, m, n: $('name').value.trim(), p: `${d} days`, i: today(), e };
+    const bytes = new TextEncoder().encode(JSON.stringify(payload));
+    const part = b64url(b64(bytes));
+    const { priv } = await keys();
+    const sig = await crypto.subtle.sign({ name: 'Ed25519' }, priv, new TextEncoder().encode(part));
+    const key = `FMC1-${part}.${b64url(b64(sig))}`;
+    const msg = `Your FixMyCircuit key (${payload.n || 'your shop'}, valid until ${e}):\n\n${key}\n\nOpen FixMyCircuit, paste it on the activation screen (or Settings > Licence) and press Activate.`;
+    out.innerHTML = `<label>Key</label><code class="big" id="key"></code><div class="row" style="margin-top:8px"><button id="copy">Copy key</button><button class="ghost" id="copyMsg">Copy WhatsApp message</button><a class="ghost" id="wa" target="_blank" style="text-align:center;padding:9px;border:1px solid var(--line);border-radius:6px;color:var(--text);text-decoration:none">Open WhatsApp</a></div>`;
+    $('key').textContent = key;
+    $('copy').onclick = () => navigator.clipboard.writeText(key);
+    $('copyMsg').onclick = () => navigator.clipboard.writeText(msg);
+    $('wa').href = 'https://wa.me/?text=' + encodeURIComponent(msg);
+    log.unshift({ i: payload.i, n: payload.n, m, e, key }); localStorage.setItem('fmc.keylog', JSON.stringify(log.slice(0, 500))); renderLog();
+  } catch (err) { out.innerHTML = `<p class="bad">${err.message}</p>`; }
+};
+
+$('check').oninput = async () => {
+  const o = $('checkOut'); const k = $('check').value.trim().replace(/\s+/g, '');
+  if (!k) { o.textContent = ''; return; }
+  try {
+    if (!k.startsWith('FMC1-')) throw new Error('Not a FixMyCircuit key.');
+    const [part, sig] = k.slice(5).split('.');
+    const p = JSON.parse(new TextDecoder().decode(unb64(fromB64url(part))));
+    let sigOk = 'not checked (load the private key)';
+    try { const { pub } = await keys(); sigOk = (await crypto.subtle.verify({ name: 'Ed25519' }, pub, unb64(fromB64url(sig)), new TextEncoder().encode(part))) ? '<span class="ok">valid signature</span>' : '<span class="bad">INVALID signature</span>'; } catch {}
+    o.innerHTML = `Machine ${p.m} · ${p.n || 'no name'} · ${p.p} · issued ${p.i} · expires ${p.e} · ${sigOk}`;
+  } catch (e) { o.innerHTML = `<span class="bad">${e.message}</span>`; }
+};
+
+function renderLog() {
+  $('log').innerHTML = log.map((r, i) => `<tr><td>${r.i}</td><td>${(r.n || '').replace(/</g, '&lt;')}</td><td><code>${r.m}</code></td><td>${r.e}</td><td><button class="ghost" data-i="${i}" style="padding:2px 8px">Copy</button></td></tr>`).join('');
+  $('log').querySelectorAll('button').forEach((b) => b.onclick = () => navigator.clipboard.writeText(log[b.dataset.i].key));
+}
+renderLog();
+$('csv').onclick = () => {
+  const rows = [['issued', 'shop', 'machine', 'expires', 'key'], ...log.map((r) => [r.i, r.n, r.m, r.e, r.key])];
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')], { type: 'text/csv' })); a.download = 'fixmycircuit-keys.csv'; a.click();
+};
+</script>
+</body>
+</html>

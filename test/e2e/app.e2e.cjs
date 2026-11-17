@@ -8,6 +8,7 @@ const APP = path.resolve(__dirname, '../..'); const SM = path.join(APP, 'samples
 const S = process.env.E2E_OUT || fs.mkdtempSync(path.join(os.tmpdir(), 'fmc-e2e-'));
 const shot = (page, n) => page.screenshot({ path: `${S}/${n}.png` });
 (async () => {
+  if (process.env.E2E_ONLY) { await ({ license: licenseRun, formats: formatsRun, demo: demoRun })[process.env.E2E_ONLY](); console.log('E2E OK (' + process.env.E2E_ONLY + ')'); return; }
   const data = path.join(S, 'data'); fs.rmSync(data, { recursive: true, force: true });
   const app = await _electron.launch({ args: ['--no-sandbox', APP], env: { ...process.env, FMC_DATA_DIR: data, FMC_NO_DEMO: '1' } });
   const page = await app.firstWindow();
@@ -110,6 +111,7 @@ const shot = (page, n) => page.screenshot({ path: `${S}/${n}.png` });
   await app.close();
   await demoRun();
   await formatsRun();
+  await licenseRun();
   console.log('E2E OK, screenshots in', S);
 })().catch(e => { console.error(e); process.exit(1); });
 
@@ -384,4 +386,78 @@ async function formatsRun() {
   await page.keyboard.press('Escape');
   assert.match(await page.textContent('[data-testid="statusbar"]'), /Ready.*FixMyCircuit v0\.3/);
   await app.close();
+}
+
+// Fourth part: offline licence keys. Uses a throwaway signing key, a fixed
+// machine ID and a moved clock (all honoured only when running from source).
+async function licenseRun() {
+  const crypto = require('crypto');
+  const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
+  const pub = publicKey.export({ type: 'spki', format: 'der' }).toString('base64');
+  const b64u = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const mkKey = (m, e, n = 'Test Shop') => {
+    const pl = b64u(JSON.stringify({ v: 1, m, n, p: '30 days', i: '2026-01-01', e }));
+    return `FMC1-${pl}.${b64u(crypto.sign(null, Buffer.from(pl), privateKey))}`;
+  };
+  const data = path.join(S, 'data-lic'); fs.rmSync(data, { recursive: true, force: true });
+  const open = async (now) => {
+    const app = await _electron.launch({ args: ['--no-sandbox', APP], env: { ...process.env, FMC_DATA_DIR: data, FMC_NO_DEMO: '1', FMC_LICENSE_PUBKEY: pub, FMC_MACHINE_ID: 'e2e-pc', FMC_NOW: now } });
+    const page = await app.firstWindow();
+    page.on('pageerror', e => console.log('[pageerror]', e.message));
+    await page.waitForSelector('[data-testid="home"], [data-testid="activation"]');
+    return { app, page };
+  };
+  // Day 1 of the trial.
+  let { app, page } = await open('2026-01-01T09:00:00Z');
+  await page.waitForSelector('[data-testid="license-banner"]');
+  assert.match(await page.textContent('[data-testid="license-banner"]'), /Free trial: 7 days left/);
+  assert.match(await page.textContent('[data-testid="status-license"]'), /Trial · 7d left/);
+  await app.close();
+  // Trial over: the app locks and shows the activation screen.
+  ({ app, page } = await open('2026-01-20T09:00:00Z'));
+  await page.waitForSelector('[data-testid="activation"]');
+  const mid = (await page.textContent('[data-testid="machine-id"]')).trim();
+  assert.match(mid, /^[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/);
+  const blocked = await page.evaluate(async () => { try { await window.fmc.tree(); return 'open'; } catch (e) { return String(e.message || e); } });
+  assert.notEqual(blocked, 'open', 'data is locked while unlicensed');
+  await shot(page, '40-activation');
+  const tryKey = async (k) => { await page.fill('[data-testid="license-key"]', k); await page.click('[data-testid="license-activate"]'); await page.waitForSelector('[data-testid="license-msg"], [data-testid="home"]'); return page.locator('[data-testid="license-msg"]').count().then((n) => n ? page.textContent('[data-testid="license-msg"]') : 'home'); };
+  assert.match(await tryKey(mkKey('AAAA-BBBB-CCCC-DDDD', '2026-03-01')), /another computer/);
+  assert.match(await tryKey(mkKey(mid, '2026-01-10')), /already expired/);
+  assert.match(await tryKey(mkKey(mid, '2026-03-01').slice(0, -6) + 'AAAAAA'), /not valid/);
+  assert.match(await tryKey('hello'), /start with FMC1-/);
+  await tryKey(mkKey(mid, '2026-03-01'));
+  await page.waitForSelector('[data-testid="home"]');
+  assert.equal(await page.locator('[data-testid="license-banner"]').count(), 0, 'no banner when licensed');
+  assert.match(await page.textContent('[data-testid="status-license"]'), /Licensed · 40d left/);
+  const st = await page.evaluate(() => window.fmc.getSettings());
+  assert.equal(st.licenseKey, undefined, 'key is not readable through settings');
+  await app.close();
+  // Last week: warning banner. Then grace, then locked.
+  ({ app, page } = await open('2026-02-25T09:00:00Z'));
+  await page.waitForSelector('[data-testid="license-banner"]');
+  assert.match(await page.textContent('[data-testid="license-banner"]'), /expires on 2026-03-01 \(4 days left\)/);
+  await shot(page, '41-license-warning');
+  await page.click('[data-testid="license-banner"] button');
+  await page.waitForSelector('[data-testid="license-settings"]');
+  assert.match(await page.textContent('[data-testid="license-settings"]'), /Licensed · 4 days left/);
+  await shot(page, '42-license-settings');
+  await app.close();
+  ({ app, page } = await open('2026-03-03T09:00:00Z'));
+  await page.waitForSelector('[data-testid="license-banner"]');
+  assert.match(await page.textContent('[data-testid="license-banner"]'), /keeps working until 2026-03-04/);
+  await app.close();
+  ({ app, page } = await open('2026-03-10T09:00:00Z'));
+  await page.waitForSelector('[data-testid="activation"]');
+  assert.match(await page.textContent('[data-testid="activation"]'), /expired on 2026-03-01/);
+  await app.close();
+  // Turning the clock back does not unlock it.
+  ({ app, page } = await open('2026-02-01T09:00:00Z'));
+  await page.waitForSelector('[data-testid="activation"]');
+  assert.match(await page.textContent('[data-testid="activation"]'), /date looks wrong/);
+  // A renewal key unlocks it again.
+  await tryKey(mkKey(mid, '2026-06-30'));
+  await page.waitForSelector('[data-testid="home"]');
+  await app.close();
+  console.log('licence flow OK, machine', mid);
 }
