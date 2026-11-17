@@ -211,7 +211,7 @@ function registerIpc() {
     const r = await dialog.showOpenDialog(win!, {
       properties: ['openFile', 'multiSelections'],
       filters: filters || [
-        { name: 'Schematics, boardviews and photos', extensions: ['pdf', 'brd', 'bdv', 'bv', 'bvr', 'cst', 'fz', 'asc', 'pcb', 'jpg', 'jpeg', 'png', 'webp'] },
+        { name: 'Schematics, boardviews and photos', extensions: ['pdf', 'brd', 'bdv', 'bv', 'bvr', 'cst', 'fz', 'asc', 'pcb', 'kicad_pcb', 'jpg', 'jpeg', 'png', 'webp'] },
         { name: 'All files', extensions: ['*'] },
       ],
     });
@@ -257,6 +257,23 @@ function registerIpc() {
   handle('jumpers:list', (photoId: number) => db.listJumpers(photoId));
   handle('jumpers:save', (j: any) => db.saveJumper(j));
   handle('jumpers:delete', (id: number) => db.deleteJumper(id));
+  handle('copper:list', (fileId: string) => db.listCopper(String(fileId)));
+  handle('copper:add', (c: any) => db.addCopper(c));
+  handle('copper:delete', (id: number) => db.deleteCopper(Number(id)));
+  /** Read Gerber files as text: from given paths (tests, drag and drop) or a file dialog. */
+  handle('copper:read', async (paths?: string[]) => {
+    let list = Array.isArray(paths) ? paths : [];
+    if (!list.length) {
+      const r = await dialog.showOpenDialog(win!, {
+        title: 'Add Gerber copper layers',
+        properties: ['openFile', 'multiSelections'],
+        filters: [{ name: 'Gerber copper (RS-274X)', extensions: ['gbr', 'ger', 'gtl', 'gbl', 'g1', 'g2', 'g3', 'g4', 'art', 'pho', 'cmp', 'sol'] }, { name: 'All files', extensions: ['*'] }],
+      });
+      if (r.canceled) return [];
+      list = r.filePaths;
+    }
+    return list.map((f) => ({ name: path.basename(f), text: fs.readFileSync(f, 'utf8') }));
+  });
 
   handle('photos:addFromData', (req: { model_id: number | null; dataUrl: string; title: string; guide_id?: number | null }) => {
     const m = /^data:image\/(png|jpeg|webp);base64,(.+)$/.exec(req.dataUrl);

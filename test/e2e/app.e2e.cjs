@@ -295,7 +295,7 @@ async function formatsRun() {
   const paths = [...info.files.map((f) => path.join(dir, f)), path.join(dir, 'asc', 'pins.asc'), path.join(dir, 'demo-photo.png'), SM + 'fmc-demo-x1-schematic.pdf', SM + 'fmc-demo-x1-top.jpg'];
   const imported = await page.evaluate(([paths, id]) => window.fmc.importFiles({ paths, model_id: id }), [paths, modelId]);
   console.log('imported:', imported.map((f) => `${f.name}:${f.kind}`).join(', '));
-  assert.equal(imported.filter((f) => f.kind === 'boardview').length, 10, 'ten boardview files');
+  assert.equal(imported.filter((f) => f.kind === 'boardview').length, 11, 'eleven boardview files (incl. KiCad layout)');
   assert.equal(imported.filter((f) => f.kind === 'photo').length, 2, 'jpg and png photos');
   assert.equal(imported.filter((f) => f.kind === 'schematic').length, 1, 'pdf schematic');
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
@@ -329,6 +329,31 @@ async function formatsRun() {
       await page.waitForTimeout(500);
       await shot(page, '31-path-tracer-light');
       await page.click('[data-testid="theme-toggle"]');
+      await page.locator('[data-testid="netlist-btn"] >> visible=true').click();
+      // Boardview: computed lines only, until a Gerber copper layer is added.
+      assert.equal(await page.locator('[data-testid="copper-state"] >> visible=true').textContent(), 'COMPUTED');
+      await page.locator('[data-testid="copper-btn"] >> visible=true').click();
+      await app.evaluate(({ dialog }, p) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [p] }); }, path.join(dir, 'demo-top.gtl'));
+      await page.locator('[data-testid="copper-add"] >> visible=true').click();
+      const cm = await page.locator('[data-testid="copper-msg"] >> visible=true').textContent();
+      console.log('gerber:', cm);
+      assert.match(cm, /lined up on \d+ pads/);
+      await page.locator('[data-testid="copper-state"]:has-text("REAL") >> visible=true').waitFor();
+      await page.fill('input[placeholder^="Find part or net"] >> visible=true', 'VBUS');
+      await page.keyboard.press('Enter');
+      await page.locator('[data-testid="net-copper"]:has-text("Real copper") >> visible=true').waitFor();
+      await page.waitForTimeout(500);
+      await shot(page, '35-gerber-copper');
+    }
+    if (f.name === 'demo-kicad.kicad_pcb') {
+      assert.equal(await page.locator('[data-testid="copper-state"] >> visible=true').textContent(), 'REAL');
+      await page.locator('[data-testid="copper-btn"] >> visible=true').click();
+      assert.match(await page.locator('[data-testid="copper-sources"] >> visible=true').textContent(), /This file\s*\d+ real tracks/);
+      await page.locator('[data-testid="copper-btn"] >> visible=true').click();
+      await page.click('[data-testid="theme-toggle"]');
+      await page.waitForTimeout(400);
+      await shot(page, '36-kicad-copper-light');
+      await page.click('[data-testid="theme-toggle"]');
     }
     await page.locator('[aria-label="Close tab"]').first().click();
   }
@@ -341,6 +366,44 @@ async function formatsRun() {
   const photos = await page.evaluate(() => window.fmc.listPhotos());
   assert.equal(photos.length, 2);
 
+  // Trace real copper on a photo, align the photo with two reading pins, see it on the boardview.
+  await page.locator('button:has-text("Board Photos") >> nth=-1').click();
+  await page.locator('img[alt="fmc-demo-x1-top"]').click();
+  const host = page.locator('[data-testid="photo-host"] >> visible=true');
+  await host.waitFor();
+  await page.waitForTimeout(600);
+  const bb = await page.locator('[data-testid="photo-host"] img >> visible=true').boundingBox();
+  const dropPin = async (fx, fy, part, pin) => {
+    await page.locator('button[data-tool="pin"] >> visible=true').click();
+    await page.mouse.click(bb.x + bb.width * fx, bb.y + bb.height * fy);
+    const ed = page.locator('[data-testid="pin-editor"] >> visible=true');
+    await ed.waitFor();
+    await ed.locator('input').nth(0).fill(part); await ed.locator('input').nth(1).fill(pin); await ed.locator('input').nth(1).blur();
+    await page.waitForTimeout(200);
+    await page.keyboard.press('Escape');
+  };
+  await dropPin(0.3, 0.3, 'U2', '1');
+  await dropPin(0.7, 0.7, 'J1', '1');
+  await page.locator('[data-testid="align-btn"] >> visible=true').click();
+  assert.match(await page.locator('[data-testid="align-msg"] >> visible=true').textContent(), /Photo aligned/);
+  await page.locator('button[data-tool="trace"] >> visible=true').click();
+  await page.mouse.click(bb.x + bb.width * 0.35, bb.y + bb.height * 0.5);
+  await page.mouse.click(bb.x + bb.width * 0.5, bb.y + bb.height * 0.5);
+  await page.mouse.click(bb.x + bb.width * 0.5, bb.y + bb.height * 0.62);
+  await page.keyboard.press('Enter');
+  await page.locator('[data-testid="trace-net"] >> visible=true').fill('VBUS');
+  await page.locator('[data-testid="trace-net"] >> visible=true').blur();
+  await page.waitForTimeout(300);
+  await shot(page, '37-photo-trace');
+  const jt = await page.evaluate(async () => { const ph = (await window.fmc.listPhotos()).find((x) => x.align); return ph ? (await window.fmc.listJumpers(ph.id)) : []; });
+  assert.ok(jt.some((j) => j.kind === 'trace' && j.net === 'VBUS' && j.points.length === 3), 'shop trace saved with its net');
+  await page.locator('[aria-label="Close tab"]').first().click();
+  await page.locator('button:has-text("BoardView") >> nth=-1').click();
+  await page.locator('button[title="Open"]:has-text("demo-brd.brd")').click();
+  await page.locator('[data-testid="copper-btn"] >> visible=true').click();
+  await page.locator('[data-testid="copper-sources"]:has-text("1 from 1 aligned photo") >> visible=true').waitFor();
+  await page.locator('[aria-label="Close tab"]').first().click();
+
   // Themes: light persists across a reload, dark comes back
   await page.click('[data-testid="brand-home"]');
   await page.click('[data-testid="theme-toggle"]');
@@ -351,9 +414,9 @@ async function formatsRun() {
   await page.waitForSelector('[data-testid="splash"]', { state: 'detached', timeout: 10000 });
   await page.waitForTimeout(900);
   await shot(page, '32-home-light');
-  assert.ok((await page.textContent('[data-testid="continue-card"]')).includes('schematic'), 'continue card shows the last document');
+  assert.ok((await page.textContent('[data-testid="continue-card"]')).includes('demo-brd.brd'), 'continue card shows the last document');
   await page.locator('[data-testid="continue-card"] button').first().click();
-  await page.waitForSelector('.pdfViewer .page canvas, .pdfViewer .page .canvasWrapper', { timeout: 15000 });
+  await page.waitForSelector('[data-testid="board-canvas"] >> visible=true', { timeout: 15000 });
   await page.locator('[aria-label="Close tab"]').first().click();
   await page.click('[data-testid="view-list"]');
   assert.equal(await page.locator('[data-testid="device-row"]').count(), 1);

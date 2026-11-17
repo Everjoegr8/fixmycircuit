@@ -1,5 +1,5 @@
 import type { LicenseStatus } from '@shared/license';
-import type { Brand, Guide, IcXref, Jumper, LibraryFile, Model, Photo, Reading, Settings, ImportRequest } from '@shared/types';
+import type { Brand, CopperLayer, Guide, IcXref, Jumper, LibraryFile, Model, Photo, Reading, Settings, ImportRequest } from '@shared/types';
 
 export type TreeModel = Model & {
   demo?: number; files: number; guides: number; readings: number; photos: number;
@@ -34,6 +34,10 @@ export interface FmcApi {
   listJumpers(photoId: number): Promise<Jumper[]>;
   saveJumper(j: Partial<Jumper> & { photo_id: number; points: { x: number; y: number }[] }): Promise<Jumper>;
   deleteJumper(id: number): Promise<void>;
+  listCopper(fileId: string): Promise<CopperLayer[]>;
+  addCopper(c: Omit<CopperLayer, 'id' | 'created_at'>): Promise<{ id: number }>;
+  deleteCopper(id: number): Promise<void>;
+  readGerbers(paths?: string[]): Promise<{ name: string; text: string }[]>;
   addPhotoFromData(req: { model_id: number | null; dataUrl: string; title: string; guide_id?: number | null }): Promise<Photo>;
   listIcs(q?: string): Promise<IcXref[]>;
   saveIc(r: Partial<IcXref> & { ic: string }): Promise<IcXref>;

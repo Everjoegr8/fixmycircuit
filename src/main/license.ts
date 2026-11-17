@@ -13,7 +13,7 @@ import {
 /** Ed25519 public key (SPKI, base64) matching the private key used by the key generator. */
 const PUBLIC_KEY = 'MCowBQYDK2VwAyEAAtcPlLfo3ID5lupMQEFSFRpZuS0twNPjJQMT4sI7PsM=';
 /** WhatsApp number (international format, digits only) that key requests go to. */
-export const SUPPORT_WHATSAPP = '';
+export const SUPPORT_WHATSAPP = '2348102514461';
 
 const dev = () => !app.isPackaged;
 /** Current time; tests can move it with FMC_NOW when running from source. */

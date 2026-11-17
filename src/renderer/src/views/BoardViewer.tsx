@@ -13,6 +13,9 @@ import { indexBoard, railFamily, TYPE_LABEL } from '@shared/netindex';
 import NetlistPanel from './board/NetlistPanel';
 import { indexModelSchematics, schematicPages, type SchIndex } from '../lib/schindex';
 import { registerBoard, touchBoard, unregisterBoard } from '../lib/boards';
+import CopperPanel, { type ShopTraceInfo } from './board/CopperPanel';
+import { parseAlign } from '../lib/sync';
+import type { CopperLayer } from '@shared/types';
 
 interface Props {
   fileId: string;
@@ -49,6 +52,11 @@ export default function BoardViewer(p: Props) {
   const [netlist, setNetlist] = useState(false);
   const [pathNets, setPathNets] = useState<string[]>([]);
   const [sch, setSch] = useState<SchIndex[]>([]);
+  const [copperOpen, setCopperOpen] = useState(false);
+  const [copperRev, setCopperRev] = useState(0);
+  const [copperLayers, setCopperLayers] = useState<CopperLayer[]>([]);
+  const [shopInfo, setShopInfo] = useState<ShopTraceInfo>({ photos: 0, traces: 0, unaligned: 0 });
+  const fileTraces = useRef<any[]>([]);
   const idx = useMemo(() => (board ? indexBoard(board) : null), [board]);
   const fileName = useRef('');
 
@@ -68,6 +76,8 @@ export default function BoardViewer(p: Props) {
           ascFiles: extOf(file.name) === 'asc' ? { ...extras, [file.name.toLowerCase()]: new Uint8Array(bytes) } : undefined,
         });
         fileName.current = file.name;
+        fileTraces.current = (b.traces || []).map((t: any) => ({ ...t, src: 'layout' }));
+        b.traces = fileTraces.current;
         if (!cancelled) setBoard(b);
       } catch (e: any) {
         if (!cancelled) setError(e?.message || String(e));
@@ -92,6 +102,39 @@ export default function BoardViewer(p: Props) {
     return () => { off = true; };
   }, [board, p.modelId, p.rev]);
   useEffect(() => { viewRef.current?.setHighlight(pathNets); }, [pathNets, board]);
+
+  // Real copper added by the shop: Gerber layers for this file and traces drawn on aligned photos.
+  useEffect(() => {
+    if (!board) return;
+    let off = false;
+    (async () => {
+      const layers = await api.listCopper(p.fileId);
+      const extra: any[] = [];
+      for (const l of layers) for (const t of l.traces) extra.push({ ...t, src: 'gerber' });
+      const info: ShopTraceInfo = { photos: 0, traces: 0, unaligned: 0 };
+      if (p.modelId != null) {
+        for (const ph of await api.listPhotos(p.modelId)) {
+          const js = (await api.listJumpers(ph.id)).filter((j) => j.kind === 'trace' && j.points.length > 1);
+          if (!js.length) continue;
+          const a = parseAlign(ph.align);
+          if (!a) { info.unaligned += js.length; continue; }
+          info.photos++;
+          const side = ph.side === 'bottom' ? 'bottom' : 'top';
+          for (const j of js) {
+            info.traces++;
+            const pts = j.points.map((q) => ({ x: a.x0 + q.x * (a.x1 - a.x0), y: a.y1 - q.y * (a.y1 - a.y0) }));
+            for (let i = 1; i < pts.length; i++) extra.push({ x1: pts[i - 1].x, y1: pts[i - 1].y, x2: pts[i].x, y2: pts[i].y, w: 0, net: j.net || '', side, src: 'shop', label: j.label });
+          }
+        }
+      }
+      if (off) return;
+      board.traces = fileTraces.current.concat(extra);
+      viewRef.current?.indexCopper();
+      setCopperLayers(layers);
+      setShopInfo(info);
+    })();
+    return () => { off = true; };
+  }, [board, p.fileId, p.modelId, p.rev, copperRev]);
 
   useEffect(() => {
     if (p.modelId == null) { setReadings([]); return; }
@@ -367,6 +410,10 @@ export default function BoardViewer(p: Props) {
         <button className="btn" title="Zoom in (+)" onClick={() => { const v = viewRef.current; v && v.zoomAt(v.canvas.clientWidth / 2, v.canvas.clientHeight / 2, 1.3); }}><Icon name="zoomIn" size={14} /></button>
         <button className="btn" title="Zoom out (-)" onClick={() => { const v = viewRef.current; v && v.zoomAt(v.canvas.clientWidth / 2, v.canvas.clientHeight / 2, 1 / 1.3); }}><Icon name="zoomOut" size={14} /></button>
         <button className={`btn ${netlist ? 'btn-on' : ''}`} title="Every net and part, board health and path tracer" onClick={() => setNetlist((x) => !x)} data-testid="netlist-btn"><Icon name="net" size={14} /> Netlist</button>
+        <button className={`btn ${copperOpen ? 'btn-on' : ''}`} title="Real copper traces vs computed connections" onClick={() => setCopperOpen((x) => !x)} data-testid="copper-btn">
+          <Icon name="layers" size={14} /> Copper
+          {board && <span className={`ml-0.5 rounded px-1 text-[9.5px] font-semibold ${(board.traces || []).length ? 'bg-amber-500/20 text-amber-200' : 'bg-bench-700 text-slate-400'}`} data-testid="copper-state">{(board.traces || []).length ? 'REAL' : 'COMPUTED'}</span>}
+        </button>
         <div className="flex-1" />
         {board && <span className="text-[11px] text-slate-500">{board.format} · {board.stats.parts} parts · {board.stats.pins} pins · {board.stats.nets} nets</span>}
       </div>
@@ -401,7 +448,13 @@ export default function BoardViewer(p: Props) {
         )}
         {board && (
           <div className={`absolute top-2 z-10 ${netlist ? 'right-[332px]' : 'right-2'}`}>
-            <LayerToggles counts={layerCounts} title="Trace layers (nets)" />
+            <div className="flex flex-col items-end gap-2">
+              <LayerToggles counts={layerCounts} title="Trace layers (nets)" />
+              {copperOpen && (
+                <CopperPanel board={board} fileId={p.fileId} layers={copperLayers} shop={shopInfo} fileTraces={fileTraces.current.length}
+                  onChanged={() => setCopperRev((n) => n + 1)} onClose={() => setCopperOpen(false)} />
+              )}
+            </div>
           </div>
         )}
         {(part || sel.net) && (
@@ -453,6 +506,7 @@ export default function BoardViewer(p: Props) {
                       <div className="flex flex-wrap gap-1">
                         {ni.ground ? <span className="chip text-slate-400">Ground</span> : ni.rail ? <span className="chip border-amber-500/50 text-amber-300">Supply rail</span> : <span className="chip">Signal</span>}
                         {ni.caps > 0 && <span className="chip">{ni.caps} decoupling caps</span>}
+                        {(board.traces || []).some((t: any) => t.net === sel.net) ? <span className="chip border-green-500/50 text-green-300" data-testid="net-copper">Real copper shown</span> : <span className="chip text-slate-400" title="Lines are computed between pins; the file has no copper for this net" data-testid="net-copper">Computed lines</span>}
                         {ni.ics.length > 0 && <span className="chip text-cyan-300">ICs: {ni.ics.slice(0, 4).join(', ')}{ni.ics.length > 4 ? '…' : ''}</span>}
                       </div>
                       {ni.through.length > 0 && (

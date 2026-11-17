@@ -30,6 +30,10 @@ const DARK = {
   pinSel: '#ffffff',
   label: '#cbd5e1',
   testpoint: '#a78bfa',
+  copperTop: '#c8873a',
+  copperBottom: '#4f86c6',
+  copperInner: '#7c8a9a',
+  shop: '#22c55e',
 };
 const LIGHT: typeof DARK = {
   bg: '#f4f6f9',
@@ -49,6 +53,10 @@ const LIGHT: typeof DARK = {
   pinSel: '#0e1620',
   label: '#1c2733',
   testpoint: '#7c3aed',
+  copperTop: '#b8661a',
+  copperBottom: '#2f6db5',
+  copperInner: '#8b97a6',
+  shop: '#15803d',
 };
 let COLORS = DARK;
 const pickColors = () => (COLORS = document.documentElement.dataset.theme === 'light' ? LIGHT : DARK);
@@ -74,6 +82,8 @@ export class BoardCanvas {
   private cx = 0;
   private cy = 0;
   private netParts = new Set<number>();
+  /** Real copper (layout file, Gerber layer or shop-verified photo traces) by net. */
+  private realByNet = new Map<string, any[]>();
   private onTheme = () => this.invalidate();
   /** Animation clock for the selected-net pulse. */
   private t0 = performance.now();
@@ -87,6 +97,7 @@ export class BoardCanvas {
     this.cy = (b.miny + b.maxy) / 2;
     this.buildGrid();
     for (const net of board.nets.keys()) this.netLayer.set(net, layerOfNet(net));
+    this.indexCopper();
     // Show the side that has parts first.
     if (!board.parts.some((p: any) => p.side === 'top') && board.parts.some((p: any) => p.side === 'bottom')) this.side = 'bottom';
     window.addEventListener('fmc-theme', this.onTheme);
@@ -111,6 +122,49 @@ export class BoardCanvas {
 
   invalidate() {
     this.dirty = true;
+  }
+
+  /** Call after board.traces changes (Gerber layer or shop traces added). */
+  indexCopper() {
+    this.realByNet.clear();
+    for (const t of this.board.traces || []) {
+      if (!t.net) continue;
+      let a = this.realByNet.get(t.net);
+      if (!a) this.realByNet.set(t.net, (a = []));
+      a.push(t);
+    }
+    this.invalidate();
+  }
+
+  /** True when the net has real copper to show instead of computed lines. */
+  hasRealCopper(net: string) {
+    return this.realByNet.has(net);
+  }
+
+  private traceVisible(t: any) {
+    if (t.side === 'inner') return this.side === 'both';
+    return this.side === 'both' || t.side === this.side || t.side === 'both';
+  }
+
+  private strokeTraces(list: any[], color: string, alpha: number, minW: number, scaleW = true) {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = alpha;
+    ctx.lineCap = 'round';
+    // Group by drawn width so each width is one stroke.
+    const byW = new Map<number, Path2D>();
+    for (const t of list) {
+      if (!this.traceVisible(t)) continue;
+      const w = Math.max(scaleW ? Math.round(t.w * this.scale * 2) / 2 : 0, minW);
+      let p = byW.get(w);
+      if (!p) byW.set(w, (p = new Path2D()));
+      const a = this.toScreen(t.x1, t.y1), b = this.toScreen(t.x2, t.y2);
+      p.moveTo(a.x, a.y);
+      p.lineTo(b.x, b.y);
+    }
+    for (const [w, p] of byW) { ctx.lineWidth = w; ctx.stroke(p); }
+    ctx.restore();
   }
 
   private buildGrid() {
@@ -312,13 +366,39 @@ export class BoardCanvas {
     }
     ctx.stroke();
 
+    // Real copper, solid. Shop-verified photo traces are green.
+    const traces: any[] = board.traces || [];
+    if (traces.length) {
+      const by: Record<string, any[]> = { top: [], bottom: [], inner: [], shop: [] };
+      for (const t of traces) (t.src === 'shop' ? by.shop : by[t.side] || by.top).push(t);
+      this.strokeTraces(by.inner, COLORS.copperInner, 0.35, 0.8);
+      const under = this.side === 'bottom' ? 'top' : 'bottom';
+      this.strokeTraces(by[under], under === 'top' ? COLORS.copperTop : COLORS.copperBottom, 0.35, 0.8);
+      this.strokeTraces(by[this.side === 'bottom' ? 'bottom' : 'top'], this.side === 'bottom' ? COLORS.copperBottom : COLORS.copperTop, 0.6, 0.8);
+      this.strokeTraces(by.shop, COLORS.shop, 0.9, 2);
+      const vias: any[] = board.vias || [];
+      if (vias.length && this.scale * (vias[0].r || 1) > 0.8) {
+        ctx.save();
+        ctx.strokeStyle = COLORS.copperTop;
+        ctx.globalAlpha = 0.8;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (const v of vias) { const sv = this.toScreen(v.x, v.y); const r = Math.max(v.r * this.scale, 1.5); ctx.moveTo(sv.x + r, sv.y); ctx.arc(sv.x, sv.y, r, 0, Math.PI * 2); }
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
     // Colour-coded net lines for the enabled layers (GND only colours pins).
     if (this.layers.size) {
       ctx.lineWidth = 1.4;
       ctx.globalAlpha = 0.75;
       const side = this.side === 'both' ? 'both' : this.side;
+      ctx.setLineDash([6, 4]);
       for (const [net, layer] of this.netLayer) {
         if (!layer || layer === 'gnd' || !this.layers.has(layer)) continue;
+        const real = this.realByNet.get(net);
+        if (real) { ctx.setLineDash([]); this.strokeTraces(real, LAYER_BY_ID[layer].color, 0.85, 1.4); ctx.setLineDash([6, 4]); continue; }
         const segs = netSegments(board, net, side);
         if (!segs.length) continue;
         ctx.strokeStyle = LAYER_BY_ID[layer].color;
@@ -330,6 +410,7 @@ export class BoardCanvas {
         }
         ctx.stroke();
       }
+      ctx.setLineDash([]);
       ctx.globalAlpha = 1;
     }
 
@@ -427,6 +508,8 @@ export class BoardCanvas {
   lastHiddenNetPins = 0;
 
   private drawTrace(net: string, color: string, t: number) {
+    const real = this.realByNet.get(net);
+    if (real) { this.strokeTraces(real, color, 0.95, 2.2); return; }
     const segs = netSegments(this.board, net, this.side === 'both' ? 'both' : this.side);
     if (!segs.length) return;
     const ctx = this.ctx;
@@ -434,6 +517,7 @@ export class BoardCanvas {
     ctx.strokeStyle = color;
     ctx.lineWidth = 2.2;
     ctx.globalAlpha = 0.85;
+    ctx.setLineDash([5, 4]);
     ctx.lineDashOffset = -t * 28;
     ctx.beginPath();
     for (const sg of segs) {
@@ -449,7 +533,9 @@ export class BoardCanvas {
   private drawNetPulse(net: string, inView: (s: Pt, m?: number) => boolean) {
     const ctx = this.ctx;
     const t = (performance.now() - this.t0) / 1000;
-    const segs = netSegments(this.board, net, this.side === 'both' ? 'both' : this.side);
+    const real = this.realByNet.get(net);
+    if (real) this.strokeTraces(real, COLORS.pinNet, 0.65 + 0.3 * Math.sin(t * 4), 2);
+    const segs = real ? [] : netSegments(this.board, net, this.side === 'both' ? 'both' : this.side);
     if (segs.length) {
       ctx.save();
       ctx.strokeStyle = COLORS.pinNet;

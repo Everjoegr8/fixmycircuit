@@ -32,6 +32,10 @@ const api = {
   listJumpers: call('jumpers:list'),
   saveJumper: call('jumpers:save'),
   deleteJumper: call('jumpers:delete'),
+  listCopper: call('copper:list'),
+  addCopper: call('copper:add'),
+  deleteCopper: call('copper:delete'),
+  readGerbers: call('copper:read'),
 
   addPhotoFromData: call('photos:addFromData'),
   listIcs: call('ics:list'),
