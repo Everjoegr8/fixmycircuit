@@ -57,3 +57,30 @@ test('Gerber without X2 pads falls back to the board extent', () => {
   assert.equal(guessGerberSide('board-B_Cu.gbr'), 'bottom');
   assert.equal(guessGerberSide('board.GTL'), 'top');
 });
+
+import { uncompressZ, parseODB } from '../src/parsers/odb.js';
+import { compressZ } from './fixtures/demoBoard.js';
+
+test('Unix .Z (LZW) round trip, including code width changes', () => {
+  let s = ''; for (let i = 0; i < 20000; i++) s += 'NET' + ((i * 7919) % 1000) + ' L ' + (i % 97) + '\n';
+  const raw = new TextEncoder().encode(s);
+  assert.equal(new TextDecoder().decode(uncompressZ(compressZ(raw))), s);
+});
+
+test('ODB++ job: parts, pins, nets, real copper on both sides', () => {
+  for (const gzip of [true, false]) {
+    const b = loadBoard(W.writeODB(demo, { gzip }), gzip ? 'demo.tgz' : 'demo.tar', {});
+    assert.equal(b.format, 'ODB++');
+    assert.equal(b.parts.length, demo.parts.length);
+    const u2 = b.parts.find((p) => p.name === 'U2');
+    const pin1 = b.pins[u2.pins.find((i) => b.pins[i].snum === '1')];
+    assert.equal(pin1.net, 'VBUS');
+    assert.ok(Math.abs(pin1.x - 1300) < 0.5 && Math.abs(pin1.y - 1000) < 0.5);
+    assert.equal(b.parts.find((p) => p.name === 'U3').side, 'bottom');
+    assert.ok(b.traces.some((t) => t.side === 'top' && t.net === 'VBUS'));
+    assert.ok(b.traces.some((t) => t.side === 'bottom' && t.net === 'PP1V8'), 'bottom copper from the .Z features file');
+    assert.ok(b.traces.filter((t) => t.net === 'VBAT').length > 4, 'arc split into segments');
+    assert.equal(b.outlineSegments.length, 4);
+    assert.ok(Math.abs(b.traces[0].w - 6) < 0.01, 'r6 symbol = 6 mil');
+  }
+});

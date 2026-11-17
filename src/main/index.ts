@@ -211,7 +211,7 @@ function registerIpc() {
     const r = await dialog.showOpenDialog(win!, {
       properties: ['openFile', 'multiSelections'],
       filters: filters || [
-        { name: 'Schematics, boardviews and photos', extensions: ['pdf', 'brd', 'bdv', 'bv', 'bvr', 'cst', 'fz', 'asc', 'pcb', 'kicad_pcb', 'jpg', 'jpeg', 'png', 'webp'] },
+        { name: 'Schematics, boardviews and photos', extensions: ['pdf', 'brd', 'bdv', 'bv', 'bvr', 'cst', 'fz', 'asc', 'pcb', 'kicad_pcb', 'tgz', 'tar', 'zip', 'jpg', 'jpeg', 'png', 'webp'] },
         { name: 'All files', extensions: ['*'] },
       ],
     });

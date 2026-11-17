@@ -6,11 +6,14 @@ import { parseCST } from './cst.js';
 import { parseFZ } from './fz.js';
 import { isXZZ, parseXZZ } from './xzz.js';
 import { isKiCad, parseKiCad } from './kicad.js';
+import { parseODB } from './odb.js';
 import { SIDE } from './util.js';
 
 export { SIDE };
 
-export const BOARD_EXTENSIONS = ['brd', 'bdv', 'bv', 'bvr', 'cst', 'fz', 'asc', 'pcb', 'kicad_pcb'];
+export const BOARD_EXTENSIONS = ['brd', 'bdv', 'bv', 'bvr', 'cst', 'fz', 'asc', 'pcb', 'kicad_pcb', 'tgz', 'zip'];
+/** ODB++ jobs come as archives. */
+export const ODB_EXTENSIONS = ['tgz', 'gz', 'tar', 'zip'];
 
 export function extOf(name) {
   const m = /\.([^./\\]+)$/.exec(name || '');
@@ -30,6 +33,7 @@ export function parseRawBoard(bytes, fileName, opts = {}) {
   if (ext === 'asc') return parseASC(opts.ascFiles || { [String(fileName).split(/[\\/]/).pop().toLowerCase()]: bytes });
   if (ext === 'cst') return parseCST(bytes);
   if (ext === 'kicad_pcb' || isKiCad(bytes)) return parseKiCad(bytes);
+  if (ODB_EXTENSIONS.includes(ext)) return parseODB(bytes);
   if (isBRD(bytes)) return parseBRD(bytes);
   if (isBRD2(bytes)) return parseBRD2(bytes);
   if (isBDV(bytes)) return parseBDV(bytes);

@@ -295,7 +295,7 @@ async function formatsRun() {
   const paths = [...info.files.map((f) => path.join(dir, f)), path.join(dir, 'asc', 'pins.asc'), path.join(dir, 'demo-photo.png'), SM + 'fmc-demo-x1-schematic.pdf', SM + 'fmc-demo-x1-top.jpg'];
   const imported = await page.evaluate(([paths, id]) => window.fmc.importFiles({ paths, model_id: id }), [paths, modelId]);
   console.log('imported:', imported.map((f) => `${f.name}:${f.kind}`).join(', '));
-  assert.equal(imported.filter((f) => f.kind === 'boardview').length, 11, 'eleven boardview files (incl. KiCad layout)');
+  assert.equal(imported.filter((f) => f.kind === 'boardview').length, 12, 'twelve boardview files (incl. KiCad and ODB++ layouts)');
   assert.equal(imported.filter((f) => f.kind === 'photo').length, 2, 'jpg and png photos');
   assert.equal(imported.filter((f) => f.kind === 'schematic').length, 1, 'pdf schematic');
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));

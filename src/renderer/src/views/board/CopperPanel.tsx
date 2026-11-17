@@ -75,7 +75,7 @@ export default function CopperPanel(p: Props) {
       </div>
       <button className="btn-primary mt-3 w-full justify-center" disabled={busy} onClick={() => add()} data-testid="copper-add"><Icon name="plus" size={13} /> Add Gerber copper layer…</button>
       <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-        For real routing, open the KiCad layout (.kicad_pcb) or add the board's Gerber copper files (top .gtl, bottom .gbl, inner .g1…). Gerber X2 files line up on the pads automatically. Or trace copper yourself on a board photo in Contributor mode with the Trace tool.
+        For real routing, open the KiCad layout (.kicad_pcb) or ODB++ job (.tgz or .zip), or add the board's Gerber copper files (top .gtl, bottom .gbl, inner .g1…). Gerber X2 files line up on the pads automatically. Or trace copper yourself on a board photo in Contributor mode with the Trace tool.
       </p>
       {msg && <div className="mt-2 text-[11.5px] text-slate-300" data-testid="copper-msg">{msg}</div>}
     </div>

@@ -319,3 +319,103 @@ export function writeGerberTop(b, off = { x: 5, y: 7 }) {
   L.push('M02*');
   return new TextEncoder().encode(L.join('\n') + '\n');
 }
+
+// --- ODB++ job (tar.gz), with one features file in Unix .Z form ---------------
+/** LZW "compress" (.Z), 16 bits, block mode, with the group padding of ncompress. */
+export function compressZ(input) {
+  const out = [0x1f, 0x9d, 0x90];
+  let nbits = 9, maxcode = 511, free = 257;
+  const table = new Map();
+  let acc = 0, accBits = 0, groupBits = 0;
+  const bits = [];
+  const put = (code) => {
+    acc |= code << accBits; accBits += nbits; groupBits += nbits;
+    while (accBits >= 8) { bits.push(acc & 0xff); acc >>>= 8; accBits -= 8; }
+    if (groupBits === nbits * 8) groupBits = 0;
+  };
+  const pad = () => {
+    if (groupBits > 0) {
+      let left = nbits * 8 - groupBits;
+      while (left > 0) { const n = Math.min(left, 8 - (accBits % 8 || 0) || 8); accBits += n; left -= n; while (accBits >= 8) { bits.push(acc & 0xff); acc >>>= 8; accBits -= 8; } }
+      groupBits = 0;
+    }
+  };
+  if (!input.length) return Uint8Array.from(out);
+  let ent = input[0];
+  for (let i = 1; i < input.length; i++) {
+    const c = input[i];
+    const key = ent * 256 + c;
+    const hit = table.get(key);
+    if (hit !== undefined) { ent = hit; continue; }
+    put(ent);
+    if (free > maxcode) { pad(); nbits++; maxcode = nbits === 16 ? 65536 : (1 << nbits) - 1; }
+    if (free < 65536) table.set(key, free++);
+    ent = c;
+  }
+  put(ent);
+  if (accBits > 0) bits.push(acc & 0xff);
+  return Uint8Array.from([...out, ...bits]);
+}
+
+function tar(files) {
+  const blocks = [];
+  for (const [name, data] of Object.entries(files)) {
+    const h = new Uint8Array(512);
+    const w = (s, o) => { for (let i = 0; i < s.length; i++) h[o + i] = s.charCodeAt(i); };
+    w(name, 0); w('0000644\0', 100); w('0000000\0', 108); w('0000000\0', 116);
+    w(data.length.toString(8).padStart(11, '0') + '\0', 124); w('00000000000\0', 136);
+    w('        ', 148); h[156] = 48; w('ustar\0', 257); w('00', 263);
+    const sum = h.reduce((a, b) => a + b, 0);
+    w(sum.toString(8).padStart(6, '0') + '\0 ', 148);
+    blocks.push(h, data, new Uint8Array((512 - (data.length % 512)) % 512));
+  }
+  blocks.push(new Uint8Array(1024));
+  const outLen = blocks.reduce((a, b) => a + b.length, 0);
+  const out = new Uint8Array(outLen);
+  let o = 0;
+  for (const b of blocks) { out.set(b, o); o += b.length; }
+  return out;
+}
+
+export function writeODB(b, { gzip = true } = {}) {
+  const te = new TextEncoder();
+  const nets = [...new Set(b.pins.map((p) => p.net).filter((n) => n && n !== 'UNCONNECTED'))];
+  const inch = (mil) => (mil / 1000).toFixed(6);
+  const files = {};
+  const J = 'demo_job/';
+  files[J + 'matrix/matrix'] = te.encode(`STEP {\n   COL=1\n   NAME=PCB\n}\n\nLAYER {\n   ROW=1\n   CONTEXT=BOARD\n   TYPE=COMPONENT\n   NAME=COMP_+_TOP\n}\nLAYER {\n   ROW=2\n   CONTEXT=BOARD\n   TYPE=SIGNAL\n   NAME=TOP\n}\nLAYER {\n   ROW=3\n   CONTEXT=BOARD\n   TYPE=SIGNAL\n   NAME=BOTTOM\n}\nLAYER {\n   ROW=4\n   CONTEXT=BOARD\n   TYPE=COMPONENT\n   NAME=COMP_+_BOT\n}\n`);
+  // Copper features per layer, remembering each feature's net for eda/data.
+  const fids = new Map(nets.map((n) => [n, []]));
+  const feat = (side, li) => {
+    const L = ['UNITS=INCH', '#', '$0 r6', '$1 r14', '#'];
+    let idx = 0;
+    for (const p of b.pins) {
+      if (p.side !== side || !p.net || p.net === 'UNCONNECTED') continue;
+      L.push(`P ${inch(p.x)} ${inch(p.y)} 1 P 0 0`); fids.get(p.net).push(`FID C ${li} ${idx++}`);
+    }
+    for (const t of demoRoutes(b)) {
+      if (t.side !== side) continue;
+      L.push(`L ${inch(t.x1)} ${inch(t.y1)} ${inch(t.x2)} ${inch(t.y2)} 0 P 0`); fids.get(t.net).push(`FID C ${li} ${idx++}`);
+    }
+    if (side === 'top') { L.push(`A ${inch(600)} ${inch(1400)} ${inch(700)} ${inch(1400)} ${inch(650)} ${inch(1400)} 0 P 0 N`); fids.get('VBAT').push(`FID C ${li} ${idx++}`); }
+    return L.join('\n') + '\n';
+  };
+  files[J + 'steps/pcb/layers/top/features'] = te.encode(feat('top', 0));
+  files[J + 'steps/pcb/layers/bottom/features.Z'] = compressZ(te.encode(feat('bottom', 1)));
+  const eda = ['HDR synthetic', 'LYR top bottom'];
+  for (const n of nets) { eda.push(`NET ${n};;ID=1`, 'SNT TRC'); for (const f of fids.get(n)) eda.push(f); }
+  files[J + 'steps/pcb/eda/data'] = te.encode(eda.join('\n') + '\n');
+  for (const [layer, side] of [['comp_+_top', 'top'], ['comp_+_bot', 'bottom']]) {
+    const L = ['UNITS=MM'];
+    b.parts.forEach((part, pi) => {
+      if (part.side !== side) return;
+      const ps = b.pins.filter((p) => p.part === pi);
+      L.push(`CMP ${pi} 0 0 0 N ${part.name} SYN-${part.name} ;`);
+      ps.forEach((p, i) => L.push(`TOP ${i} ${(p.x * 0.0254).toFixed(4)} ${(p.y * 0.0254).toFixed(4)} 0 N ${p.net === 'UNCONNECTED' ? -1 : nets.indexOf(p.net)} 0 ${p.snum}`));
+    });
+    files[J + `steps/pcb/layers/${layer}/components`] = te.encode(L.join('\n') + '\n');
+  }
+  files[J + 'steps/pcb/profile'] = te.encode(`UNITS=INCH\nS P 0\nOB 0 0 I\nOS 2 0\nOS 2 4\nOS 0 4\nOS 0 0\nOE\nSE\n`);
+  const t = tar(files);
+  return gzip ? deflate(t, { gzip: true }) : t;
+}

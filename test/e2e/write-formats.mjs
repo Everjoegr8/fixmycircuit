@@ -19,6 +19,7 @@ const files = {
   'demo-fz.fz': W.writeFZPlain(b),
   'demo-xzz.pcb': W.writeXZZ(b),
   'demo-kicad.kicad_pcb': W.writeKiCad(b),
+  'demo-odb.tgz': W.writeODB(b),
 };
 for (const [n, bytes] of Object.entries(files)) fs.writeFileSync(path.join(dir, n), bytes);
 fs.writeFileSync(path.join(dir, 'demo-top.gtl'), W.writeGerberTop(b));
