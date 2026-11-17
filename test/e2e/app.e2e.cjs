@@ -14,7 +14,8 @@ const shot = (page, n) => page.screenshot({ path: `${S}/${n}.png` });
   page.on('pageerror', e => console.log('[pageerror]', e.message));
   page.on('console', m => m.type() === 'error' && console.log('[console]', m.text()));
   page.on('dialog', d => d.accept());
-  await page.waitForSelector('text=Welcome to the bench');
+  await page.waitForSelector('[data-testid="home"]');
+  await page.waitForSelector('[data-testid="splash"]', { state: 'detached', timeout: 10000 });
   // Add model through UI
   await page.hover('text=Tecno'); 
   await page.locator('button[title="Add Tecno model"]').click();
@@ -108,6 +109,7 @@ const shot = (page, n) => page.screenshot({ path: `${S}/${n}.png` });
   assert.equal(jumpers[0].points.length, 3);
   await app.close();
   await demoRun();
+  await formatsRun();
   console.log('E2E OK, screenshots in', S);
 })().catch(e => { console.error(e); process.exit(1); });
 
@@ -120,6 +122,7 @@ async function demoRun() {
   page.on('pageerror', e => console.log('[pageerror]', e.message));
   page.on('console', m => m.type() === 'error' && console.log('[console]', m.text()));
   await page.waitForSelector('[data-testid="demo-banner"]');
+  await page.waitForSelector('[data-testid="splash"]', { state: 'detached', timeout: 10000 });
   const tree = await page.evaluate(() => window.fmc.tree());
   const demo = tree.models.filter((m) => m.demo);
   console.log('demo models:', demo.map((m) => `${tree.brands.find((b) => b.id === m.brand_id).name} ${m.name} g${m.guides} r${m.readings} p${m.photos} f${m.files}`));
@@ -129,7 +132,8 @@ async function demoRun() {
   await shot(page, '20-home-dashboard');
 
   // Board photo with trace layers, net lines and hover card
-  await page.click('button:has-text("Board photo + layers")');
+  assert.equal(await page.locator('[data-testid="device-card"]').count(), 4, 'four demo device cards');
+  await openDemo(page, 'photo');
   await page.waitForSelector('[data-testid="netlines-toggle"]', { timeout: 15000 });
   assert.equal(await page.locator('[data-netlines]').count(), 0, 'net lines off by default on photos');
   await page.check('[data-testid="netlines-toggle"]');
@@ -182,8 +186,7 @@ async function demoRun() {
 
   // Boardview with layers + hover card, split with the photo (zoom/pan sync)
   await page.click('button[title="Close split view"]');
-  await page.click('button:has-text("Home")');
-  await page.click('button:has-text("Boardview")');
+  await openDemo(page, 'board');
   await page.waitForSelector('[data-testid="board-canvas"] >> visible=true');
   await page.waitForTimeout(800);
   const cv = await page.locator('[data-testid="board-canvas"] >> visible=true').boundingBox();
@@ -195,8 +198,25 @@ async function demoRun() {
   console.log('board hover card:', found);
   assert.ok(found, 'hover card on a board pin');
   await shot(page, '23-board-layers-hover');
+  // Net facts and schematic cross-links for a selected net
+  await page.locator('input[placeholder="Find part or net (Ctrl+F)"] >> visible=true').fill('VBUS_IN');
+  await page.keyboard.press('Enter');
+  await page.waitForSelector('[data-testid="net-facts"] >> visible=true');
+  await page.waitForSelector('[data-testid="sch-links"]:has-text("Schematic page") >> visible=true', { timeout: 20000 });
+  console.log('net facts:', await page.locator('[data-testid="net-facts"] >> visible=true').textContent());
+  await page.locator('[data-testid="netlist-btn"] >> visible=true').click();
+  const health = await page.locator('[data-testid="board-health"] >> visible=true').textContent();
+  console.log('board health:', health);
+  assert.match(health, /Parts/);
+  assert.ok(await page.locator('[data-testid="net-row"]').count() > 50, 'every net listed');
+  await page.locator('[data-testid="netlist-tab-parts"]').click();
+  assert.ok(await page.locator('[data-testid="part-row"]').count() > 50, 'every part listed');
+  await page.waitForTimeout(400);
+  await shot(page, '23b-board-netlist-net');
+  await page.locator('[data-testid="netlist-btn"] >> visible=true').click();
 
   // Workbench tools
+  await page.click('[data-testid="brand-home"]');
   await page.click('[data-tool="calculators"]');
   await page.fill('[data-testid="res-code"]', '4702');
   assert.match(await page.textContent('[data-testid="res-result"]'), /47 kΩ/);
@@ -239,5 +259,129 @@ async function demoRun() {
   assert.equal(removed.removed, 4);
   const again = await page.evaluate(() => window.fmc.loadDemo());
   assert.equal(again.added, 4);
+  await app.close();
+}
+
+async function openDemo(page, what) {
+  await page.evaluate(async (what) => {
+    const t = await window.fmc.tree();
+    const m = t.models.find((x) => x.demo);
+    window.__open = what === 'photo' ? (await window.fmc.listPhotos(m.id))[0] : (await window.fmc.listFiles(m.id, 'boardview'))[0];
+  }, what);
+  await page.click('[data-testid="brand-home"]');
+  // Use the Home quick action for boards; photos open from the model's Board Photos page.
+  if (what === 'board') { await page.locator('button:has-text("Open boardview")').click(); return; }
+  await page.locator('[data-testid="device-card"]').first().click();
+  await page.locator('button:has-text("Board Photos") >> nth=-1').click();
+  await page.locator('[data-testid="photo-open"], button:has-text("Open")').first().click();
+}
+
+// Third launch: import every supported format, themes, AI assistant (test mode), About.
+async function formatsRun() {
+  const dir = path.join(S, 'formats'); fs.rmSync(dir, { recursive: true, force: true });
+  const info = JSON.parse(require('child_process').execFileSync(process.execPath, [path.join(__dirname, 'write-formats.mjs'), dir]).toString());
+  const data = path.join(S, 'data-formats'); fs.rmSync(data, { recursive: true, force: true });
+  const app = await _electron.launch({ args: ['--no-sandbox', APP], env: { ...process.env, FMC_DATA_DIR: data, FMC_NO_DEMO: '1', FMC_AI_MOCK: '1' } });
+  const page = await app.firstWindow();
+  await app.evaluate(({ BrowserWindow }) => { BrowserWindow.getAllWindows()[0].setSize(1600, 940); });
+  page.on('pageerror', e => console.log('[pageerror]', e.message));
+  page.on('console', m => m.type() === 'error' && console.log('[console]', m.text()));
+  page.on('dialog', d => d.accept());
+  await page.waitForSelector('[data-testid="splash"]', { state: 'detached', timeout: 10000 });
+  await page.evaluate((k) => window.fmc.setSettings({ xzzKey: k }), info.xzzKey);
+  const modelId = await page.evaluate(async () => { const t = await window.fmc.tree(); const b = t.brands.find((x) => x.name === 'Samsung'); return (await window.fmc.addModel(b.id, 'Format Lab')).id; });
+  const paths = [...info.files.map((f) => path.join(dir, f)), path.join(dir, 'asc', 'pins.asc'), path.join(dir, 'demo-photo.png'), SM + 'fmc-demo-x1-schematic.pdf', SM + 'fmc-demo-x1-top.jpg'];
+  const imported = await page.evaluate(([paths, id]) => window.fmc.importFiles({ paths, model_id: id }), [paths, modelId]);
+  console.log('imported:', imported.map((f) => `${f.name}:${f.kind}`).join(', '));
+  assert.equal(imported.filter((f) => f.kind === 'boardview').length, 10, 'ten boardview files');
+  assert.equal(imported.filter((f) => f.kind === 'photo').length, 2, 'jpg and png photos');
+  assert.equal(imported.filter((f) => f.kind === 'schematic').length, 1, 'pdf schematic');
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await page.click('[data-testid="brand-home"]');
+  await page.reload();
+  await page.waitForSelector('[data-testid="device-card"]');
+  await page.locator('[data-testid="device-card"]').first().click();
+  await page.locator('button:has-text("BoardView") >> nth=-1').click();
+  const results = [];
+  for (const f of imported.filter((x) => x.kind === 'boardview')) {
+    await page.locator(`button[title="Open"]:has-text("${f.name}")`).click();
+    const stats = page.locator('text=/\\d+ parts · \\d+ pins · \\d+ nets/ >> visible=true');
+    await stats.waitFor({ timeout: 15000 });
+    const t = await stats.textContent();
+    results.push(`${f.name} -> ${t}`);
+    const m = /(\d+) parts · (\d+) pins · (\d+) nets/.exec(t);
+    assert.ok(+m[1] >= 15 && +m[3] >= 10, `${f.name} parsed: ${t}`);
+    if (f.name === 'demo-brd.brd') {
+      await page.locator('[data-testid="netlist-btn"] >> visible=true').click();
+      await page.locator('[data-testid="netlist-tab-path"] >> visible=true').click();
+      await page.fill('[data-testid="path-from"]', 'VBAT');
+      await page.fill('[data-testid="path-to"]', 'I2C_SCL');
+      await page.click('[data-testid="path-go"]');
+      const pr = await page.locator('[data-testid="path-result"]').textContent();
+      console.log('path VBAT -> I2C_SCL:', pr);
+      assert.match(pr, /VBAT.*L1.*PP1V8.*R1.*I2C_SCL/);
+      await page.waitForTimeout(500);
+      await shot(page, '30-path-tracer');
+      // Light theme on the board too
+      await page.click('[data-testid="theme-toggle"]');
+      await page.waitForTimeout(500);
+      await shot(page, '31-path-tracer-light');
+      await page.click('[data-testid="theme-toggle"]');
+    }
+    await page.locator('[aria-label="Close tab"]').first().click();
+  }
+  console.log('formats:\n  ' + results.join('\n  '));
+  // PDF and PNG open
+  await page.locator('button:has-text("Schematics/PDF") >> nth=-1').click();
+  await page.locator('button[title="Open"]').first().click();
+  await page.waitForSelector('.pdfViewer .page canvas, .pdfViewer .page .canvasWrapper', { timeout: 15000 });
+  await page.locator('[aria-label="Close tab"]').first().click();
+  const photos = await page.evaluate(() => window.fmc.listPhotos());
+  assert.equal(photos.length, 2);
+
+  // Themes: light persists across a reload, dark comes back
+  await page.click('[data-testid="brand-home"]');
+  await page.click('[data-testid="theme-toggle"]');
+  assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'light');
+  await page.reload();
+  await page.waitForSelector('[data-testid="home"]');
+  assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'light', 'theme persists');
+  await page.waitForSelector('[data-testid="splash"]', { state: 'detached', timeout: 10000 });
+  await page.waitForTimeout(900);
+  await shot(page, '32-home-light');
+  assert.ok((await page.textContent('[data-testid="continue-card"]')).includes('schematic'), 'continue card shows the last document');
+  await page.locator('[data-testid="continue-card"] button').first().click();
+  await page.waitForSelector('.pdfViewer .page canvas, .pdfViewer .page .canvasWrapper', { timeout: 15000 });
+  await page.locator('[aria-label="Close tab"]').first().click();
+  await page.click('[data-testid="view-list"]');
+  assert.equal(await page.locator('[data-testid="device-row"]').count(), 1);
+  await page.click('[data-testid="view-grid"]');
+  await page.fill('[data-testid="device-search"]', 'zzz');
+  assert.equal(await page.locator('[data-testid="device-card"]').count(), 0);
+  await page.fill('[data-testid="device-search"]', '');
+  await page.click('button[title="Settings and offline storage"]');
+  await page.click('[data-theme-option="dark"]');
+  assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'dark');
+  await page.keyboard.press('Escape');
+
+  // AI assistant in test mode: runs the tool loop against the real board
+  await page.click('[data-tool="ai"]');
+  await page.waitForSelector('[data-testid="ai-tool"]');
+  await page.fill('[data-testid="ai-input"]', 'Phone not charging, where do I start?');
+  await page.click('[data-testid="ai-send"]');
+  await page.waitForSelector('[data-testid="ai-answer"]', { timeout: 20000 });
+  const ans = await page.textContent('[data-testid="ai-answer"]');
+  console.log('AI (test mode):', ans);
+  assert.match(ans, /AI suggestion/);
+  assert.match(ans, /Board has \d+ nets and \d+ parts/);
+  await page.waitForTimeout(500);
+  await shot(page, '33-ai-assistant');
+
+  // About / branding
+  await page.click('[data-testid="about-btn"]');
+  assert.match(await page.textContent('[data-testid="about"] >> xpath=..'), /ERA Technologiz and Engineering Services/);
+  await shot(page, '34-about');
+  await page.keyboard.press('Escape');
+  assert.match(await page.textContent('[data-testid="statusbar"]'), /Ready.*FixMyCircuit v0\.3/);
   await app.close();
 }

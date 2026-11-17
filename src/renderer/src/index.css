@@ -2,24 +2,135 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme colours: Tailwind's bench/slate/amber/cyan/green/red/sky classes read these. */
+:root, :root[data-theme="dark"] {
+  color-scheme: dark;
+  --c-bench-500: 78 93 114;
+  --c-bench-600: 54 67 85;
+  --c-bench-700: 40 51 66;
+  --c-bench-800: 29 38 50;
+  --c-bench-850: 23 31 41;
+  --c-bench-900: 17 24 33;
+  --c-bench-950: 11 15 20;
+  --c-slate-100: 233 238 244;
+  --c-slate-200: 212 219 228;
+  --c-slate-300: 179 190 203;
+  --c-slate-400: 141 153 169;
+  --c-slate-500: 107 120 137;
+  --c-slate-600: 79 91 106;
+  --c-amber-100: 253 235 196;
+  --c-amber-200: 248 214 137;
+  --c-amber-300: 242 181 68;
+  --c-amber-400: 242 181 68;
+  --c-amber-500: 242 181 68;
+  --c-cyan-200: 168 238 250;
+  --c-cyan-300: 55 201 232;
+  --c-cyan-400: 55 201 232;
+  --c-cyan-500: 31 178 211;
+  --c-green-200: 185 242 207;
+  --c-green-300: 111 214 155;
+  --c-green-400: 76 201 126;
+  --c-green-500: 47 174 100;
+  --c-red-200: 249 203 203;
+  --c-red-300: 238 154 154;
+  --c-red-400: 224 116 116;
+  --c-red-500: 212 86 86;
+  --c-sky-100: 224 242 254;
+  --c-sky-200: 186 230 253;
+  --c-sky-300: 125 211 252;
+  --c-sky-500: 14 165 233;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --c-bench-500: 151 163 179;
+  --c-bench-600: 198 207 218;
+  --c-bench-700: 220 226 234;
+  --c-bench-800: 240 243 247;
+  --c-bench-850: 255 255 255;
+  --c-bench-900: 247 249 251;
+  --c-bench-950: 237 241 245;
+  --c-slate-100: 14 22 32;
+  --c-slate-200: 28 39 51;
+  --c-slate-300: 52 65 79;
+  --c-slate-400: 82 96 112;
+  --c-slate-500: 103 117 135;
+  --c-slate-600: 134 146 161;
+  --c-amber-100: 94 59 0;
+  --c-amber-200: 115 73 0;
+  --c-amber-300: 138 87 0;
+  --c-amber-400: 162 102 0;
+  --c-amber-500: 224 162 46;
+  --c-cyan-200: 5 85 103;
+  --c-cyan-300: 8 117 141;
+  --c-cyan-400: 10 136 163;
+  --c-cyan-500: 14 165 198;
+  --c-green-200: 18 80 43;
+  --c-green-300: 22 122 62;
+  --c-green-400: 26 145 73;
+  --c-green-500: 34 165 89;
+  --c-red-200: 116 28 28;
+  --c-red-300: 174 40 40;
+  --c-red-400: 194 52 52;
+  --c-red-500: 214 69 69;
+  --c-sky-100: 11 53 84;
+  --c-sky-200: 12 74 110;
+  --c-sky-300: 3 105 161;
+  --c-sky-500: 14 165 233;
+}
+:root { --shadow-card: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 8px 24px -12px rgb(0 0 0 / 0.6); --canvas-bg: #0b0f14; }
+:root[data-theme="light"] { --shadow-card: 0 1px 2px rgb(15 23 42 / 0.06), 0 8px 24px -14px rgb(15 23 42 / 0.25); --canvas-bg: #f4f6f9; }
+
 html, body, #root { height: 100%; }
-body { margin: 0; font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif; font-size: 13px; overflow: hidden; }
+body {
+  margin: 0; font-size: 13px; overflow: hidden;
+  font-family: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  background: rgb(var(--c-bench-950)); color: rgb(var(--c-slate-200));
+  transition: background-color .25s ease, color .25s ease;
+}
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: #333d4b; border-radius: 6px; border: 2px solid #11151b; }
+::-webkit-scrollbar-thumb { background: rgb(var(--c-bench-600)); border-radius: 6px; border: 2px solid rgb(var(--c-bench-900)); }
 ::-webkit-scrollbar-track { background: transparent; }
 
 @layer components {
-  .btn { @apply inline-flex items-center gap-1.5 rounded-md border border-bench-600 bg-bench-800 px-2.5 py-1 text-slate-200 hover:bg-bench-700 disabled:opacity-40 disabled:cursor-not-allowed; }
+  .btn { @apply inline-flex items-center gap-1.5 rounded-md border border-bench-600 bg-bench-800 px-2.5 py-1 text-slate-200 transition-colors duration-150 hover:bg-bench-700 disabled:cursor-not-allowed disabled:opacity-40; }
   .btn-primary { @apply btn border-amber-500/60 bg-amber-500/15 text-amber-200 hover:bg-amber-500/25; }
+  .btn-solid { @apply inline-flex items-center gap-1.5 rounded-md bg-amber-500 px-3 py-1.5 font-semibold text-[#1a1203] shadow-sm transition hover:brightness-110 active:scale-[.98] disabled:opacity-40; }
   .btn-danger { @apply btn border-red-500/50 text-red-300 hover:bg-red-500/15; }
   .btn-ghost { @apply inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-slate-400 hover:bg-bench-700 hover:text-slate-100; }
   .btn-on { @apply border-amber-500/70 bg-amber-500/20 text-amber-100; }
   .input { @apply w-full rounded-md border border-bench-600 bg-bench-900 px-2 py-1 text-slate-100 placeholder:text-slate-500 focus:border-amber-500/70 focus:outline-none; }
   .label { @apply mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-400; }
-  .card { @apply rounded-lg border border-bench-700 bg-bench-850; }
+  .card { @apply rounded-lg border border-bench-700 bg-bench-850; box-shadow: var(--shadow-card); }
   .chip { @apply inline-flex items-center rounded border border-bench-600 bg-bench-800 px-1.5 py-px font-mono text-[11px] text-slate-300; }
+  .lift { @apply transition duration-200 ease-out hover:-translate-y-0.5 hover:border-amber-500/50; }
+  .lift:hover { box-shadow: 0 14px 30px -16px rgb(var(--c-amber-500) / 0.45); }
+  .section-title { @apply mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500; }
+}
+
+/* ---- Animations ---------------------------------------------------------- */
+@keyframes fmc-page-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.fmc-page { animation: fmc-page-in .28s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes fmc-rise { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
+.fmc-rise { animation: fmc-rise .45s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes fmc-draw { from { stroke-dashoffset: 120; } to { stroke-dashoffset: 0; } }
+.fmc-pulse-draw { stroke-dasharray: 120; animation: fmc-draw 1.4s ease-out both; }
+.fmc-pulse-draw.loop { animation: fmc-draw 2.4s ease-in-out infinite alternate; }
+@keyframes fmc-glow { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+.fmc-node-glow { animation: fmc-glow 1.8s ease-in-out infinite; }
+@keyframes fmc-trace { to { stroke-dashoffset: -40; } }
+.fmc-trace { stroke-dasharray: 6 14; animation: fmc-trace 1.6s linear infinite; }
+@keyframes fmc-bar { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.fmc-bar { transform-origin: bottom; animation: fmc-bar .6s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes fmc-shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+.fmc-shimmer { background: linear-gradient(90deg, transparent, rgb(var(--c-amber-500) / .18), transparent); background-size: 200% 100%; animation: fmc-shimmer 1.6s linear infinite; }
+@keyframes fmc-splash-out { to { opacity: 0; visibility: hidden; } }
+.fmc-splash { animation: fmc-splash-out .45s ease 1.5s forwards; }
+@keyframes fmc-spin { to { transform: rotate(360deg); } }
+.fmc-spin { animation: fmc-spin 14s linear infinite; transform-origin: center; transform-box: fill-box; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
 
 /* pdf.js viewer pieces we use */
-.pdfViewerHost { position: absolute; inset: 0; overflow: auto; background: #0b0e12; }
-.pdfViewerHost .pdfViewer .page { margin: 8px auto; border: none; box-shadow: 0 2px 10px #0008; }
+.pdfViewerHost { position: absolute; inset: 0; overflow: auto; background: var(--canvas-bg); }
+.pdfViewerHost .pdfViewer .page { margin: 8px auto; border: none; box-shadow: 0 2px 10px #0006; }

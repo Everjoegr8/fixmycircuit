@@ -52,3 +52,18 @@ platform tools. scrcpy is Copyright (C) 2018 Genymobile and Copyright (C)
 2018-2024 Romain Vimont, licensed under the Apache License, Version 2.0
 (https://www.apache.org/licenses/LICENSE-2.0). adb is part of the Android Open
 Source Project, also under the Apache License, Version 2.0.
+
+## Photographs
+
+Real photographs bundled in `src/renderer/src/assets/photos/` (shown on the
+Home screen and workbench tool cards). Each is used under its stated licence;
+the list in the app's About box mirrors this one.
+
+- *Microscope close-up of blown step-down regulator on laptop PCB* by Profpcde,
+  CC0 1.0. https://commons.wikimedia.org/wiki/File:Microscope_close-up_of_blown_step-down_regulator_on_laptop_PCB.jpg
+  (resized)
+
+## Anthropic TypeScript SDK
+
+The optional AI assistant uses `@anthropic-ai/sdk` (MIT License,
+https://github.com/anthropics/anthropic-sdk-typescript).

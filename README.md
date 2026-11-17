@@ -1,14 +1,47 @@
 # FixMyCircuit
 
+*A product of **ERA Technologiz and Engineering Services**. Find the fault. Fix with confidence.*
+
 A free, offline desktop workbench for phone repair technicians. Open schematic
 PDFs and boardview files side by side, click a part to light up its nets, and
 keep your shop's own diode readings, jumper wires and fault fixes in a local
 database. Built for iPhone, Samsung, Tecno, Infinix, Itel and Xiaomi repairs,
 and works with any brand.
 
-No account, no licence server, no internet needed.
+No account, no licence server, no internet needed (the optional AI assistant
+is the only feature that goes online, and only with your own API key).
 
 ## Features
+
+### New in 0.3: every node known, AI assistant, new look
+
+- **Full netlist index.** Every part, pin and net in the boardview is indexed.
+  The Netlist panel lists all nets (rails, signals, ground) and all parts with
+  their type, shows board health (NC pins, single-pin nets, ground nets), and
+  a selected net shows its decoupling caps, the ICs on it and the series
+  parts it continues through (for example VBUS_IN → F3000 → VBUS_IN_F).
+- **Path tracer.** Pick two parts or nets and FixMyCircuit finds the DC path
+  between them through resistors, coils, fuses, ferrites, jumpers and diodes
+  (never through ground), draws it on the board and lists each hop. Only
+  connections in the file are used; nothing is guessed.
+- **Schematic cross-links.** The model's schematic PDFs are text-indexed, so a
+  selected part or net shows which schematic pages name it.
+- **Optional AI troubleshooting assistant.** Describe a fault in plain words.
+  The assistant looks up the real nets, parts, paths, your shop readings, saved
+  fixes, the knowledge base and the IC list before answering, then suggests
+  what to measure. Part and net names in its answer are clickable. It uses the
+  Claude API (Claude Opus 5.5 by default, Sonnet 5.5 optional) with your own
+  key from Settings, and every answer is labelled as an AI suggestion to verify
+  with measurements.
+- **Repair command centre.** A new Home with a real microscope photo, “Continue
+  your work”, live stats with 14-day activity bars, colour quick actions, a
+  searchable device library with completeness rings (grid or list), workshop
+  tools and recent activity. All numbers come from your own library.
+- **Light and dark mode** (or follow Windows), including the boardview canvas.
+- **Animations:** splash screen, page transitions, hover lifts, counters, and
+  a marching trace pulse along the selected net on the boardview.
+- **Branding:** new FixMyCircuit app icon and an original ERA Technologiz logo
+  in the sidebar, splash, About and status bar.
 
 ### New in 0.2: workbench tools and a demo workshop
 

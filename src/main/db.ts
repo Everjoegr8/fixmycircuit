@@ -130,11 +130,36 @@ export function openDb(file: string) {
             (SELECT COUNT(*) FROM files f WHERE f.model_id = m.id AND f.kind != 'photo') AS files,
             (SELECT COUNT(*) FROM guides g WHERE g.model_id = m.id) AS guides,
             (SELECT COUNT(*) FROM readings r WHERE r.model_id = m.id) AS readings,
-            (SELECT COUNT(*) FROM photos p WHERE p.model_id = m.id) AS photos
+            (SELECT COUNT(*) FROM photos p WHERE p.model_id = m.id) AS photos,
+            (SELECT COUNT(*) FROM files f WHERE f.model_id = m.id AND f.kind = 'schematic') AS schematics,
+            (SELECT COUNT(*) FROM files f WHERE f.model_id = m.id AND f.kind = 'boardview') AS boardviews,
+            (SELECT COUNT(*) FROM jumpers j JOIN photos p ON p.id = j.photo_id WHERE p.model_id = m.id) AS jumpers,
+            (SELECT p.file_id FROM photos p WHERE p.model_id = m.id ORDER BY p.id LIMIT 1) AS photo_file,
+            (SELECT MAX(t) FROM (SELECT MAX(added_at) t FROM files WHERE model_id = m.id UNION ALL SELECT MAX(updated_at) FROM guides WHERE model_id = m.id UNION ALL SELECT MAX(created_at) FROM readings WHERE model_id = m.id)) AS last_activity
            FROM models m ORDER BY m.name`,
         )
         .all();
       return { brands, models };
+    },
+    /** Items added per day over the last `days` days, for the Home sparklines. */
+    activity(days = 14) {
+      const q = (sql: string) => db.prepare(sql).all(`-${days} days`) as { d: string; n: number }[];
+      return {
+        files: q("SELECT date(added_at) d, COUNT(*) n FROM files WHERE kind != 'photo' AND added_at >= datetime('now', ?) GROUP BY d"),
+        guides: q("SELECT date(updated_at) d, COUNT(*) n FROM guides WHERE updated_at >= datetime('now', ?) GROUP BY d"),
+        readings: q("SELECT date(created_at) d, COUNT(*) n FROM readings WHERE created_at >= datetime('now', ?) GROUP BY d"),
+        photos: q("SELECT date(created_at) d, COUNT(*) n FROM photos WHERE created_at >= datetime('now', ?) GROUP BY d"),
+      };
+    },
+    recentActivity(limit = 10) {
+      return db.prepare(
+        `SELECT * FROM (
+           SELECT 'file' AS type, f.kind AS sub, f.id AS ref, f.name AS title, f.model_id, f.added_at AS at FROM files f WHERE f.kind != 'photo'
+           UNION ALL SELECT 'guide', '', CAST(g.id AS TEXT), g.title, g.model_id, g.updated_at FROM guides g
+           UNION ALL SELECT 'photo', '', CAST(p.id AS TEXT), p.title, p.model_id, p.created_at FROM photos p
+           UNION ALL SELECT 'reading', r.type, CAST(r.id AS TEXT), trim(r.part || CASE WHEN r.pin != '' THEN '.' || r.pin ELSE '' END || ' ' || r.net || ' ' || r.value), r.model_id, r.created_at FROM readings r
+         ) ORDER BY at DESC LIMIT ?`,
+      ).all(limit);
     },
     addBrand(name: string) {
       insBrand.run(name.trim());

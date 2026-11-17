@@ -12,8 +12,12 @@ export interface Selection {
 
 interface Pt { x: number; y: number }
 
-const COLORS = {
-  bg: '#0b0e12',
+const DARK = {
+  bg: '#0b0f14',
+  labelBg: '#0b0f14cc',
+  pinText: '#0b0f14',
+  hover: '#ffffff',
+  selFill: '#37c9e814',
   outline: '#7dd3fc',
   part: '#3b4656',
   partSel: '#22d3ee',
@@ -27,6 +31,27 @@ const COLORS = {
   label: '#cbd5e1',
   testpoint: '#a78bfa',
 };
+const LIGHT: typeof DARK = {
+  bg: '#f4f6f9',
+  labelBg: '#ffffffd9',
+  pinText: '#ffffff',
+  hover: '#0e1620',
+  selFill: '#0891b21c',
+  outline: '#08758d',
+  part: '#9aa6b5',
+  partSel: '#0891b2',
+  partNet: '#c27803',
+  pin: '#5f6b7b',
+  pinGnd: '#9db5a2',
+  pinNC: '#c7ced8',
+  pinSelPart: '#0891b2',
+  pinNet: '#d97706',
+  pinSel: '#0e1620',
+  label: '#1c2733',
+  testpoint: '#7c3aed',
+};
+let COLORS = DARK;
+const pickColors = () => (COLORS = document.documentElement.dataset.theme === 'light' ? LIGHT : DARK);
 
 export class BoardCanvas {
   board: any;
@@ -49,6 +74,9 @@ export class BoardCanvas {
   private cx = 0;
   private cy = 0;
   private netParts = new Set<number>();
+  private onTheme = () => this.invalidate();
+  /** Animation clock for the selected-net pulse. */
+  private t0 = performance.now();
 
   constructor(canvas: HTMLCanvasElement, board: any) {
     this.canvas = canvas;
@@ -61,14 +89,23 @@ export class BoardCanvas {
     for (const net of board.nets.keys()) this.netLayer.set(net, layerOfNet(net));
     // Show the side that has parts first.
     if (!board.parts.some((p: any) => p.side === 'top') && board.parts.some((p: any) => p.side === 'bottom')) this.side = 'bottom';
+    window.addEventListener('fmc-theme', this.onTheme);
+    let frame = 0;
     const loop = () => {
+      frame++;
+      // While a net is selected, redraw ~30 fps so its trace pulses; otherwise only when dirty.
+      if (this.sel.net && this.layersPulse && frame % 2 === 0) this.dirty = true;
       if (this.dirty) { this.dirty = false; this.draw(); }
       this.raf = requestAnimationFrame(loop);
     };
     this.raf = requestAnimationFrame(loop);
   }
 
+  /** Set false to stop the selected-net pulse animation (e.g. tests, slow PCs). */
+  layersPulse = true;
+
   destroy() {
+    window.removeEventListener('fmc-theme', this.onTheme);
     cancelAnimationFrame(this.raf);
   }
 
@@ -188,6 +225,13 @@ export class BoardCanvas {
     this.invalidate();
   }
 
+  /** Nets on a traced path, drawn in cyan. */
+  highlight = new Set<string>();
+  setHighlight(nets: Iterable<string>) {
+    this.highlight = new Set(nets);
+    this.invalidate();
+  }
+
   setSelection(sel: Selection) {
     this.sel = sel;
     this.netParts = new Set();
@@ -247,6 +291,7 @@ export class BoardCanvas {
     const dpr = window.devicePixelRatio || 1;
     const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    pickColors();
     ctx.fillStyle = COLORS.bg;
     ctx.fillRect(0, 0, w, h);
     const board = this.board;
@@ -304,7 +349,7 @@ export class BoardCanvas {
       const onNet = this.netParts.has(part.index);
       ctx.strokeStyle = isSel ? COLORS.partSel : onNet ? COLORS.partNet : COLORS.part;
       ctx.lineWidth = isSel ? 2 : 1;
-      if (isSel) { ctx.fillStyle = '#22d3ee14'; ctx.fillRect(x, y, pw, ph); }
+      if (isSel) { ctx.fillStyle = COLORS.selFill; ctx.fillRect(x, y, pw, ph); }
       if (this.side === 'both' && part.side === 'bottom') ctx.setLineDash([3, 3]);
       ctx.strokeRect(x, y, pw, ph);
       ctx.setLineDash([]);
@@ -333,6 +378,7 @@ export class BoardCanvas {
       let color = pin.testpoint ? COLORS.testpoint : nc ? COLORS.pinNC : isGroundNet(pin.net) ? COLORS.pinGnd : COLORS.pin;
       const pl = pin.net ? this.netLayer.get(pin.net) : null;
       if (pl && this.layers.has(pl)) color = LAYER_BY_ID[pl].color;
+      if (this.highlight.size && pin.net && this.highlight.has(pin.net)) color = COLORS.partSel;
       if (pin.part === selPart) color = COLORS.pinSelPart;
       if (selNet && pin.net === selNet) color = COLORS.pinNet;
       if (pin.index === this.sel.pin) color = COLORS.pinSel;
@@ -343,10 +389,12 @@ export class BoardCanvas {
       ctx.fillStyle = color;
       ctx.fill(path);
     }
+    if (this.highlight.size) for (const n of this.highlight) this.drawTrace(n, COLORS.partSel, 0);
+    if (selNet && this.layersPulse) this.drawNetPulse(selNet, inView);
     if (this.hover != null) {
       const pin = board.pins[this.hover];
       const s = this.toScreen(pin.x, pin.y);
-      ctx.strokeStyle = '#fff';
+      ctx.strokeStyle = COLORS.hover;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.arc(s.x, s.y, Math.max(pin.r * this.scale, 1.2) + 2, 0, Math.PI * 2);
@@ -359,7 +407,7 @@ export class BoardCanvas {
     for (const [name, x, y, size] of partLabels) {
       const fs = Math.min(Math.max(size / 4, 9), 22);
       ctx.font = `600 ${fs}px Segoe UI, system-ui, sans-serif`;
-      ctx.fillStyle = '#0b0e12cc';
+      ctx.fillStyle = COLORS.labelBg;
       const tw = ctx.measureText(name).width;
       ctx.fillRect(x - tw / 2 - 2, y - fs / 2 - 1, tw + 4, fs + 2);
       ctx.fillStyle = COLORS.label;
@@ -369,7 +417,7 @@ export class BoardCanvas {
       for (const [name, x, y, r] of pinLabels) {
         const fs = Math.min(r * 0.8, 13);
         ctx.font = `${fs}px Consolas, monospace`;
-        ctx.fillStyle = '#0b0e12';
+        ctx.fillStyle = COLORS.pinText;
         ctx.fillText(name, x, y);
       }
 
@@ -377,4 +425,65 @@ export class BoardCanvas {
   }
 
   lastHiddenNetPins = 0;
+
+  private drawTrace(net: string, color: string, t: number) {
+    const segs = netSegments(this.board, net, this.side === 'both' ? 'both' : this.side);
+    if (!segs.length) return;
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.2;
+    ctx.globalAlpha = 0.85;
+    ctx.lineDashOffset = -t * 28;
+    ctx.beginPath();
+    for (const sg of segs) {
+      const a = this.toScreen(sg.x1, sg.y1), b = this.toScreen(sg.x2, sg.y2);
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /** Marching trace along the selected net plus a breathing halo on its pins. */
+  private drawNetPulse(net: string, inView: (s: Pt, m?: number) => boolean) {
+    const ctx = this.ctx;
+    const t = (performance.now() - this.t0) / 1000;
+    const segs = netSegments(this.board, net, this.side === 'both' ? 'both' : this.side);
+    if (segs.length) {
+      ctx.save();
+      ctx.strokeStyle = COLORS.pinNet;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([7, 9]);
+      ctx.lineDashOffset = -t * 28;
+      ctx.globalAlpha = 0.9;
+      ctx.beginPath();
+      for (const sg of segs) {
+        const a = this.toScreen(sg.x1, sg.y1), b = this.toScreen(sg.x2, sg.y2);
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+    const pins: number[] = this.board.nets.get(net) || [];
+    if (pins.length > 2000) return;
+    const k = 0.5 + 0.5 * Math.sin(t * 4);
+    ctx.save();
+    ctx.strokeStyle = COLORS.pinNet;
+    ctx.globalAlpha = 0.25 + 0.5 * k;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (const i of pins) {
+      const pin = this.board.pins[i];
+      if (!this.visible(pin.side)) continue;
+      const s = this.toScreen(pin.x, pin.y);
+      if (!inView(s)) continue;
+      const r = Math.max(pin.r * this.scale, 1.2) + 2 + 3 * k;
+      ctx.moveTo(s.x + r, s.y);
+      ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
 }

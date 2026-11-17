@@ -18,6 +18,10 @@ import IcXrefView from './views/tools/IcXrefView';
 import MicroscopeView from './views/tools/MicroscopeView';
 import MirrorView from './views/tools/MirrorView';
 import { Icon } from './components/Icon';
+import AboutDialog from './components/AboutDialog';
+import AiToolView from './views/tools/AiToolView';
+import { Splash } from './brand/Logo';
+import { forgetSession, saveSession } from './lib/session';
 import { TOOLS, categoryLabel, type Doc, type Focus, type Nav } from './types';
 
 export default function App() {
@@ -33,6 +37,14 @@ export default function App() {
   const [showPanel, setShowPanel] = useState(true);
   const [importOpen, setImportOpen] = useState<{ paths?: string[]; modelId?: number | null } | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [splash, setSplash] = useState(() => !(window as any).__fmcNoSplash);
+  const [version, setVersion] = useState('');
+  useEffect(() => {
+    api.dataInfo().then((i) => setVersion(i.version));
+    const t = setTimeout(() => setSplash(false), 2100);
+    return () => clearTimeout(t);
+  }, []);
   const [rev, setRev] = useState(0); // bump to make views reload data
   const [pdfQuery, setPdfQuery] = useState<Record<string, { q: string; n: number }>>({});
   const [boardQuery, setBoardQuery] = useState<Record<string, { q: string; n: number }>>({});
@@ -94,6 +106,8 @@ export default function App() {
   };
 
   const active = docs.find((d) => d.key === activeKey) || null;
+  // Remember the last document worked on for "Continue your work" on Home.
+  useEffect(() => { if (active) saveSession({ key: active.key, type: active.type, id: active.id, title: active.title, modelId: active.modelId, label: modelLabel(active.modelId) }); }, [active, modelLabel]);
 
   const goto = (n: Nav) => {
     setNav(n);
@@ -199,7 +213,9 @@ export default function App() {
   }, [active]);
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full flex-col">
+    {splash && <Splash version={version} />}
+    <div className="flex min-h-0 flex-1">
       <Sidebar
         brands={brands}
         models={models}
@@ -208,6 +224,7 @@ export default function App() {
         onReload={reload}
         onImport={() => setImportOpen({ modelId: navModelId ?? null })}
         onSettings={() => setSettingsOpen(true)}
+        onAbout={() => setAboutOpen(true)}
         onOpenFile={openFile}
         onOpenPhoto={openPhoto}
         modelLabel={modelLabel}
@@ -293,6 +310,8 @@ export default function App() {
                         onChanged={reload}
                         onFindInSchematic={(q) => findInSchematic(q, d.modelId)}
                         onFindOnBoard={(q) => findOnBoard(q, d.modelId)}
+                        demo={!!models.find((m) => m.id === d.modelId)?.demo}
+                        onOpenSettings={() => setSettingsOpen(true)}
                       />
                     ) : null
                   }
@@ -303,7 +322,7 @@ export default function App() {
             );
           })}
           {!viewer && (
-            <div className="absolute inset-0 overflow-auto">
+            <div className="fmc-page absolute inset-0 overflow-auto" key={JSON.stringify(nav)}>
               {nav.kind === 'home' ? (
                 <Home
                   models={models}
@@ -313,10 +332,22 @@ export default function App() {
                   onOpenFile={openFile}
                   onOpenPhoto={openPhoto}
                   onReload={reload}
+                  onOpenDoc={async (d) => {
+                    if (d.type === 'photo') {
+                      if (await api.getPhoto(Number(d.id))) return openPhoto(Number(d.id), d.title, d.modelId);
+                    } else {
+                      const f = (await api.listFiles(d.modelId)).find((x) => String(x.id) === String(d.id));
+                      if (f) return openFile(f);
+                    }
+                    forgetSession(d.key);
+                    alertMsg('That file is no longer in the library.');
+                    reload();
+                  }}
                   rev={rev}
                 />
               ) : nav.kind === 'tool' ? (
-                nav.tool === 'knowledge' ? <KnowledgeView models={models} brands={brands} onChanged={reload} />
+                nav.tool === 'ai' ? <AiToolView models={models} brands={brands} onOpenSettings={() => setSettingsOpen(true)} onFindOnBoard={(q, id) => findOnBoard(q, id)} />
+                : nav.tool === 'knowledge' ? <KnowledgeView models={models} brands={brands} onChanged={reload} />
                 : nav.tool === 'calculators' ? <CalculatorsView />
                 : nav.tool === 'ics' ? <IcXrefView />
                 : nav.tool === 'microscope' ? <MicroscopeView models={models} brands={brands} onChanged={reload} onOpenPhoto={openPhoto} />
@@ -363,9 +394,26 @@ export default function App() {
         />
       )}
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} onReload={reload} />}
+      {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
       {toast && (
-        <div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-md border border-amber-500/50 bg-bench-800 px-4 py-2 text-amber-100 shadow-xl">{toast}</div>
+        <div className="fmc-rise fixed bottom-10 left-1/2 z-50 -translate-x-1/2 rounded-md border border-amber-500/50 bg-bench-800 px-4 py-2 text-amber-100 shadow-xl">{toast}</div>
       )}
     </div>
+    <StatusBar version={version} docs={docs.length} models={models.length} onAbout={() => setAboutOpen(true)} />
+    </div>
+  );
+}
+
+function StatusBar({ version, docs, models, onAbout }: { version: string; docs: number; models: number; onAbout: () => void }) {
+  return (
+    <footer className="flex h-6 shrink-0 items-center gap-3 border-t border-bench-700 bg-bench-900 px-3 text-[11px] text-slate-500" data-testid="statusbar">
+      <span className="flex items-center gap-1.5 text-green-300"><span className="fmc-node-glow inline-block h-1.5 w-1.5 rounded-full bg-green-400" /> Ready</span>
+      <span>FixMyCircuit v{version}</span>
+      <span className="hidden md:inline">·</span>
+      <span className="hidden md:inline">{models} models · {docs} open</span>
+      <span className="hidden md:inline">· Offline</span>
+      <span className="flex-1 text-center italic text-slate-500">Find the fault. Fix with confidence.</span>
+      <button className="hover:text-amber-300" onClick={onAbout}>by ERA Technologiz</button>
+    </footer>
   );
 }

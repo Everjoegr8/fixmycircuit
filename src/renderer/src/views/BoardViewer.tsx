@@ -9,6 +9,10 @@ import LayerToggles, { useLayers } from '../components/LayerToggles';
 import HoverCard, { type HoverData } from '../components/HoverCard';
 import { netsByLayer } from '../lib/netlines';
 import { syncBus } from '../lib/sync';
+import { indexBoard, railFamily, TYPE_LABEL } from '@shared/netindex';
+import NetlistPanel from './board/NetlistPanel';
+import { indexModelSchematics, schematicPages, type SchIndex } from '../lib/schindex';
+import { registerBoard, touchBoard, unregisterBoard } from '../lib/boards';
 
 interface Props {
   fileId: string;
@@ -42,6 +46,11 @@ export default function BoardViewer(p: Props) {
   const [layers] = useLayers();
   const [hiddenNetPins, setHiddenNetPins] = useState(0);
   const [loadNonce, setLoadNonce] = useState(0);
+  const [netlist, setNetlist] = useState(false);
+  const [pathNets, setPathNets] = useState<string[]>([]);
+  const [sch, setSch] = useState<SchIndex[]>([]);
+  const idx = useMemo(() => (board ? indexBoard(board) : null), [board]);
+  const fileName = useRef('');
 
   // Load + parse
   useEffect(() => {
@@ -58,6 +67,7 @@ export default function BoardViewer(p: Props) {
           xzzKey: settings.xzzKey,
           ascFiles: extOf(file.name) === 'asc' ? { ...extras, [file.name.toLowerCase()]: new Uint8Array(bytes) } : undefined,
         });
+        fileName.current = file.name;
         if (!cancelled) setBoard(b);
       } catch (e: any) {
         if (!cancelled) setError(e?.message || String(e));
@@ -67,6 +77,21 @@ export default function BoardViewer(p: Props) {
     })();
     return () => { cancelled = true; };
   }, [p.fileId, loadNonce]);
+
+  // Register for the AI assistant, and index the model's schematics for cross-links.
+  useEffect(() => {
+    if (!board) return;
+    registerBoard({ fileId: p.fileId, name: fileName.current, modelId: p.modelId ?? null, board });
+    return () => unregisterBoard(p.fileId);
+  }, [board, p.fileId, p.modelId]);
+  useEffect(() => { if (p.active) touchBoard(p.fileId); }, [p.active, p.fileId]);
+  useEffect(() => {
+    if (!board) return;
+    let off = false;
+    indexModelSchematics(p.modelId).then((x) => !off && setSch(x));
+    return () => { off = true; };
+  }, [board, p.modelId, p.rev]);
+  useEffect(() => { viewRef.current?.setHighlight(pathNets); }, [pathNets, board]);
 
   useEffect(() => {
     if (p.modelId == null) { setReadings([]); return; }
@@ -341,6 +366,7 @@ export default function BoardViewer(p: Props) {
         <button className="btn" title="Fit board (F)" onClick={() => viewRef.current?.fit()}><Icon name="fit" size={14} /></button>
         <button className="btn" title="Zoom in (+)" onClick={() => { const v = viewRef.current; v && v.zoomAt(v.canvas.clientWidth / 2, v.canvas.clientHeight / 2, 1.3); }}><Icon name="zoomIn" size={14} /></button>
         <button className="btn" title="Zoom out (-)" onClick={() => { const v = viewRef.current; v && v.zoomAt(v.canvas.clientWidth / 2, v.canvas.clientHeight / 2, 1 / 1.3); }}><Icon name="zoomOut" size={14} /></button>
+        <button className={`btn ${netlist ? 'btn-on' : ''}`} title="Every net and part, board health and path tracer" onClick={() => setNetlist((x) => !x)} data-testid="netlist-btn"><Icon name="net" size={14} /> Netlist</button>
         <div className="flex-1" />
         {board && <span className="text-[11px] text-slate-500">{board.format} · {board.stats.parts} parts · {board.stats.pins} pins · {board.stats.nets} nets</span>}
       </div>
@@ -362,8 +388,19 @@ export default function BoardViewer(p: Props) {
           </div>
         )}
         {hoverCard && <HoverCard d={hoverCard} />}
+        {netlist && idx && (
+          <div className="absolute bottom-0 right-0 top-0 z-20">
+            <NetlistPanel
+              idx={idx}
+              onClose={() => { setNetlist(false); setPathNets([]); }}
+              onNet={(n) => selectNet(n)}
+              onPart={(n) => { const i = idx.parts.get(n)?.index; if (i != null) selectPart(i); }}
+              onPath={(nets) => { setPathNets(nets); if (nets.length && viewRef.current) { const v = viewRef.current; const pins = nets.flatMap((n) => (board.nets.get(n) || []).map((i: number) => board.pins[i])).filter((pin: any) => v.visible(pin.side)); if (pins.length) v.zoomTo(pins, 2); } }}
+            />
+          </div>
+        )}
         {board && (
-          <div className="absolute right-2 top-2 z-10">
+          <div className={`absolute top-2 z-10 ${netlist ? 'right-[332px]' : 'right-2'}`}>
             <LayerToggles counts={layerCounts} title="Trace layers (nets)" />
           </div>
         )}
@@ -377,7 +414,8 @@ export default function BoardViewer(p: Props) {
                   <div className="flex-1" />
                   <button className="btn-ghost" title="Find in schematic" onClick={() => p.onFindInSchematic(part.name)}><Icon name="doc" size={13} /> Schematic</button>
                 </div>
-                {part.mfgcode && <div className="mt-1 text-[12px] text-slate-400">{part.mfgcode}</div>}
+                <div className="mt-1 text-[12px] text-slate-400">{TYPE_LABEL[idx?.parts.get(part.name)?.type || 'other']}{part.mfgcode ? ` · ${part.mfgcode}` : ''}</div>
+                <SchLinks sch={sch} name={part.name} onOpen={() => p.onFindInSchematic(part.name)} />
                 <div className="mt-2 text-[11px] uppercase tracking-wide text-slate-500">{part.pins.length} pins</div>
                 <table className="mt-1 w-full font-mono text-[12px]">
                   <tbody>
@@ -407,6 +445,31 @@ export default function BoardViewer(p: Props) {
                   {netPins.length} pins on {netPartNames.length} parts
                   {hiddenNetPins > 0 && <span className="text-amber-200/80"> · {hiddenNetPins} on the other side</span>}
                 </div>
+                {idx?.nets.get(sel.net) && (() => {
+                  const ni = idx.nets.get(sel.net!)!;
+                  const fam = railFamily(idx, sel.net!, 2).filter((f) => f.depth > 0);
+                  return (
+                    <div className="mt-1.5 space-y-1 text-[12px]" data-testid="net-facts">
+                      <div className="flex flex-wrap gap-1">
+                        {ni.ground ? <span className="chip text-slate-400">Ground</span> : ni.rail ? <span className="chip border-amber-500/50 text-amber-300">Supply rail</span> : <span className="chip">Signal</span>}
+                        {ni.caps > 0 && <span className="chip">{ni.caps} decoupling caps</span>}
+                        {ni.ics.length > 0 && <span className="chip text-cyan-300">ICs: {ni.ics.slice(0, 4).join(', ')}{ni.ics.length > 4 ? '…' : ''}</span>}
+                      </div>
+                      {ni.through.length > 0 && (
+                        <div>
+                          <div className="text-[10.5px] uppercase tracking-wide text-slate-500">Continues through</div>
+                          {ni.through.slice(0, 12).map((t) => (
+                            <button key={t.part + t.other} className="flex w-full items-center gap-1 rounded px-1 py-px text-left hover:bg-bench-800" onClick={() => selectNet(t.other)}>
+                              <span className="font-mono text-cyan-300">{t.part}</span><span className="text-slate-500">→</span><span className="truncate font-mono text-slate-200">{t.other}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {fam.length > ni.through.length && <div className="text-[11px] text-slate-500">Rail family (2 hops): {fam.map((f) => f.net).slice(0, 10).join(', ')}</div>}
+                      <SchLinks sch={sch} name={sel.net!} onOpen={() => p.onFindInSchematic(sel.net!)} />
+                    </div>
+                  );
+                })()}
                 <div className="mt-2 flex flex-wrap gap-1">
                   {netPartNames.slice(0, 200).map((n) => (
                     <button key={n} className="chip hover:border-cyan-400 hover:text-cyan-200" onClick={() => { const idx = board.parts.findIndex((x: any) => x.name === n); if (idx >= 0) { selectPart(idx); setSel({ part: idx, pin: null, net: sel.net }); } }}>{n}</button>
@@ -418,6 +481,24 @@ export default function BoardViewer(p: Props) {
         )}
         <div className="pointer-events-none absolute bottom-2 right-3 text-[11px] text-slate-600">Drag to pan · wheel to zoom · Space flips · R rotates · F fits</div>
       </div>
+    </div>
+  );
+}
+
+function SchLinks({ sch, name, onOpen }: { sch: SchIndex[]; name: string; onOpen: () => void }) {
+  if (!sch.length) return null;
+  const hits = schematicPages(sch, name);
+  return (
+    <div className="mt-1 text-[11.5px]" data-testid="sch-links">
+      {hits.length ? (
+        hits.map((h) => (
+          <button key={h.fileId} className="flex flex-wrap items-center gap-1 text-left text-slate-400 hover:text-amber-200" onClick={onOpen} title={h.name}>
+            <Icon name="doc" size={11} /> Schematic page{h.pages.length > 1 ? 's' : ''} {h.pages.slice(0, 8).join(', ')}{h.pages.length > 8 ? '…' : ''}
+          </button>
+        ))
+      ) : (
+        <span className="text-slate-500">Not named in the schematic text</span>
+      )}
     </div>
   );
 }

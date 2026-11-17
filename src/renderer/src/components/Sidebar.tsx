@@ -3,6 +3,8 @@ import type { Brand, LibraryFile } from '@shared/types';
 import { api, type TreeModel } from '../api';
 import { CATEGORIES, TOOLS, categoryLabel, type Nav } from '../types';
 import { Icon } from './Icon';
+import { AppMark, EraBadge } from '../brand/Logo';
+import { useTheme } from '../lib/theme';
 
 interface Props {
   brands: Brand[];
@@ -12,6 +14,7 @@ interface Props {
   onReload: () => void;
   onImport: () => void;
   onSettings: () => void;
+  onAbout: () => void;
   onOpenFile: (f: LibraryFile) => void;
   onOpenPhoto: (id: number, title: string, modelId: number | null) => void;
   modelLabel: (id: number | null) => string;
@@ -72,10 +75,12 @@ export default function Sidebar(p: Props) {
   return (
     <aside className="flex w-72 shrink-0 flex-col border-r border-bench-700 bg-bench-900">
       <div className="flex items-center gap-2 border-b border-bench-700 px-3 py-2.5">
-        <div className="grid h-7 w-7 place-items-center rounded-md bg-amber-500/20 text-amber-400"><Icon name="chip" /></div>
-        <button className="text-left" onClick={() => p.onNav({ kind: 'home' })}>
-          <div className="text-sm font-semibold leading-tight text-slate-100">FixMyCircuit</div>
-          <div className="text-[10px] uppercase tracking-wider text-slate-500">Repair workbench</div>
+        <button className="flex items-center gap-2 text-left" onClick={() => p.onNav({ kind: 'home' })} data-testid="brand-home">
+          <AppMark size={30} />
+          <div>
+            <div className="font-display text-[15px] font-semibold leading-tight text-slate-100">Fix<span className="text-amber-300">My</span>Circuit</div>
+            <div className="text-[10px] uppercase tracking-wider text-slate-500">Repair workbench</div>
+          </div>
         </button>
       </div>
       <div className="relative px-3 py-2">
@@ -101,7 +106,13 @@ export default function Sidebar(p: Props) {
         )}
       </div>
       <nav className="min-h-0 flex-1 overflow-auto px-1.5 pb-3">
-        <div className="px-2 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Workbench</div>
+        <button
+          className={`mt-1 flex w-full items-center gap-2 rounded px-2 py-1 text-left ${p.nav?.kind === 'home' ? 'bg-amber-500/15 text-amber-200' : 'text-slate-300 hover:bg-bench-800'}`}
+          onClick={() => p.onNav({ kind: 'home' })}
+        >
+          <Icon name="home" size={13} /> Command centre
+        </button>
+        <div className="px-2 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Workbench</div>
         {TOOLS.map((t) => (
           <button
             key={t.id}
@@ -181,9 +192,23 @@ export default function Sidebar(p: Props) {
       </nav>
       <div className="flex gap-2 border-t border-bench-700 p-2">
         <button className="btn-primary flex-1 justify-center" onClick={p.onImport}><Icon name="upload" size={13} /> Import files</button>
+        <ThemeButton />
         <button className="btn" title="Settings and offline storage" onClick={p.onSettings}><Icon name="gear" size={14} /></button>
       </div>
+      <button className="flex items-center justify-between border-t border-bench-700 px-3 py-2 text-left hover:bg-bench-850" onClick={p.onAbout} data-testid="about-btn" title="About FixMyCircuit">
+        <EraBadge />
+        <Icon name="info" size={13} className="text-slate-500" />
+      </button>
     </aside>
+  );
+}
+
+function ThemeButton() {
+  const { theme, setPref } = useTheme();
+  return (
+    <button className="btn" title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} onClick={() => setPref(theme === 'dark' ? 'light' : 'dark')} data-testid="theme-toggle">
+      <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={14} />
+    </button>
   );
 }
 
