@@ -1,3 +1,4 @@
+import type { ToolInfo } from '../../main/tools';
 import type { LicenseStatus } from '@shared/license';
 import type { Brand, CopperLayer, Guide, IcXref, Jumper, LibraryFile, Model, Photo, Reading, Settings, ImportRequest } from '@shared/types';
 
@@ -38,6 +39,14 @@ export interface FmcApi {
   addCopper(c: Omit<CopperLayer, 'id' | 'created_at'>): Promise<{ id: number }>;
   deleteCopper(id: number): Promise<void>;
   readGerbers(paths?: string[]): Promise<{ name: string; text: string }[]>;
+  listTools(): Promise<ToolInfo[]>;
+  installTool(id: string): Promise<{ path: string; version: string; sha256: string }>;
+  openToolsFolder(): Promise<string>;
+  openUrl(url: string): Promise<void>;
+  onToolProgress(f: (e: { id: string; msg: string }) => void): () => void;
+  airplayStatus(): Promise<{ uxplay: string | null; running: boolean }>;
+  airplayStart(opts?: { name?: string; pin?: boolean }): Promise<{ running: boolean }>;
+  airplayStop(): Promise<{ running: boolean }>;
   addPhotoFromData(req: { model_id: number | null; dataUrl: string; title: string; guide_id?: number | null }): Promise<Photo>;
   listIcs(q?: string): Promise<IcXref[]>;
   saveIc(r: Partial<IcXref> & { ic: string }): Promise<IcXref>;

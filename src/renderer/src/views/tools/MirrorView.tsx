@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import { Icon } from '../../components/Icon';
+import ToolsPanel from '../../components/ToolsPanel';
+import AirPlayCard from './AirPlayCard';
 
 type Status = Awaited<ReturnType<typeof api.mirrorStatus>>;
 
@@ -52,11 +54,7 @@ export default function MirrorView() {
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         <div className="card p-4">
           <div className="label">Tools</div>
-          <div className="space-y-1 font-mono text-[12px]">
-            <div className={st?.scrcpy ? 'text-green-300' : 'text-red-300'}>{st?.scrcpy ? '✓ scrcpy found' : '✗ scrcpy not found'}</div>
-            <div className={st?.adb ? 'text-green-300' : 'text-red-300'}>{st?.adb ? '✓ adb found' : '✗ adb not found'}</div>
-          </div>
-          {st && (!st.scrcpy || !st.adb) && <p className="mt-2 text-[12px] text-slate-400">The Windows installer includes both. On other systems install scrcpy (it brings adb), then press Refresh.</p>}
+          <ToolsPanel only={['scrcpy', 'adb']} compact key={st?.scrcpy || 'none'} />
           <div className="label mt-4">Connected phones</div>
           {!st?.devices.length && <div className="text-slate-500">No phone found yet.</div>}
           {st?.devices.map((d) => (
@@ -75,7 +73,7 @@ export default function MirrorView() {
             <li>Connect with a data USB cable and accept the "Allow USB debugging" prompt.</li>
             <li>If it shows <span className="chip">unauthorized</span>, the prompt is waiting on the phone screen.</li>
           </ol>
-          <p className="mt-2 text-[11.5px] text-slate-500">With a fully black screen and debugging off you cannot accept the prompt; an OTG mouse or a temporary screen is needed first. iPhones are not supported by scrcpy.</p>
+          <p className="mt-2 text-[11.5px] text-slate-500">With a fully black screen and debugging off you cannot accept the prompt; an OTG mouse or a temporary screen is needed first. iPhones are not supported by scrcpy; use iPhone AirPlay below.</p>
         </div>
       </div>
 
@@ -98,6 +96,7 @@ export default function MirrorView() {
         </div>
         {!ready && st?.adb && <p className="mt-2 text-[12px] text-slate-500">Connect a phone with USB debugging allowed to enable backup.</p>}
       </div>
+      <AirPlayCard />
       {msg && <div className="mt-4 rounded border border-amber-500/40 bg-amber-500/10 p-3 text-amber-100">{msg}</div>}
     </div>
   );

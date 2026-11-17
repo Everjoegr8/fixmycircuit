@@ -8,7 +8,7 @@ const APP = path.resolve(__dirname, '../..'); const SM = path.join(APP, 'samples
 const S = process.env.E2E_OUT || fs.mkdtempSync(path.join(os.tmpdir(), 'fmc-e2e-'));
 const shot = (page, n) => page.screenshot({ path: `${S}/${n}.png` });
 (async () => {
-  if (process.env.E2E_ONLY) { await ({ license: licenseRun, formats: formatsRun, demo: demoRun })[process.env.E2E_ONLY](); console.log('E2E OK (' + process.env.E2E_ONLY + ')'); return; }
+  if (process.env.E2E_ONLY) { await ({ license: licenseRun, tools: toolsRun, formats: formatsRun, demo: demoRun })[process.env.E2E_ONLY](); console.log('E2E OK (' + process.env.E2E_ONLY + ')'); return; }
   const data = path.join(S, 'data'); fs.rmSync(data, { recursive: true, force: true });
   const app = await _electron.launch({ args: ['--no-sandbox', APP], env: { ...process.env, FMC_DATA_DIR: data, FMC_NO_DEMO: '1' } });
   const page = await app.firstWindow();
@@ -112,6 +112,7 @@ const shot = (page, n) => page.screenshot({ path: `${S}/${n}.png` });
   await demoRun();
   await formatsRun();
   await licenseRun();
+  await toolsRun();
   console.log('E2E OK, screenshots in', S);
 })().catch(e => { console.error(e); process.exit(1); });
 
@@ -523,4 +524,56 @@ async function licenseRun() {
   await page.waitForSelector('[data-testid="home"]');
   await app.close();
   console.log('licence flow OK, machine', mid);
+}
+
+// Tool manager: a missing scrcpy is installed from a (local, mocked) GitHub
+// release, and only when the download matches the published SHA-256.
+async function toolsRun() {
+  const http = require('http'); const crypto = require('crypto');
+  const zip = (files) => { // stored (uncompressed) zip
+    const parts = [], central = []; let off = 0;
+    const crc32 = (buf) => { let c = ~0; for (const b of buf) { c ^= b; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; } return ~c >>> 0; };
+    for (const [name, text] of Object.entries(files)) {
+      const data = Buffer.from(text), nb = Buffer.from(name), crc = crc32(data);
+      const lh = Buffer.alloc(30); lh.writeUInt32LE(0x04034b50, 0); lh.writeUInt16LE(20, 4); lh.writeUInt32LE(crc, 14); lh.writeUInt32LE(data.length, 18); lh.writeUInt32LE(data.length, 22); lh.writeUInt16LE(nb.length, 26);
+      const ch = Buffer.alloc(46); ch.writeUInt32LE(0x02014b50, 0); ch.writeUInt16LE(20, 4); ch.writeUInt16LE(20, 6); ch.writeUInt32LE(crc, 16); ch.writeUInt32LE(data.length, 20); ch.writeUInt32LE(data.length, 24); ch.writeUInt16LE(nb.length, 28); ch.writeUInt32LE(off, 42);
+      parts.push(lh, nb, data); central.push(ch, nb); off += 30 + nb.length + data.length;
+    }
+    const cd = Buffer.concat(central); const end = Buffer.alloc(22); end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(central.length / 2, 8); end.writeUInt16LE(central.length / 2, 10); end.writeUInt32LE(cd.length, 12); end.writeUInt32LE(off, 16);
+    return Buffer.concat([...parts, cd, end]);
+  };
+  const pkg = zip({ 'scrcpy-win64-v9.9/scrcpy': '#!/bin/sh\necho scrcpy 9.9\n', 'scrcpy-win64-v9.9/adb': '#!/bin/sh\necho "List of devices attached"\n', 'scrcpy-win64-v9.9/README.txt': 'synthetic test package' });
+  let digest = 'sha256:' + '0'.repeat(64); // wrong at first
+  const srv = http.createServer((req, res) => {
+    const base = `http://127.0.0.1:${srv.address().port}`;
+    if (req.url === '/repos/Genymobile/scrcpy/releases/latest') { res.setHeader('content-type', 'application/json'); res.end(JSON.stringify({ tag_name: 'v9.9', body: '', assets: [{ name: 'scrcpy-win64-v9.9.zip', digest, browser_download_url: base + '/dl/scrcpy-win64-v9.9.zip' }] })); return; }
+    if (req.url === '/dl/scrcpy-win64-v9.9.zip') { res.end(pkg); return; }
+    res.statusCode = 404; res.end();
+  });
+  await new Promise((r) => srv.listen(0, '127.0.0.1', r));
+  const data = path.join(S, 'data-tools'); fs.rmSync(data, { recursive: true, force: true });
+  const app = await _electron.launch({ args: ['--no-sandbox', APP], env: { ...process.env, PATH: '/usr/bin:/bin', FMC_DATA_DIR: data, FMC_NO_DEMO: '1', FMC_GITHUB_API: `http://127.0.0.1:${srv.address().port}` } });
+  const page = await app.firstWindow();
+  page.on('pageerror', e => console.log('[pageerror]', e.message));
+  await page.waitForSelector('[data-testid="home"]');
+  await page.waitForSelector('[data-testid="splash"]', { state: 'detached', timeout: 10000 });
+  await page.click('[data-tool="mirror"]');
+  await page.waitForSelector('[data-testid="tools-missing"]');
+  await page.click('[data-testid="tools-install-missing"]');
+  await page.locator('[data-testid="tool-scrcpy"] [data-testid="tool-msg"]:has-text("checksum")').waitFor();
+  assert.match(await page.textContent('[data-testid="tool-scrcpy"] [data-testid="tool-msg"]'), /does not match the official checksum/);
+  assert.match(await page.textContent('[data-testid="tool-scrcpy"] [data-testid="tool-state"]'), /Missing/);
+  digest = 'sha256:' + crypto.createHash('sha256').update(pkg).digest('hex');
+  await page.click('[data-testid="tools-install-missing"]');
+  await page.locator('[data-testid="tool-scrcpy"] [data-testid="tool-state"]:has-text("Installed by FixMyCircuit")').waitFor();
+  assert.match(await page.textContent('[data-testid="tool-adb"] [data-testid="tool-state"]'), /Installed by FixMyCircuit/);
+  assert.ok(fs.existsSync(path.join(data, 'profile', 'tools', 'scrcpy', 'scrcpy')), 'unpacked into the tools folder');
+  assert.match(await page.textContent('[data-testid="ios-limits"]'), /View only/);
+  await shot(page, '43-tools-mirror');
+  await page.click('button[title="Settings and offline storage"]');
+  await page.waitForSelector('[data-testid="tools-settings"]');
+  assert.match(await page.textContent('[data-testid="tools-settings"]'), /Gerber, ODB\+\+ and KiCad import are built in/);
+  await app.close();
+  srv.close();
+  console.log('tool manager OK');
 }

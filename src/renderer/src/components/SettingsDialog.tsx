@@ -6,6 +6,7 @@ import { Icon } from './Icon';
 import { useTheme, type ThemePref } from '../lib/theme';
 import { LicenseSettings, useLicense } from './License';
 import { AI_PROVIDERS, providerInfo } from '@shared/aiProviders';
+import ToolsPanel from './ToolsPanel';
 
 export default function SettingsDialog({ onClose, onReload }: { onClose: () => void; onReload?: () => void }) {
   const [s, setS] = useState<Settings | null>(null);
@@ -96,6 +97,10 @@ export default function SettingsDialog({ onClose, onReload }: { onClose: () => v
           <label className="label flex items-center gap-1"><Icon name="key" size={12} /> FZ key (44 hex words)</label>
           <textarea className="input h-20 font-mono text-[11px]" value={s.fzKey} onChange={(e) => setS({ ...s, fzKey: e.target.value })} placeholder="Needed only for encrypted .fz boardviews" />
           <p className="mt-1 text-[11px] text-slate-500">Like OpenBoardView, FixMyCircuit does not ship these decryption keys. Paste the key you already use in your existing boardview software.</p>
+        </div>
+        <div className="card p-3" data-testid="tools-settings">
+          <div className="label flex items-center gap-1"><Icon name="download" size={12} /> Tools and components</div>
+          <ToolsPanel />
         </div>
         <div className="card p-3">
           <div className="label">Offline storage</div>

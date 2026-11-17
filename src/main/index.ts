@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { openDb, type DB } from './db';
+import { findTool as findToolAt, installTool, listTools, toolsDir, type ToolId } from './tools';
 import { kindForExt, guessBrand, type FileKind, type ImportRequest } from '../shared/types';
 
 protocol.registerSchemesAsPrivileged([
@@ -116,18 +117,8 @@ function removeDemo() {
 }
 
 // --- phone mirror (scrcpy + adb) ---------------------------------------------------
-function findTool(name: 'scrcpy' | 'adb') {
-  const exe = process.platform === 'win32' ? `${name}.exe` : name;
-  const dirs = [
-    app.isPackaged ? path.join(process.resourcesPath, 'scrcpy') : path.join(app.getAppPath(), 'vendor', 'scrcpy'),
-    ...(process.env.PATH || '').split(path.delimiter),
-  ];
-  for (const d of dirs) {
-    const p = path.join(d, exe);
-    if (d && fs.existsSync(p)) return p;
-  }
-  return null;
-}
+const findTool = (name: 'scrcpy' | 'adb' | 'uxplay') => findToolAt(name)?.path || null;
+let airplay: ReturnType<typeof spawn> | null = null;
 
 function run(cmd: string, args: string[], timeout = 0): Promise<{ ok: boolean; out: string }> {
   return new Promise((resolve) => {
@@ -325,7 +316,7 @@ function registerIpc() {
   });
   handle('mirror:start', (opts: { serial?: string; turnScreenOff?: boolean; stayAwake?: boolean; record?: boolean; maxSize?: number }) => {
     const scrcpy = findTool('scrcpy');
-    if (!scrcpy) throw new Error('scrcpy is not installed. The Windows build includes it; on other systems install scrcpy and adb.');
+    if (!scrcpy) throw new Error('scrcpy is missing. Open Settings, Tools and components, and press Install.');
     const args = ['--window-title', 'FixMyCircuit phone mirror'];
     if (opts.serial) args.push('--serial', opts.serial);
     if (opts.turnScreenOff) args.push('--turn-screen-off');
@@ -336,6 +327,26 @@ function registerIpc() {
     child.unref();
     return { started: true };
   });
+  handle('tools:list', () => listTools());
+  handle('tools:install', async (id: ToolId) => {
+    const r = await installTool(id, (msg) => win?.webContents.send('tools:progress', { id, msg }));
+    return r;
+  });
+  handle('tools:folder', () => { fs.mkdirSync(toolsDir(), { recursive: true }); shell.openPath(toolsDir()); return toolsDir(); });
+  handle('tools:open-url', (url: string) => { if (/^https:\/\//.test(url)) shell.openExternal(url); });
+  // iPhone / iPad mirroring through AirPlay (UxPlay). iOS only allows viewing, not control.
+  handle('airplay:status', () => ({ uxplay: findTool('uxplay'), running: !!airplay && airplay.exitCode == null }));
+  handle('airplay:start', (opts: { name?: string; pin?: boolean }) => {
+    const ux = findTool('uxplay');
+    if (!ux) throw new Error('UxPlay is not installed. See Settings, Tools and components.');
+    if (airplay && airplay.exitCode == null) return { running: true };
+    const args = ['-n', (opts?.name || 'FixMyCircuit').slice(0, 40), '-nh'];
+    if (opts?.pin) args.push('-pin');
+    airplay = spawn(ux, args, { cwd: path.dirname(ux), stdio: 'ignore', windowsHide: false });
+    airplay.on('exit', () => { airplay = null; });
+    return { running: true };
+  });
+  handle('airplay:stop', () => { airplay?.kill(); airplay = null; return { running: false }; });
   handle('mirror:backup', async (req: { serial?: string; remote: string }) => {
     const adb = findTool('adb');
     if (!adb) throw new Error('adb is not available.');
