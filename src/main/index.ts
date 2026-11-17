@@ -288,6 +288,7 @@ function registerIpc() {
   handle('ics:list', (q?: string) => db.listIcs(q));
   handle('ics:save', (r: any) => db.saveIc(r));
   handle('ics:delete', (id: number) => db.deleteIc(id));
+  handle('ics:verify', (id: number, on: boolean) => db.verifyIc(Number(id), (db.getSettings() as any).author || '', on !== false));
 
   handle('demo:load', () => seedDemo());
   handle('demo:remove', () => removeDemo());

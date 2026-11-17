@@ -120,6 +120,8 @@ export function openDb(file: string) {
   addCol('guides', 'photo_ids', "TEXT NOT NULL DEFAULT ''");
   addCol('photos', 'align', "TEXT NOT NULL DEFAULT ''");
   addCol('models', 'demo', 'INTEGER NOT NULL DEFAULT 0');
+  addCol('ic_xref', 'verified_by', "TEXT NOT NULL DEFAULT ''");
+  addCol('ic_xref', 'verified_at', "TEXT NOT NULL DEFAULT ''");
   if (!(db.prepare('SELECT COUNT(*) AS n FROM ic_xref').get() as { n: number }).n) {
     const ins = db.prepare("INSERT INTO ic_xref(ic, function, platform, used_in, alternatives, notes, source) VALUES (@ic, @function, @platform, @used_in, @alternatives, @notes, 'starter')");
     for (const r of IC_XREF_STARTER) ins.run({ platform: '', used_in: '', alternatives: '', notes: '', ...r });
@@ -322,6 +324,12 @@ export function openDb(file: string) {
       if (r.id) db.prepare('UPDATE ic_xref SET ic=@ic, function=@function, platform=@platform, used_in=@used_in, alternatives=@alternatives, notes=@notes, source=@source WHERE id=@id').run(row);
       else row.id = Number(db.prepare('INSERT INTO ic_xref(ic, function, platform, used_in, alternatives, notes, source) VALUES (@ic, @function, @platform, @used_in, @alternatives, @notes, @source)').run(row).lastInsertRowid);
       return db.prepare('SELECT * FROM ic_xref WHERE id = ?').get(row.id);
+    },
+    /** A technician confirms (or un-confirms) an IC entry from a real board. */
+    verifyIc(id: number, by: string, on: boolean) {
+      if (on) db.prepare("UPDATE ic_xref SET verified_by = ?, verified_at = datetime('now') WHERE id = ?").run(by || 'technician', id);
+      else db.prepare("UPDATE ic_xref SET verified_by = '', verified_at = '' WHERE id = ?").run(id);
+      return db.prepare('SELECT * FROM ic_xref WHERE id = ?').get(id);
     },
     deleteIc(id: number) {
       db.prepare('DELETE FROM ic_xref WHERE id = ?').run(id);

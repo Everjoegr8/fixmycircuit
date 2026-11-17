@@ -110,6 +110,9 @@ export interface IcXref {
   alternatives: string;
   notes: string;
   source: 'starter' | 'shop';
+  /** Technician who confirmed this entry on a real board, and when ('' = not yet). */
+  verified_by?: string;
+  verified_at?: string;
 }
 
 export interface Tree {

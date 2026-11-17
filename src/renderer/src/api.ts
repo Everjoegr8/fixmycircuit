@@ -39,6 +39,7 @@ export interface FmcApi {
   addCopper(c: Omit<CopperLayer, 'id' | 'created_at'>): Promise<{ id: number }>;
   deleteCopper(id: number): Promise<void>;
   readGerbers(paths?: string[]): Promise<{ name: string; text: string }[]>;
+  verifyIc(id: number, on: boolean): Promise<IcXref>;
   listTools(): Promise<ToolInfo[]>;
   installTool(id: string): Promise<{ path: string; version: string; sha256: string }>;
   openToolsFolder(): Promise<string>;

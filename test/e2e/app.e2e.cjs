@@ -235,6 +235,13 @@ async function demoRun() {
   await page.click('[data-tool="ics"]');
   await page.fill('[data-testid="ic-search"]', 'MT6358');
   await page.waitForSelector('td:has-text("MT6358")');
+  await page.locator('[data-testid="ic-verify"]').first().click();
+  await page.locator('[data-testid="ic-verified"]').first().waitFor();
+  await page.click('[data-ic-filter="verified"]');
+  assert.ok(await page.locator('[data-testid="ic-row"]').count() >= 1, 'verified filter shows the verified entry');
+  await page.click('[data-ic-filter="unverified"]');
+  assert.equal(await page.locator('[data-testid="ic-verified"]').count(), 0, 'to-verify filter hides verified entries');
+  await page.click('[data-ic-filter="all"]');
   await shot(page, '26-ic-xref');
   await page.click('[data-tool="mirror"]');
   await page.waitForSelector('text=scrcpy');

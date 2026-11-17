@@ -36,6 +36,7 @@ const api = {
   addCopper: call('copper:add'),
   deleteCopper: call('copper:delete'),
   readGerbers: call('copper:read'),
+  verifyIc: call('ics:verify'),
   listTools: call('tools:list'),
   installTool: call('tools:install'),
   openToolsFolder: call('tools:folder'),
