@@ -1,0 +1,283 @@
+// SQLite storage (better-sqlite3). Everything lives in the user's data folder so
+// the app works fully offline.
+import Database from 'better-sqlite3';
+import { BRAND_SEED } from '../shared/types';
+import type { Guide, Jumper, Reading, Photo, LibraryFile, Settings } from '../shared/types';
+
+const SCHEMA = `
+CREATE TABLE IF NOT EXISTS brands (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE COLLATE NOCASE
+);
+CREATE TABLE IF NOT EXISTS models (
+  id INTEGER PRIMARY KEY,
+  brand_id INTEGER NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+  name TEXT NOT NULL COLLATE NOCASE,
+  UNIQUE (brand_id, name)
+);
+CREATE TABLE IF NOT EXISTS files (
+  id TEXT PRIMARY KEY,
+  model_id INTEGER REFERENCES models(id) ON DELETE SET NULL,
+  kind TEXT NOT NULL,
+  name TEXT NOT NULL,
+  ext TEXT NOT NULL,
+  size INTEGER NOT NULL DEFAULT 0,
+  added_at TEXT NOT NULL DEFAULT (datetime('now')),
+  notes TEXT NOT NULL DEFAULT '',
+  extra TEXT NOT NULL DEFAULT ''
+);
+CREATE TABLE IF NOT EXISTS guides (
+  id INTEGER PRIMARY KEY,
+  model_id INTEGER REFERENCES models(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  symptom TEXT NOT NULL DEFAULT '',
+  steps TEXT NOT NULL DEFAULT '',
+  parts TEXT NOT NULL DEFAULT '',
+  nets TEXT NOT NULL DEFAULT '',
+  author TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS photos (
+  id INTEGER PRIMARY KEY,
+  model_id INTEGER REFERENCES models(id) ON DELETE CASCADE,
+  file_id TEXT NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+  title TEXT NOT NULL DEFAULT '',
+  side TEXT NOT NULL DEFAULT 'top',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS readings (
+  id INTEGER PRIMARY KEY,
+  model_id INTEGER REFERENCES models(id) ON DELETE CASCADE,
+  photo_id INTEGER REFERENCES photos(id) ON DELETE CASCADE,
+  x REAL, y REAL,
+  type TEXT NOT NULL DEFAULT 'diode',
+  part TEXT NOT NULL DEFAULT '',
+  pin TEXT NOT NULL DEFAULT '',
+  net TEXT NOT NULL DEFAULT '',
+  value TEXT NOT NULL DEFAULT '',
+  color TEXT NOT NULL DEFAULT '#f5a524',
+  note TEXT NOT NULL DEFAULT '',
+  author TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS jumpers (
+  id INTEGER PRIMARY KEY,
+  photo_id INTEGER NOT NULL REFERENCES photos(id) ON DELETE CASCADE,
+  points TEXT NOT NULL,
+  color TEXT NOT NULL DEFAULT '#ef4444',
+  label TEXT NOT NULL DEFAULT '',
+  note TEXT NOT NULL DEFAULT '',
+  author TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_files_model ON files(model_id);
+CREATE INDEX IF NOT EXISTS idx_guides_model ON guides(model_id);
+CREATE INDEX IF NOT EXISTS idx_readings_model ON readings(model_id);
+CREATE INDEX IF NOT EXISTS idx_readings_net ON readings(net);
+CREATE INDEX IF NOT EXISTS idx_readings_part ON readings(part);
+`;
+
+export type DB = ReturnType<typeof openDb>;
+
+export function openDb(file: string) {
+  const db = new Database(file);
+  db.pragma('journal_mode = WAL');
+  db.pragma('foreign_keys = ON');
+  db.exec(SCHEMA);
+  const insBrand = db.prepare('INSERT OR IGNORE INTO brands(name) VALUES (?)');
+  for (const b of BRAND_SEED) insBrand.run(b);
+
+  const now = () => new Date().toISOString().replace('T', ' ').slice(0, 19);
+
+  const api = {
+    raw: db,
+
+    // --- tree --------------------------------------------------------------
+    tree() {
+      const brands = db.prepare('SELECT id, name FROM brands ORDER BY name').all();
+      const models = db
+        .prepare(
+          `SELECT m.id, m.brand_id, m.name,
+            (SELECT COUNT(*) FROM files f WHERE f.model_id = m.id AND f.kind != 'photo') AS files,
+            (SELECT COUNT(*) FROM guides g WHERE g.model_id = m.id) AS guides,
+            (SELECT COUNT(*) FROM readings r WHERE r.model_id = m.id) AS readings,
+            (SELECT COUNT(*) FROM photos p WHERE p.model_id = m.id) AS photos
+           FROM models m ORDER BY m.name`,
+        )
+        .all();
+      return { brands, models };
+    },
+    addBrand(name: string) {
+      insBrand.run(name.trim());
+      return db.prepare('SELECT id, name FROM brands WHERE name = ?').get(name.trim());
+    },
+    addModel(brandId: number, name: string) {
+      db.prepare('INSERT OR IGNORE INTO models(brand_id, name) VALUES (?, ?)').run(brandId, name.trim());
+      return db.prepare('SELECT id, brand_id, name FROM models WHERE brand_id = ? AND name = ?').get(brandId, name.trim());
+    },
+    renameModel(id: number, name: string) {
+      db.prepare('UPDATE models SET name = ? WHERE id = ?').run(name.trim(), id);
+    },
+    deleteModel(id: number) {
+      db.prepare('DELETE FROM models WHERE id = ?').run(id);
+    },
+
+    // --- files -------------------------------------------------------------
+    listFiles(modelId: number | null | undefined, kind?: string): LibraryFile[] {
+      const where: string[] = [];
+      const args: unknown[] = [];
+      if (modelId !== undefined) {
+        if (modelId === null) where.push('model_id IS NULL');
+        else { where.push('model_id = ?'); args.push(modelId); }
+      }
+      if (kind) { where.push('kind = ?'); args.push(kind); }
+      return db.prepare(`SELECT * FROM files ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY name`).all(...args) as LibraryFile[];
+    },
+    getFile(id: string) {
+      return db.prepare('SELECT * FROM files WHERE id = ?').get(id) as LibraryFile | undefined;
+    },
+    addFile(f: Omit<LibraryFile, 'added_at' | 'notes'> & { notes?: string }) {
+      db.prepare('INSERT INTO files(id, model_id, kind, name, ext, size, notes, extra) VALUES (@id, @model_id, @kind, @name, @ext, @size, @notes, @extra)').run({ notes: '', ...f });
+      return api.getFile(f.id)!;
+    },
+    updateFile(id: string, patch: Partial<Pick<LibraryFile, 'model_id' | 'kind' | 'name' | 'notes'>>) {
+      const cols = Object.keys(patch).filter((k) => ['model_id', 'kind', 'name', 'notes'].includes(k));
+      if (!cols.length) return api.getFile(id);
+      db.prepare(`UPDATE files SET ${cols.map((c) => `${c} = @${c}`).join(', ')} WHERE id = @id`).run({ ...patch, id });
+      return api.getFile(id);
+    },
+    deleteFile(id: string) {
+      db.prepare('DELETE FROM files WHERE id = ?').run(id);
+    },
+
+    // --- guides ------------------------------------------------------------
+    listGuides(modelId?: number | null, q?: string): Guide[] {
+      const where: string[] = [];
+      const args: unknown[] = [];
+      if (modelId !== undefined && modelId !== null) { where.push('model_id = ?'); args.push(modelId); }
+      if (q) {
+        where.push('(title LIKE ? OR symptom LIKE ? OR steps LIKE ? OR parts LIKE ? OR nets LIKE ?)');
+        const like = `%${q}%`;
+        args.push(like, like, like, like, like);
+      }
+      return db.prepare(`SELECT * FROM guides ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY updated_at DESC`).all(...args) as Guide[];
+    },
+    saveGuide(g: Partial<Guide> & { title: string }) {
+      const row = { model_id: null, symptom: '', steps: '', parts: '', nets: '', author: '', ...g, updated_at: now() };
+      if (g.id) {
+        db.prepare('UPDATE guides SET model_id=@model_id, title=@title, symptom=@symptom, steps=@steps, parts=@parts, nets=@nets, author=@author, updated_at=@updated_at WHERE id=@id').run(row);
+        return db.prepare('SELECT * FROM guides WHERE id = ?').get(g.id) as Guide;
+      }
+      const r = db.prepare('INSERT INTO guides(model_id, title, symptom, steps, parts, nets, author, updated_at) VALUES (@model_id, @title, @symptom, @steps, @parts, @nets, @author, @updated_at)').run(row);
+      return db.prepare('SELECT * FROM guides WHERE id = ?').get(r.lastInsertRowid) as Guide;
+    },
+    deleteGuide(id: number) {
+      db.prepare('DELETE FROM guides WHERE id = ?').run(id);
+    },
+
+    // --- readings ----------------------------------------------------------
+    listReadings(filter: { model_id?: number | null; photo_id?: number; net?: string; part?: string }): Reading[] {
+      const where: string[] = [];
+      const args: unknown[] = [];
+      if (filter.model_id != null) { where.push('model_id = ?'); args.push(filter.model_id); }
+      if (filter.photo_id != null) { where.push('photo_id = ?'); args.push(filter.photo_id); }
+      if (filter.net) { where.push('net = ? COLLATE NOCASE'); args.push(filter.net); }
+      if (filter.part) { where.push('part = ? COLLATE NOCASE'); args.push(filter.part); }
+      return db.prepare(`SELECT * FROM readings ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY part, pin, id`).all(...args) as Reading[];
+    },
+    saveReading(r: Partial<Reading>) {
+      const row = { model_id: null, photo_id: null, x: null, y: null, type: 'diode', part: '', pin: '', net: '', value: '', color: '#f5a524', note: '', author: '', ...r };
+      if (r.id) {
+        db.prepare('UPDATE readings SET model_id=@model_id, photo_id=@photo_id, x=@x, y=@y, type=@type, part=@part, pin=@pin, net=@net, value=@value, color=@color, note=@note, author=@author WHERE id=@id').run(row);
+        return db.prepare('SELECT * FROM readings WHERE id = ?').get(r.id) as Reading;
+      }
+      const res = db.prepare('INSERT INTO readings(model_id, photo_id, x, y, type, part, pin, net, value, color, note, author) VALUES (@model_id, @photo_id, @x, @y, @type, @part, @pin, @net, @value, @color, @note, @author)').run(row);
+      return db.prepare('SELECT * FROM readings WHERE id = ?').get(res.lastInsertRowid) as Reading;
+    },
+    deleteReading(id: number) {
+      db.prepare('DELETE FROM readings WHERE id = ?').run(id);
+    },
+
+    // --- photos & jumpers --------------------------------------------------
+    listPhotos(modelId?: number | null): Photo[] {
+      if (modelId == null) return db.prepare('SELECT * FROM photos ORDER BY created_at DESC').all() as Photo[];
+      return db.prepare('SELECT * FROM photos WHERE model_id = ? ORDER BY created_at DESC').all(modelId) as Photo[];
+    },
+    getPhoto(id: number) {
+      return db.prepare('SELECT * FROM photos WHERE id = ?').get(id) as Photo | undefined;
+    },
+    addPhoto(p: { model_id: number | null; file_id: string; title: string; side?: string }) {
+      const r = db.prepare('INSERT INTO photos(model_id, file_id, title, side) VALUES (@model_id, @file_id, @title, @side)').run({ side: 'top', ...p });
+      return api.getPhoto(Number(r.lastInsertRowid))!;
+    },
+    updatePhoto(id: number, patch: Partial<Pick<Photo, 'title' | 'side' | 'model_id'>>) {
+      const cols = Object.keys(patch).filter((k) => ['title', 'side', 'model_id'].includes(k));
+      if (cols.length) db.prepare(`UPDATE photos SET ${cols.map((c) => `${c} = @${c}`).join(', ')} WHERE id = @id`).run({ ...patch, id });
+      return api.getPhoto(id);
+    },
+    deletePhoto(id: number) {
+      const p = api.getPhoto(id);
+      db.prepare('DELETE FROM photos WHERE id = ?').run(id);
+      return p;
+    },
+    listJumpers(photoId: number): Jumper[] {
+      return (db.prepare('SELECT * FROM jumpers WHERE photo_id = ? ORDER BY id').all(photoId) as any[]).map((j) => ({ ...j, points: JSON.parse(j.points) }));
+    },
+    saveJumper(j: Partial<Jumper> & { photo_id: number; points: { x: number; y: number }[] }) {
+      const row = { color: '#ef4444', label: '', note: '', author: '', ...j, points: JSON.stringify(j.points) };
+      let id = j.id;
+      if (id) db.prepare('UPDATE jumpers SET points=@points, color=@color, label=@label, note=@note, author=@author WHERE id=@id').run(row);
+      else id = Number(db.prepare('INSERT INTO jumpers(photo_id, points, color, label, note, author) VALUES (@photo_id, @points, @color, @label, @note, @author)').run(row).lastInsertRowid);
+      const out = db.prepare('SELECT * FROM jumpers WHERE id = ?').get(id) as any;
+      return { ...out, points: JSON.parse(out.points) } as Jumper;
+    },
+    deleteJumper(id: number) {
+      db.prepare('DELETE FROM jumpers WHERE id = ?').run(id);
+    },
+
+    // --- search across everything -------------------------------------------
+    search(q: string) {
+      const like = `%${q}%`;
+      return {
+        models: db.prepare(`SELECT m.id, m.name, b.name AS brand FROM models m JOIN brands b ON b.id = m.brand_id WHERE m.name LIKE ? OR b.name LIKE ? LIMIT 30`).all(like, like),
+        files: db.prepare('SELECT * FROM files WHERE name LIKE ? LIMIT 30').all(like),
+        guides: db.prepare('SELECT * FROM guides WHERE title LIKE ? OR symptom LIKE ? OR steps LIKE ? OR parts LIKE ? OR nets LIKE ? LIMIT 30').all(like, like, like, like, like),
+        readings: db.prepare('SELECT * FROM readings WHERE part LIKE ? OR net LIKE ? OR note LIKE ? LIMIT 50').all(like, like, like),
+      };
+    },
+
+    // --- settings ----------------------------------------------------------
+    getSettings(): Settings {
+      const rows = db.prepare('SELECT key, value FROM settings').all() as { key: string; value: string }[];
+      const s: Settings = { fzKey: '', xzzKey: '', author: '' };
+      for (const r of rows) (s as any)[r.key] = r.value;
+      return s;
+    },
+    setSettings(patch: Partial<Settings>) {
+      const st = db.prepare('INSERT INTO settings(key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value');
+      for (const [k, v] of Object.entries(patch)) st.run(k, String(v ?? ''));
+      return api.getSettings();
+    },
+
+    // --- export / import of shop-made content (guides, readings, jumpers) ----
+    exportContent() {
+      const models = db.prepare('SELECT m.id, m.name, b.name AS brand FROM models m JOIN brands b ON b.id = m.brand_id').all();
+      return {
+        app: 'FixMyCircuit',
+        version: 1,
+        exported_at: now(),
+        models,
+        guides: db.prepare('SELECT * FROM guides').all(),
+        readings: db.prepare('SELECT * FROM readings').all(),
+        photos: db.prepare('SELECT * FROM photos').all(),
+        jumpers: db.prepare('SELECT * FROM jumpers').all(),
+      };
+    },
+  };
+  return api;
+}

@@ -1,0 +1,148 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+2 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+3 0 obj
+<< /Length 2810 >>
+stream
+0.6 w 0.1 0.1 0.1 RG
+BT /F2 12 Tf 30 560 Td (DEMO PHONE - POWER AND CHARGING (synthetic sample, not a real device)) Tj ET
+90 330 120 100 re S
+BT /F2 10 Tf 120 436 Td (J1) Tj ET
+BT /F1 8 Tf 120 318 Td (USB-C RECEPTACLE) Tj ET
+30 412 m 90 412 l S
+BT /F1 8 Tf 32 415 Td (VBUS) Tj ET
+BT /F1 7 Tf 94 409 Td (1) Tj ET
+30 396 m 90 396 l S
+BT /F1 8 Tf 32 399 Td (USB_DP) Tj ET
+BT /F1 7 Tf 94 393 Td (2) Tj ET
+30 380 m 90 380 l S
+BT /F1 8 Tf 32 383 Td (USB_DM) Tj ET
+BT /F1 7 Tf 94 377 Td (3) Tj ET
+30 364 m 90 364 l S
+BT /F1 8 Tf 32 367 Td (CC1) Tj ET
+BT /F1 7 Tf 94 361 Td (4) Tj ET
+30 348 m 90 348 l S
+BT /F1 8 Tf 32 351 Td (GND) Tj ET
+BT /F1 7 Tf 94 345 Td (5) Tj ET
+210 412 m 270 412 l S
+BT /F1 8 Tf 215 415 Td (VBUS) Tj ET
+BT /F1 7 Tf 198 409 Td (6) Tj ET
+210 396 m 270 396 l S
+BT /F1 8 Tf 215 399 Td (USB_DP) Tj ET
+BT /F1 7 Tf 198 393 Td (7) Tj ET
+210 380 m 270 380 l S
+BT /F1 8 Tf 215 383 Td (USB_DM) Tj ET
+BT /F1 7 Tf 198 377 Td (8) Tj ET
+210 364 m 270 364 l S
+BT /F1 8 Tf 215 367 Td (CC2) Tj ET
+BT /F1 7 Tf 198 361 Td (9) Tj ET
+210 348 m 270 348 l S
+BT /F1 8 Tf 215 351 Td (GND) Tj ET
+BT /F1 7 Tf 198 345 Td (10) Tj ET
+420 360 120 68 re S
+BT /F2 10 Tf 450 434 Td (U2) Tj ET
+BT /F1 8 Tf 450 348 Td (CHARGER IC) Tj ET
+360 410 m 420 410 l S
+BT /F1 8 Tf 362 413 Td (VBUS) Tj ET
+BT /F1 7 Tf 424 407 Td (1) Tj ET
+360 394 m 420 394 l S
+BT /F1 8 Tf 362 397 Td (VBAT) Tj ET
+BT /F1 7 Tf 424 391 Td (2) Tj ET
+360 378 m 420 378 l S
+BT /F1 8 Tf 362 381 Td (GND) Tj ET
+BT /F1 7 Tf 424 375 Td (3) Tj ET
+540 410 m 600 410 l S
+BT /F1 8 Tf 545 413 Td (CHG_EN) Tj ET
+BT /F1 7 Tf 528 407 Td (4) Tj ET
+540 394 m 600 394 l S
+BT /F1 8 Tf 545 397 Td (I2C_SCL) Tj ET
+BT /F1 7 Tf 528 391 Td (5) Tj ET
+540 378 m 600 378 l S
+BT /F1 8 Tf 545 381 Td (I2C_SDA) Tj ET
+BT /F1 7 Tf 528 375 Td (6) Tj ET
+BT /F1 8 Tf 330 470 Td (F1  1.5A) Tj ET
+320 455 50 10 re S
+BT /F1 7 Tf 300 445 Td (VBUS) Tj ET
+BT /F1 7 Tf 372 445 Td (VBUS_PROT) Tj ET
+420 120 120 68 re S
+BT /F2 10 Tf 450 194 Td (U1) Tj ET
+BT /F1 8 Tf 450 108 Td (PMIC) Tj ET
+360 170 m 420 170 l S
+BT /F1 8 Tf 362 173 Td (VBAT) Tj ET
+BT /F1 7 Tf 424 167 Td (1) Tj ET
+360 154 m 420 154 l S
+BT /F1 8 Tf 362 157 Td (GND) Tj ET
+BT /F1 7 Tf 424 151 Td (2) Tj ET
+360 138 m 420 138 l S
+BT /F1 8 Tf 362 141 Td (PP1V8) Tj ET
+BT /F1 7 Tf 424 135 Td (3) Tj ET
+540 170 m 600 170 l S
+BT /F1 8 Tf 545 173 Td (PP3V3) Tj ET
+BT /F1 7 Tf 528 167 Td (4) Tj ET
+540 154 m 600 154 l S
+BT /F1 8 Tf 545 157 Td (I2C_SCL) Tj ET
+BT /F1 7 Tf 528 151 Td (5) Tj ET
+540 138 m 600 138 l S
+BT /F1 8 Tf 545 141 Td (I2C_SDA) Tj ET
+BT /F1 7 Tf 528 135 Td (6) Tj ET
+BT /F1 8 Tf 650 260 Td (R1 4.7K  I2C_SCL to PP1V8) Tj ET
+BT /F1 8 Tf 650 245 Td (R2 4.7K  I2C_SDA to PP1V8) Tj ET
+BT /F1 8 Tf 650 220 Td (L1 1uH  VBAT to PP1V8) Tj ET
+BT /F1 8 Tf 30 60 Td (C1 C5: 10uF on VBAT    C2: 1uF on VBUS    C3: PP1V8    C4: PP3V3) Tj ET
+endstream
+endobj
+4 0 obj
+<< /Type /Page /Parent 7 0 R /MediaBox [0 0 842 595] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 3 0 R >>
+endobj
+5 0 obj
+<< /Length 583 >>
+stream
+0.6 w
+BT /F2 12 Tf 30 560 Td (DEMO PHONE - SENSOR (bottom side)) Tj ET
+300 300 120 52 re S
+BT /F2 10 Tf 330 358 Td (U3) Tj ET
+BT /F1 8 Tf 330 288 Td (SENSOR) Tj ET
+240 334 m 300 334 l S
+BT /F1 8 Tf 242 337 Td (PP1V8) Tj ET
+BT /F1 7 Tf 304 331 Td (1) Tj ET
+240 318 m 300 318 l S
+BT /F1 8 Tf 242 321 Td (GND) Tj ET
+BT /F1 7 Tf 304 315 Td (2) Tj ET
+420 334 m 480 334 l S
+BT /F1 8 Tf 425 337 Td (I2C_SCL) Tj ET
+BT /F1 7 Tf 408 331 Td (3) Tj ET
+420 318 m 480 318 l S
+BT /F1 8 Tf 425 321 Td (I2C_SDA) Tj ET
+BT /F1 7 Tf 408 315 Td (4) Tj ET
+BT /F1 8 Tf 300 250 Td (C20 100nF on PP1V8) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 7 0 R /MediaBox [0 0 842 595] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 5 0 R >>
+endobj
+7 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R] /Count 2 >>
+endobj
+8 0 obj
+<< /Type /Catalog /Pages 7 0 R >>
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000009 00000 n 
+0000000079 00000 n 
+0000000154 00000 n 
+0000003016 00000 n 
+0000003152 00000 n 
+0000003786 00000 n 
+0000003922 00000 n 
+0000003985 00000 n 
+trailer
+<< /Size 9 /Root 8 0 R >>
+startxref
+4034
+%%EOF

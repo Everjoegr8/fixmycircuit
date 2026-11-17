@@ -1,27 +1,32 @@
 {
   "name": "fixmycircuit",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "directories": {
-    "test": "test"
-  },
+  "version": "0.1.0",
+  "description": "Free offline schematic, boardview and repair-guide workbench for phone repair technicians",
+  "main": "out/main/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "test": "node --test test/*.test.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "postinstall": "electron-builder install-app-deps",
+    "dist": "electron-vite build && electron-builder",
+    "dist:win": "electron-vite build && electron-builder --win",
+    "dist:linux": "electron-vite build && electron-builder --linux",
+    "sample": "node scripts/make-samples.mjs",
+    "test:e2e": "node test/e2e/app.e2e.cjs"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Everjoegr8/fixmycircuit.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "FixMyCircuit",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/Everjoegr8/fixmycircuit/issues"
   },
   "homepage": "https://github.com/Everjoegr8/fixmycircuit#readme",
   "devDependencies": {
-    "@electron/rebuild": "^3.7.1",
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^20.19.43",
     "@types/pako": "^2.0.3",
@@ -32,6 +37,7 @@
     "electron": "^33.4.11",
     "electron-builder": "^25.1.8",
     "electron-vite": "^2.3.0",
+    "playwright-core": "^1.63.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.6.3",
@@ -43,5 +49,67 @@
     "pdfjs-dist": "^4.10.38",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
+  },
+  "productName": "FixMyCircuit",
+  "build": {
+    "appId": "ng.fixmycircuit.app",
+    "productName": "FixMyCircuit",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "**/node_modules/better-sqlite3/**"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Utility"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ]
+    },
+    "fileAssociations": [
+      {
+        "ext": [
+          "brd",
+          "bdv",
+          "bv",
+          "bvr",
+          "cst",
+          "fz",
+          "pcb"
+        ],
+        "name": "Boardview file"
+      }
+    ]
   }
 }
