@@ -134,3 +134,10 @@ body {
 /* pdf.js viewer pieces we use */
 .pdfViewerHost { position: absolute; inset: 0; overflow: auto; background: var(--canvas-bg); }
 .pdfViewerHost .pdfViewer .page { margin: 8px auto; border: none; box-shadow: 0 2px 10px #0006; }
+
+/* ERA mark: a soft pop on first paint and a light sweeping round the tile. */
+@keyframes fmc-era-pop { 0% { transform: scale(0.6); opacity: 0; } 70% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes fmc-era-shine { to { stroke-dashoffset: -420; } }
+.fmc-era-pop { animation: fmc-era-pop 0.7s cubic-bezier(.2,.9,.3,1.2) both; transform-origin: center; }
+.fmc-era-shine { animation: fmc-era-shine 2.4s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .fmc-era-pop, .fmc-era-shine { animation: none; } }

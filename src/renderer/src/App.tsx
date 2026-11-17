@@ -21,7 +21,7 @@ import { Icon } from './components/Icon';
 import AboutDialog from './components/AboutDialog';
 import { ActivationScreen, LicenseBanner, useLicense } from './components/License';
 import AiToolView from './views/tools/AiToolView';
-import { Splash } from './brand/Logo';
+import { Splash , EraMark } from './brand/Logo';
 import { forgetSession, saveSession } from './lib/session';
 import { TOOLS, categoryLabel, type Doc, type Focus, type Nav } from './types';
 
@@ -421,7 +421,7 @@ function StatusBar({ version, docs, models, onAbout, lic }: { version: string; d
       <span className="hidden md:inline">· Offline</span>
       {lic && <span className="hidden md:inline" data-testid="status-license">· {lic}</span>}
       <span className="flex-1 text-center italic text-slate-500">Find the fault. Fix with confidence.</span>
-      <button className="hover:text-amber-300" onClick={onAbout}>by ERA Technologiz</button>
+      <button className="flex items-center gap-1 hover:text-amber-300" onClick={onAbout}><EraMark size={13} /> by ERA Technologiz</button>
     </footer>
   );
 }
