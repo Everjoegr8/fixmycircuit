@@ -1,6 +1,6 @@
-import type { Brand, Guide, Jumper, LibraryFile, Model, Photo, Reading, Settings, ImportRequest } from '@shared/types';
+import type { Brand, Guide, IcXref, Jumper, LibraryFile, Model, Photo, Reading, Settings, ImportRequest } from '@shared/types';
 
-export type TreeModel = Model & { files: number; guides: number; readings: number; photos: number };
+export type TreeModel = Model & { demo?: number; files: number; guides: number; readings: number; photos: number };
 
 export interface FmcApi {
   tree(): Promise<{ brands: Brand[]; models: TreeModel[] }>;
@@ -28,6 +28,16 @@ export interface FmcApi {
   listJumpers(photoId: number): Promise<Jumper[]>;
   saveJumper(j: Partial<Jumper> & { photo_id: number; points: { x: number; y: number }[] }): Promise<Jumper>;
   deleteJumper(id: number): Promise<void>;
+  addPhotoFromData(req: { model_id: number | null; dataUrl: string; title: string; guide_id?: number | null }): Promise<Photo>;
+  listIcs(q?: string): Promise<IcXref[]>;
+  saveIc(r: Partial<IcXref> & { ic: string }): Promise<IcXref>;
+  deleteIc(id: number): Promise<void>;
+  loadDemo(): Promise<{ added: number; error?: string }>;
+  removeDemo(): Promise<{ removed: number }>;
+  saveSamples(): Promise<string | null>;
+  mirrorStatus(): Promise<{ scrcpy: string | null; adb: string | null; devices: { serial: string; state: string; model: string }[] }>;
+  mirrorStart(opts: { serial?: string; turnScreenOff?: boolean; stayAwake?: boolean; record?: boolean; maxSize?: number }): Promise<{ started: boolean }>;
+  mirrorBackup(req: { serial?: string; remote: string }): Promise<{ ok: boolean; out: string; dest: string } | null>;
   search(q: string): Promise<{ models: { id: number; name: string; brand: string }[]; files: LibraryFile[]; guides: Guide[]; readings: Reading[] }>;
   getSettings(): Promise<Settings>;
   setSettings(patch: Partial<Settings>): Promise<Settings>;

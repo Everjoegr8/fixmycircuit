@@ -33,6 +33,14 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Bundle scrcpy (Apache-2.0) for the phone mirror tab
+        shell: pwsh
+        run: |
+          $v = '3.1'
+          Invoke-WebRequest "https://github.com/Genymobile/scrcpy/releases/download/v$v/scrcpy-win64-v$v.zip" -OutFile scrcpy.zip
+          Expand-Archive scrcpy.zip -DestinationPath scrcpy-tmp
+          Copy-Item "scrcpy-tmp/scrcpy-win64-v$v/*" vendor/scrcpy/ -Recurse
+          if (!(Test-Path vendor/scrcpy/scrcpy.exe)) { throw 'scrcpy.exe missing' }
       - name: Build Windows installer and portable .exe
         run: npm run dist:win -- --publish never
         env:
@@ -68,6 +76,8 @@ jobs:
           files: dist-win/*.exe
           body: |
             Free offline repair workbench for phone technicians.
+
+            First launch opens a demo workshop (Tecno Camon 20 Pro, Infinix Note 30, Samsung Galaxy A32, iPhone 12 Pro) built on one synthetic sample board, so every feature can be tried right away. Remove it from Home or Settings.
 
             - **FixMyCircuit Setup ${{ steps.version.outputs.version }}.exe**: installer (choose folder, creates a desktop shortcut)
             - **FixMyCircuit ${{ steps.version.outputs.version }}.exe**: portable, runs without installing

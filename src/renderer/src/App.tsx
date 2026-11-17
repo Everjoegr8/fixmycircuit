@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Brand, LibraryFile } from '@shared/types';
 import { api, type TreeModel } from './api';
 import Sidebar from './components/Sidebar';
@@ -12,7 +12,13 @@ import PdfViewer from './views/PdfViewer';
 import BoardViewer from './views/BoardViewer';
 import PhotoEditor from './views/PhotoEditor';
 import RepairPanel from './views/RepairPanel';
-import { categoryLabel, type Doc, type Focus, type Nav } from './types';
+import KnowledgeView from './views/tools/KnowledgeView';
+import CalculatorsView from './views/tools/CalculatorsView';
+import IcXrefView from './views/tools/IcXrefView';
+import MicroscopeView from './views/tools/MicroscopeView';
+import MirrorView from './views/tools/MirrorView';
+import { Icon } from './components/Icon';
+import { TOOLS, categoryLabel, type Doc, type Focus, type Nav } from './types';
 
 export default function App() {
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -20,7 +26,10 @@ export default function App() {
   const [nav, setNav] = useState<Nav>({ kind: 'home' });
   const [docs, setDocs] = useState<Doc[]>([]);
   const [activeKey, setActiveKey] = useState<string | null>(null);
-  const [focus, setFocus] = useState<Focus>({});
+  const [focus, setFocus] = useState<Focus & { src?: string }>({});
+  const [split, setSplit] = useState<string | null>(null);
+  const [syncOn, setSyncOn] = useState(true);
+  const [jump, setJump] = useState('');
   const [showPanel, setShowPanel] = useState(true);
   const [importOpen, setImportOpen] = useState<{ paths?: string[]; modelId?: number | null } | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -66,6 +75,12 @@ export default function App() {
     setActiveKey(key);
   }, []);
 
+  useEffect(() => {
+    const f = (e: Event) => { const ph = (e as CustomEvent).detail; openPhoto(ph.id, ph.title, ph.model_id); };
+    window.addEventListener('fmc-open-photo', f);
+    return () => window.removeEventListener('fmc-open-photo', f);
+  }, [openPhoto]);
+
   useEffect(() => api.onOpenFiles((files) => { reload(); files.forEach(openFile); }), [openFile, reload]);
 
   const closeDoc = (key: string) => {
@@ -73,6 +88,7 @@ export default function App() {
       const i = d.findIndex((x) => x.key === key);
       const next = d.filter((x) => x.key !== key);
       if (activeKey === key) setActiveKey(next.length ? next[Math.max(0, i - 1)].key : null);
+      if (split === key) setSplit(null);
       return next;
     });
   };
@@ -109,6 +125,66 @@ export default function App() {
     setBoardQuery((p) => ({ ...p, [doc!.key]: { q, n: (p[doc!.key]?.n || 0) + 1 } }));
   };
 
+  // --- split-screen sync ---------------------------------------------------------
+  const splitDoc = split && split !== activeKey ? docs.find((d) => d.key === split) || null : null;
+  const splitMode = !!(active && splitDoc);
+
+  /** Open the best partner for the active document (schematic next to a board or photo). */
+  const startSplit = async () => {
+    if (!active) return;
+    if (splitMode) { setSplit(null); return; }
+    const other = docs.find((d) => d.key !== active.key && d.modelId === active.modelId && d.type !== active.type) || docs.find((d) => d.key !== active.key);
+    if (other) { setSplit(other.key); return; }
+    const want = active.type === 'pdf' ? 'photo' : 'schematic';
+    if (want === 'schematic') {
+      const pdfs = await api.listFiles(active.modelId, 'schematic');
+      if (!pdfs.length) return alertMsg('Import a schematic PDF for this model to use split view.');
+      const key = `pdf:${pdfs[0].id}`;
+      setDocs((d) => (d.some((x) => x.key === key) ? d : [...d, { key, type: 'pdf', id: pdfs[0].id, title: pdfs[0].name, modelId: active.modelId }]));
+      setSplit(key);
+    } else {
+      const photos = await api.listPhotos(active.modelId);
+      if (photos.length) {
+        const key = `photo:${photos[0].id}`;
+        setDocs((d) => (d.some((x) => x.key === key) ? d : [...d, { key, type: 'photo', id: photos[0].id, title: photos[0].title, modelId: active.modelId }]));
+        setSplit(key);
+        return;
+      }
+      const boards = await api.listFiles(active.modelId, 'boardview');
+      if (!boards.length) return alertMsg('Add a board photo or boardview for this model to use split view.');
+      const key = `board:${boards[0].id}`;
+      setDocs((d) => (d.some((x) => x.key === key) ? d : [...d, { key, type: 'board', id: boards[0].id, title: boards[0].name, modelId: active.modelId }]));
+      setSplit(key);
+    }
+  };
+
+  // Selection sync: a part or net picked in one pane is found in the other.
+  const lastSent = useRef<Record<string, string>>({});
+  const sendTo = (d: Doc, q: string) => {
+    if (!q || lastSent.current[d.key] === q) return;
+    lastSent.current[d.key] = q;
+    if (d.type === 'pdf') setPdfQuery((p) => ({ ...p, [d.key]: { q, n: (p[d.key]?.n || 0) + 1 } }));
+    if (d.type === 'board') setBoardQuery((p) => ({ ...p, [d.key]: { q, n: (p[d.key]?.n || 0) + 1 } }));
+  };
+  useEffect(() => {
+    if (!splitMode || !syncOn || !focus.src) return;
+    const q = focus.part || focus.net || '';
+    for (const d of [active!, splitDoc!]) {
+      if (d.key === focus.src) { lastSent.current[d.key] = q; continue; }
+      if (d.type === 'pdf') sendTo(d, q);
+      if (d.type === 'board' && focus.src.startsWith('photo:')) sendTo(d, focus.net || focus.part || '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus, splitMode, syncOn]);
+
+  const doJump = () => {
+    const q = jump.trim();
+    if (!q) return;
+    const panes = splitMode ? [active!, splitDoc!] : active ? [active] : [];
+    for (const d of panes) { lastSent.current[d.key] = ''; sendTo(d, q); }
+    setFocus({ part: q, net: q, src: 'jump' });
+  };
+
   const [toast, setToast] = useState<string | null>(null);
   function alertMsg(m: string) {
     setToast(m);
@@ -143,14 +219,39 @@ export default function App() {
           onSelect={setActiveKey}
           onClose={closeDoc}
           onLibrary={() => setActiveKey(null)}
-          libraryLabel={nav.kind === 'model' ? `${modelLabel(nav.modelId)} · ${categoryLabel(nav.category)}` : nav.kind === 'unsorted' ? 'Unsorted files' : 'Home'}
+          libraryLabel={nav.kind === 'model' ? `${modelLabel(nav.modelId)} · ${categoryLabel(nav.category)}` : nav.kind === 'unsorted' ? 'Unsorted files' : nav.kind === 'tool' ? TOOLS.find((t) => t.id === nav.tool)!.label : 'Home'}
           showPanel={showPanel}
           onTogglePanel={() => setShowPanel((s) => !s)}
+          split={splitMode}
+          onSplit={startSplit}
         />
+        {splitMode && (
+          <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-bench-700 bg-bench-850 px-2 py-1.5" data-testid="split-bar">
+            <span className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-sky-300"><Icon name="split" size={13} /> Split view</span>
+            <select className="input w-56 py-0.5" value={splitDoc!.key} onChange={(e) => setSplit(e.target.value)} title="Right pane">
+              {docs.filter((d) => d.key !== activeKey).map((d) => <option key={d.key} value={d.key}>{d.type === 'pdf' ? 'Schematic' : d.type === 'board' ? 'Boardview' : 'Photo'}: {d.title}</option>)}
+            </select>
+            <button className="btn" title="Swap panes" onClick={() => { const a = activeKey; setActiveKey(split); setSplit(a); }}>⇄</button>
+            <div className="relative ml-2 w-72">
+              <input className="input pl-7" placeholder="Jump to component or net on both sides" value={jump} onChange={(e) => setJump(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && doJump()} data-testid="jump-input" />
+              <span className="pointer-events-none absolute left-2 top-[7px] text-slate-500"><Icon name="search" size={13} /></span>
+            </div>
+            <button className="btn" onClick={doJump}>Jump</button>
+            <label className="ml-2 flex items-center gap-1.5 text-slate-300" title="Zoom, pan and selection follow between the two panes">
+              <input type="checkbox" checked={syncOn} onChange={(e) => setSyncOn(e.target.checked)} data-testid="sync-toggle" /> <Icon name="sync" size={13} /> Sync zoom, pan and selection
+            </label>
+            <div className="flex-1" />
+            <button className="btn-ghost" onClick={() => setSplit(null)} title="Close split view"><Icon name="x" size={13} /></button>
+          </div>
+        )}
         <div className="relative min-h-0 flex-1">
           {/* Keep every open document mounted so switching tabs is instant. */}
           {docs.map((d) => {
             const isActive = d.key === viewer?.key;
+            const isSecond = splitMode && d.key === splitDoc!.key;
+            const shown = isActive || isSecond;
+            const sync = splitMode && syncOn && shown;
+            const onFocusFrom = (f: Focus) => { if (isActive || isSecond) setFocus({ ...f, src: d.key }); };
             const body =
               d.type === 'pdf' ? (
                 <PdfViewer
@@ -158,25 +259,32 @@ export default function App() {
                   active={isActive}
                   searchRequest={pdfQuery[d.key]}
                   onFindOnBoard={(q) => findOnBoard(q, d.modelId)}
+                  syncKey={d.key}
+                  sync={sync}
                 />
               ) : d.type === 'board' ? (
                 <BoardViewer
                   fileId={String(d.id)}
-                  active={isActive}
+                  active={isActive || isSecond}
                   searchRequest={boardQuery[d.key]}
-                  onFocus={setFocus}
+                  onFocus={onFocusFrom}
                   onFindInSchematic={(q) => findInSchematic(q, d.modelId)}
                   onOpenSettings={() => setSettingsOpen(true)}
+                  modelId={d.modelId}
+                  rev={rev}
+                  syncKey={d.key}
+                  sync={sync}
                 />
               ) : (
-                <PhotoEditor photoId={Number(d.id)} active={isActive} onChanged={reload} onFocus={setFocus} />
+                <PhotoEditor photoId={Number(d.id)} active={isActive} onChanged={reload} onFocus={onFocusFrom} focus={focus} syncKey={d.key} sync={sync} />
               );
+            const pos = !splitMode || !shown ? 'inset-0' : isActive ? 'inset-y-0 left-0 right-1/2 border-r-2 border-sky-500/40' : 'inset-y-0 left-1/2 right-0';
             return (
-              <div key={d.key} className="absolute inset-0" style={{ visibility: isActive ? 'visible' : 'hidden' }}>
+              <div key={d.key} className={`absolute ${pos}`} style={{ visibility: shown ? 'visible' : 'hidden' }}>
                 <SplitPane
                   storageKey="fmc.split"
                   right={
-                    showPanel && isActive ? (
+                    showPanel && isActive && !splitMode ? (
                       <RepairPanel
                         modelId={d.modelId}
                         modelLabel={modelLabel(d.modelId)}
@@ -203,8 +311,16 @@ export default function App() {
                   onNav={goto}
                   onImport={() => setImportOpen({ modelId: null })}
                   onOpenFile={openFile}
+                  onOpenPhoto={openPhoto}
+                  onReload={reload}
                   rev={rev}
                 />
+              ) : nav.kind === 'tool' ? (
+                nav.tool === 'knowledge' ? <KnowledgeView models={models} brands={brands} onChanged={reload} />
+                : nav.tool === 'calculators' ? <CalculatorsView />
+                : nav.tool === 'ics' ? <IcXrefView />
+                : nav.tool === 'microscope' ? <MicroscopeView models={models} brands={brands} onChanged={reload} onOpenPhoto={openPhoto} />
+                : <MirrorView />
               ) : (
                 <ModelView
                   key={`${nav.kind}-${navModelId}`}
@@ -246,7 +362,7 @@ export default function App() {
           onReloadTree={reload}
         />
       )}
-      {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
+      {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} onReload={reload} />}
       {toast && (
         <div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-md border border-amber-500/50 bg-bench-800 px-4 py-2 text-amber-100 shadow-xl">{toast}</div>
       )}

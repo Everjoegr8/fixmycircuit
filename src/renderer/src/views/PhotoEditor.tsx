@@ -1,9 +1,15 @@
 // Shop Contributor Mode: drop reading pins and draw jumper wires on a board photo.
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Jumper, Photo, Reading, ReadingType } from '@shared/types';
 import { api, fileUrl } from '../api';
 import { Icon } from '../components/Icon';
 import type { Focus } from '../types';
+import { loadBoard } from '@parsers/index.js';
+import { LAYERS, LAYER_BY_ID, layerOfNet, layerOfText, type LayerId } from '@shared/layers';
+import LayerToggles, { useLayers } from '../components/LayerToggles';
+import HoverCard, { type HoverData } from '../components/HoverCard';
+import { netSegments, netsByLayer } from '../lib/netlines';
+import { parseAlign, syncBus } from '../lib/sync';
 
 type Tool = 'select' | 'pin' | 'jumper';
 type Sel = { kind: 'pin'; id: number } | { kind: 'jumper'; id: number } | null;
@@ -16,7 +22,13 @@ interface Props {
   active: boolean;
   onChanged: () => void;
   onFocus: (f: Focus) => void;
+  /** Part or net selected elsewhere (board, schematic, jump bar): matching pins glow. */
+  focus?: Focus;
+  syncKey?: string;
+  sync?: boolean;
 }
+
+const jumperLayer = (j: Jumper): LayerId | null => (j.layer as LayerId) || layerOfText(`${j.label} ${j.note}`);
 
 export default function PhotoEditor(p: Props) {
   const [photo, setPhoto] = useState<Photo | null>(null);
@@ -31,6 +43,28 @@ export default function PhotoEditor(p: Props) {
   const [author, setAuthor] = useState('');
   const [lastType, setLastType] = useState<ReadingType>('diode');
   const hostRef = useRef<HTMLDivElement>(null);
+  const [layers] = useLayers();
+  const [board, setBoard] = useState<any>(null);
+  const [showNetLines, setShowNetLines] = useState(() => { try { return localStorage.getItem('fmc.photoNetLines') === '1'; } catch { return false; } });
+  const [hover, setHover] = useState<HoverData | null>(null);
+  const align = parseAlign(photo?.align);
+
+  // Aligned photos (the demo ones, for now) can show the boardview's net lines on top.
+  useEffect(() => {
+    if (!photo || !align || photo.model_id == null) { setBoard(null); return; }
+    let dead = false;
+    (async () => {
+      const files = await api.listFiles(photo.model_id, 'boardview');
+      if (!files.length) return;
+      const [{ file, bytes }, st] = await Promise.all([api.readFile(files[0].id), api.getSettings()]);
+      try {
+        const b = loadBoard(new Uint8Array(bytes), file.name, { fzKey: st.fzKey, xzzKey: st.xzzKey });
+        if (!dead) setBoard(b);
+      } catch { /* photo still works without it */ }
+    })();
+    return () => { dead = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photo?.id, photo?.align, photo?.model_id]);
 
   const load = useCallback(async () => {
     const ph = await api.getPhoto(p.photoId);
@@ -108,7 +142,11 @@ export default function PhotoEditor(p: Props) {
     if (tool === 'jumper') setCursorPt(toImage(e));
     if (!d) return;
     if (Math.abs(e.clientX - d.sx) + Math.abs(e.clientY - d.sy) > 3) d.moved = true;
-    if (d.mode === 'pan') setView((v) => ({ ...v, x: d.vx + e.clientX - d.sx, y: d.vy + e.clientY - d.sy }));
+    if (d.mode === 'pan') {
+      const next = { ...view, x: d.vx + e.clientX - d.sx, y: d.vy + e.clientY - d.sy };
+      setView(next);
+      emitView(next);
+    }
     else if (d.mode === 'pin' && d.moved) {
       const pt = toImage(e);
       setPins((ps) => ps.map((r) => (r.id === d.id ? { ...r, x: Math.min(Math.max(pt.x, 0), 1), y: Math.min(Math.max(pt.y, 0), 1) } : r)));
@@ -126,11 +164,47 @@ export default function PhotoEditor(p: Props) {
     const r = hostRef.current!.getBoundingClientRect();
     const mx = e.clientX - r.left, my = e.clientY - r.top;
     const f = Math.pow(1.0015, -e.deltaY);
-    setView((v) => {
-      const s = Math.min(Math.max(v.scale * f, 0.02), 40);
-      return { scale: s, x: mx - ((mx - v.x) * s) / v.scale, y: my - ((my - v.y) * s) / v.scale };
+    const v = view;
+    const sc = Math.min(Math.max(v.scale * f, 0.02), 40);
+    const next = { scale: sc, x: mx - ((mx - v.x) * sc) / v.scale, y: my - ((my - v.y) * sc) / v.scale };
+    setView(next);
+    emitView(next);
+    if (p.sync && p.syncKey) syncBus.emit({ type: 'zoom', source: p.syncKey, factor: f });
+  };
+
+  // --- split-screen sync (aligned photos share board coordinates) ---------------
+  const emitView = (v: { scale: number; x: number; y: number }) => {
+    const host = hostRef.current;
+    if (!p.sync || !p.syncKey || !align || !img || !host) return;
+    const px = (host.clientWidth / 2 - v.x) / v.scale, py = (host.clientHeight / 2 - v.y) / v.scale;
+    syncBus.emit({
+      type: 'view',
+      source: p.syncKey,
+      cx: align.x0 + (px / img.w) * (align.x1 - align.x0),
+      cy: align.y1 - (py / img.h) * (align.y1 - align.y0),
+      upp: (align.x1 - align.x0) / img.w / v.scale,
     });
   };
+  useEffect(() => {
+    if (!p.sync || !img) return;
+    return syncBus.on((e) => {
+      const host = hostRef.current;
+      if (e.source === p.syncKey || !host) return;
+      if (e.type === 'zoom' && e.pdf) {
+        const mx = host.clientWidth / 2, my = host.clientHeight / 2;
+        setView((v) => { const sc = Math.min(Math.max(v.scale * e.factor, 0.02), 40); return { scale: sc, x: mx - ((mx - v.x) * sc) / v.scale, y: my - ((my - v.y) * sc) / v.scale }; });
+        return;
+      }
+      if (!align) return;
+      if (e.type === 'view') {
+        const sc = (align.x1 - align.x0) / img.w / e.upp;
+        const px = ((e.cx - align.x0) / (align.x1 - align.x0)) * img.w;
+        const py = ((align.y1 - e.cy) / (align.y1 - align.y0)) * img.h;
+        setView({ scale: sc, x: host.clientWidth / 2 - px * sc, y: host.clientHeight / 2 - py * sc });
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.sync, p.syncKey, photo?.align, img]);
 
   useEffect(() => {
     if (!p.active) return;
@@ -148,6 +222,28 @@ export default function PhotoEditor(p: Props) {
     window.addEventListener('keydown', k);
     return () => window.removeEventListener('keydown', k);
   });
+
+  const netLines = useMemo(() => {
+    if (!board || !align || !img || !showNetLines) return [] as [LayerId, string][];
+    const tx = (x: number) => (((x - align.x0) / (align.x1 - align.x0)) * img.w).toFixed(1);
+    const ty = (y: number) => (((align.y1 - y) / (align.y1 - align.y0)) * img.h).toFixed(1);
+    const out: [LayerId, string][] = [];
+    for (const [layer, nets] of netsByLayer(board)) {
+      if (layer === 'gnd' || !layers.has(layer)) continue;
+      let d = '';
+      for (const net of nets) for (const sg of netSegments(board, net, photo?.side === 'bottom' ? 'bottom' : 'top')) d += `M${tx(sg.x1)} ${ty(sg.y1)}L${tx(sg.x2)} ${ty(sg.y2)}`;
+      if (d) out.push([layer, d]);
+    }
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [board, photo?.align, img, layers, showNetLines, photo?.side]);
+  const layerCounts = useMemo(() => {
+    const c: Partial<Record<LayerId, number>> = {};
+    for (const l of LAYERS) c[l.id] = 0;
+    for (const j of jumpers) { const l = jumperLayer(j); if (l) c[l] = (c[l] || 0) + 1; }
+    return c;
+  }, [jumpers]);
+  void layerOfNet;
 
   const selPin = sel?.kind === 'pin' ? pins.find((x) => x.id === sel.id) : undefined;
   const selJumper = sel?.kind === 'jumper' ? jumpers.find((x) => x.id === sel.id) : undefined;
@@ -168,6 +264,21 @@ export default function PhotoEditor(p: Props) {
     if (sel?.kind === 'pin') { await api.deleteReading(sel.id); setPins((x) => x.filter((r) => r.id !== sel.id)); p.onChanged(); }
     if (sel?.kind === 'jumper') { await api.deleteJumper(sel.id); setJumpers((x) => x.filter((r) => r.id !== sel.id)); }
     setSel(null);
+  };
+
+  const up = (x?: string) => (x || '').toUpperCase();
+  const focused = (r: Reading) => !!p.focus && ((!!p.focus.net && up(r.net) === up(p.focus.net)) || (!!p.focus.part && up(r.part) === up(p.focus.part)));
+  const showHover = (e: React.MouseEvent, r: Reading) => {
+    const host = hostRef.current!.getBoundingClientRect();
+    const same = r.net ? pins.filter((x) => up(x.net) === up(r.net)) : [r];
+    const ics: string[] = [];
+    if (board && r.net && board.nets.has(r.net)) {
+      for (const i of board.nets.get(r.net)) {
+        const q = board.parts[board.pins[i].part];
+        if (q && (/^U/i.test(q.name) || q.pins.length >= 8) && !ics.includes(q.name)) ics.push(q.name);
+      }
+    } else if (/^U/i.test(r.part)) ics.push(r.part);
+    setHover({ x: e.clientX - host.left, y: e.clientY - host.top, pin: `${r.part}${r.pin ? '.' + r.pin : ''}`, net: r.net, part: r.part, readings: same.length ? same : [r], ics });
   };
 
   if (!photo) return <div className="grid h-full place-items-center text-slate-400">Loading photo…</div>;
@@ -235,7 +346,10 @@ export default function PhotoEditor(p: Props) {
           />
           {img && (
             <svg className="absolute left-0 top-0" width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-              {jumpers.map((j) => (
+              {netLines.map(([layer, d]) => (
+                <path key={layer} d={d} fill="none" stroke={LAYER_BY_ID[layer].color} strokeWidth={1.6 * k} opacity={0.7} className="pointer-events-none" data-netlines={layer} />
+              ))}
+              {jumpers.filter((j) => { const l = jumperLayer(j); return !l || layers.has(l); }).map((j) => (
                 <g key={j.id} data-jumper={j.id} className="cursor-pointer">
                   <polyline points={ptStr(j.points)} fill="none" stroke="#000a" strokeWidth={7 * k} strokeLinecap="round" strokeLinejoin="round" />
                   <polyline points={ptStr(j.points)} fill="none" stroke={j.color} strokeWidth={(sel?.kind === 'jumper' && sel.id === j.id ? 5 : 3.5) * k} strokeLinecap="round" strokeLinejoin="round" />
@@ -253,7 +367,9 @@ export default function PhotoEditor(p: Props) {
                 const isSel = sel?.kind === 'pin' && sel.id === r.id;
                 const label = [r.part && `${r.part}${r.pin ? '.' + r.pin : ''}`, r.value].filter(Boolean).join('  ');
                 return (
-                  <g key={r.id} data-pin={r.id} className="cursor-pointer" transform={`translate(${r.x * W} ${r.y * H})`}>
+                  <g key={r.id} data-pin={r.id} className="cursor-pointer" transform={`translate(${r.x * W} ${r.y * H})`}
+                    onMouseEnter={(e) => showHover(e, r)} onMouseLeave={() => setHover(null)}>
+                    {focused(r) && <circle r={15 * k} fill="none" stroke="#fff" strokeWidth={2.5 * k} className="animate-pulse" data-focused="1" />}
                     <circle r={(isSel ? 9 : 7) * k} fill={r.color} stroke={isSel ? '#fff' : '#000'} strokeWidth={2 * k} />
                     <circle r={2 * k} fill="#000" />
                     {label && (
@@ -265,8 +381,20 @@ export default function PhotoEditor(p: Props) {
             </svg>
           )}
         </div>
+        {hover && <HoverCard d={hover} />}
+        <div className="absolute right-2 top-2 z-10 flex flex-col items-end gap-2">
+        <LayerToggles
+          title="Jumper / trace layers"
+          counts={layerCounts}
+          extra={board && (
+            <label className="mt-1 flex cursor-pointer items-center gap-2 border-t border-bench-700 px-1 pt-1.5 text-[11px] text-slate-400">
+              <input type="checkbox" checked={showNetLines} onChange={(e) => { setShowNetLines(e.target.checked); try { localStorage.setItem('fmc.photoNetLines', e.target.checked ? '1' : '0'); } catch { /* ignore */ } }} data-testid="netlines-toggle" />
+              Overlay boardview net lines
+            </label>
+          )}
+        />
         {(selPin || selJumper) && (
-          <div className="absolute right-2 top-2 z-10 w-72 rounded-lg border border-bench-600 bg-bench-900/95 p-3 shadow-2xl" onMouseDown={(e) => e.stopPropagation()} onWheel={(e) => e.stopPropagation()} data-testid="pin-editor">
+          <div className="w-72 rounded-lg border border-bench-600 bg-bench-900/95 p-3 shadow-2xl" onMouseDown={(e) => e.stopPropagation()} onWheel={(e) => e.stopPropagation()} data-testid="pin-editor">
             {selPin && (
               <div className="space-y-2">
                 <div className="flex items-center">
@@ -318,6 +446,13 @@ export default function PhotoEditor(p: Props) {
                   <input className="input" placeholder="e.g. VBUS jumper from F1 to U2 pin 1" value={selJumper.label} onChange={(e) => updateJumper({ label: e.target.value })} onBlur={saveJumper} autoFocus />
                 </div>
                 <div>
+                  <label className="label">Layer</label>
+                  <select className="input" value={selJumper.layer || ''} onChange={(e) => { const layer = e.target.value; const color = layer ? LAYER_BY_ID[layer as LayerId].color : selJumper.color; updateJumper({ layer, color }); api.saveJumper({ ...selJumper, layer, color }); }}>
+                    <option value="">Guess from label</option>
+                    {LAYERS.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
+                  </select>
+                </div>
+                <div>
                   <label className="label">Colour</label>
                   <div className="flex gap-1.5">
                     {['#ef4444', '#f5a524', '#22c55e', '#38bdf8', '#e879f9', '#ffffff'].map((c) => (
@@ -333,6 +468,7 @@ export default function PhotoEditor(p: Props) {
             )}
           </div>
         )}
+        </div>
         <div className="pointer-events-none absolute bottom-2 left-3 text-[11px] text-slate-500">
           {pins.length} readings · {jumpers.length} jumpers · wheel to zoom · {tool === 'select' ? 'drag to pan' : 'middle-drag to pan'}
         </div>

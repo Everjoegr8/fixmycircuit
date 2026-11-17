@@ -35,6 +35,8 @@ export interface Guide {
   parts: string;
   nets: string;
   author: string;
+  /** Comma-separated photo ids attached to this fault solution. */
+  photo_ids: string;
   created_at: string;
   updated_at: string;
 }
@@ -68,6 +70,8 @@ export interface Jumper {
   label: string;
   note: string;
   author: string;
+  /** Circuit layer (see shared/layers.ts), '' = guess from label. */
+  layer: string;
   created_at: string;
 }
 
@@ -77,12 +81,25 @@ export interface Photo {
   file_id: string;
   title: string;
   side: 'top' | 'bottom' | 'other';
+  /** JSON {x0,y0,x1,y1}: board coordinates the photo's full frame covers, '' = not aligned. */
+  align: string;
   created_at: string;
+}
+
+export interface IcXref {
+  id: number;
+  ic: string;
+  function: string;
+  platform: string;
+  used_in: string;
+  alternatives: string;
+  notes: string;
+  source: 'starter' | 'shop';
 }
 
 export interface Tree {
   brands: Brand[];
-  models: (Model & { files: number; guides: number; readings: number; photos: number })[];
+  models: (Model & { demo?: number; files: number; guides: number; readings: number; photos: number })[];
 }
 
 export interface ImportRequest {

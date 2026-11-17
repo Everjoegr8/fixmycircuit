@@ -2,6 +2,7 @@
 // the app works fully offline.
 import Database from 'better-sqlite3';
 import { BRAND_SEED } from '../shared/types';
+import { IC_XREF_STARTER } from '../shared/icxref';
 import type { Guide, Jumper, Reading, Photo, LibraryFile, Settings } from '../shared/types';
 
 const SCHEMA = `
@@ -75,6 +76,16 @@ CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS ic_xref (
+  id INTEGER PRIMARY KEY,
+  ic TEXT NOT NULL,
+  function TEXT NOT NULL DEFAULT '',
+  platform TEXT NOT NULL DEFAULT '',
+  used_in TEXT NOT NULL DEFAULT '',
+  alternatives TEXT NOT NULL DEFAULT '',
+  notes TEXT NOT NULL DEFAULT '',
+  source TEXT NOT NULL DEFAULT 'shop'
+);
 CREATE INDEX IF NOT EXISTS idx_files_model ON files(model_id);
 CREATE INDEX IF NOT EXISTS idx_guides_model ON guides(model_id);
 CREATE INDEX IF NOT EXISTS idx_readings_model ON readings(model_id);
@@ -89,6 +100,19 @@ export function openDb(file: string) {
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
   db.exec(SCHEMA);
+  // Columns added after v0.1.0.
+  const addCol = (table: string, col: string, def: string) => {
+    const cols = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+    if (!cols.some((c) => c.name === col)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${def}`);
+  };
+  addCol('jumpers', 'layer', "TEXT NOT NULL DEFAULT ''");
+  addCol('guides', 'photo_ids', "TEXT NOT NULL DEFAULT ''");
+  addCol('photos', 'align', "TEXT NOT NULL DEFAULT ''");
+  addCol('models', 'demo', 'INTEGER NOT NULL DEFAULT 0');
+  if (!(db.prepare('SELECT COUNT(*) AS n FROM ic_xref').get() as { n: number }).n) {
+    const ins = db.prepare("INSERT INTO ic_xref(ic, function, platform, used_in, alternatives, notes, source) VALUES (@ic, @function, @platform, @used_in, @alternatives, @notes, 'starter')");
+    for (const r of IC_XREF_STARTER) ins.run({ platform: '', used_in: '', alternatives: '', notes: '', ...r });
+  }
   const insBrand = db.prepare('INSERT OR IGNORE INTO brands(name) VALUES (?)');
   for (const b of BRAND_SEED) insBrand.run(b);
 
@@ -102,7 +126,7 @@ export function openDb(file: string) {
       const brands = db.prepare('SELECT id, name FROM brands ORDER BY name').all();
       const models = db
         .prepare(
-          `SELECT m.id, m.brand_id, m.name,
+          `SELECT m.id, m.brand_id, m.name, m.demo,
             (SELECT COUNT(*) FROM files f WHERE f.model_id = m.id AND f.kind != 'photo') AS files,
             (SELECT COUNT(*) FROM guides g WHERE g.model_id = m.id) AS guides,
             (SELECT COUNT(*) FROM readings r WHERE r.model_id = m.id) AS readings,
@@ -168,12 +192,12 @@ export function openDb(file: string) {
       return db.prepare(`SELECT * FROM guides ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY updated_at DESC`).all(...args) as Guide[];
     },
     saveGuide(g: Partial<Guide> & { title: string }) {
-      const row = { model_id: null, symptom: '', steps: '', parts: '', nets: '', author: '', ...g, updated_at: now() };
+      const row = { model_id: null, symptom: '', steps: '', parts: '', nets: '', author: '', photo_ids: '', ...g, updated_at: now() };
       if (g.id) {
-        db.prepare('UPDATE guides SET model_id=@model_id, title=@title, symptom=@symptom, steps=@steps, parts=@parts, nets=@nets, author=@author, updated_at=@updated_at WHERE id=@id').run(row);
+        db.prepare('UPDATE guides SET model_id=@model_id, title=@title, symptom=@symptom, steps=@steps, parts=@parts, nets=@nets, author=@author, photo_ids=@photo_ids, updated_at=@updated_at WHERE id=@id').run(row);
         return db.prepare('SELECT * FROM guides WHERE id = ?').get(g.id) as Guide;
       }
-      const r = db.prepare('INSERT INTO guides(model_id, title, symptom, steps, parts, nets, author, updated_at) VALUES (@model_id, @title, @symptom, @steps, @parts, @nets, @author, @updated_at)').run(row);
+      const r = db.prepare('INSERT INTO guides(model_id, title, symptom, steps, parts, nets, author, photo_ids, updated_at) VALUES (@model_id, @title, @symptom, @steps, @parts, @nets, @author, @photo_ids, @updated_at)').run(row);
       return db.prepare('SELECT * FROM guides WHERE id = ?').get(r.lastInsertRowid) as Guide;
     },
     deleteGuide(id: number) {
@@ -215,8 +239,8 @@ export function openDb(file: string) {
       const r = db.prepare('INSERT INTO photos(model_id, file_id, title, side) VALUES (@model_id, @file_id, @title, @side)').run({ side: 'top', ...p });
       return api.getPhoto(Number(r.lastInsertRowid))!;
     },
-    updatePhoto(id: number, patch: Partial<Pick<Photo, 'title' | 'side' | 'model_id'>>) {
-      const cols = Object.keys(patch).filter((k) => ['title', 'side', 'model_id'].includes(k));
+    updatePhoto(id: number, patch: Partial<Pick<Photo, 'title' | 'side' | 'model_id' | 'align'>>) {
+      const cols = Object.keys(patch).filter((k) => ['title', 'side', 'model_id', 'align'].includes(k));
       if (cols.length) db.prepare(`UPDATE photos SET ${cols.map((c) => `${c} = @${c}`).join(', ')} WHERE id = @id`).run({ ...patch, id });
       return api.getPhoto(id);
     },
@@ -229,15 +253,42 @@ export function openDb(file: string) {
       return (db.prepare('SELECT * FROM jumpers WHERE photo_id = ? ORDER BY id').all(photoId) as any[]).map((j) => ({ ...j, points: JSON.parse(j.points) }));
     },
     saveJumper(j: Partial<Jumper> & { photo_id: number; points: { x: number; y: number }[] }) {
-      const row = { color: '#ef4444', label: '', note: '', author: '', ...j, points: JSON.stringify(j.points) };
+      const row = { color: '#ef4444', label: '', note: '', author: '', layer: '', ...j, points: JSON.stringify(j.points) };
       let id = j.id;
-      if (id) db.prepare('UPDATE jumpers SET points=@points, color=@color, label=@label, note=@note, author=@author WHERE id=@id').run(row);
-      else id = Number(db.prepare('INSERT INTO jumpers(photo_id, points, color, label, note, author) VALUES (@photo_id, @points, @color, @label, @note, @author)').run(row).lastInsertRowid);
+      if (id) db.prepare('UPDATE jumpers SET points=@points, color=@color, label=@label, note=@note, author=@author, layer=@layer WHERE id=@id').run(row);
+      else id = Number(db.prepare('INSERT INTO jumpers(photo_id, points, color, label, note, author, layer) VALUES (@photo_id, @points, @color, @label, @note, @author, @layer)').run(row).lastInsertRowid);
       const out = db.prepare('SELECT * FROM jumpers WHERE id = ?').get(id) as any;
       return { ...out, points: JSON.parse(out.points) } as Jumper;
     },
     deleteJumper(id: number) {
       db.prepare('DELETE FROM jumpers WHERE id = ?').run(id);
+    },
+
+    // --- IC cross-reference ------------------------------------------------
+    listIcs(q?: string) {
+      if (!q) return db.prepare('SELECT * FROM ic_xref ORDER BY function, ic').all();
+      const like = `%${q}%`;
+      return db.prepare('SELECT * FROM ic_xref WHERE ic LIKE ? OR function LIKE ? OR platform LIKE ? OR used_in LIKE ? OR alternatives LIKE ? OR notes LIKE ? ORDER BY function, ic').all(like, like, like, like, like, like);
+    },
+    saveIc(r: any) {
+      const row = { function: '', platform: '', used_in: '', alternatives: '', notes: '', source: 'shop', ...r };
+      if (r.id) db.prepare('UPDATE ic_xref SET ic=@ic, function=@function, platform=@platform, used_in=@used_in, alternatives=@alternatives, notes=@notes, source=@source WHERE id=@id').run(row);
+      else row.id = Number(db.prepare('INSERT INTO ic_xref(ic, function, platform, used_in, alternatives, notes, source) VALUES (@ic, @function, @platform, @used_in, @alternatives, @notes, @source)').run(row).lastInsertRowid);
+      return db.prepare('SELECT * FROM ic_xref WHERE id = ?').get(row.id);
+    },
+    deleteIc(id: number) {
+      db.prepare('DELETE FROM ic_xref WHERE id = ?').run(id);
+    },
+
+    // --- demo models ---------------------------------------------------------
+    markDemo(modelId: number) {
+      db.prepare('UPDATE models SET demo = 1 WHERE id = ?').run(modelId);
+    },
+    demoModels() {
+      return db.prepare('SELECT id FROM models WHERE demo = 1').all() as { id: number }[];
+    },
+    filesOfModel(modelId: number) {
+      return db.prepare('SELECT id FROM files WHERE model_id = ?').all(modelId) as { id: string }[];
     },
 
     // --- search across everything -------------------------------------------

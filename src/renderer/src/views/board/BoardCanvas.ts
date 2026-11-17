@@ -1,5 +1,7 @@
 // Canvas renderer and hit testing for a parsed boardview.
 import { isGroundNet } from '@parsers/index.js';
+import { LAYER_BY_ID, layerOfNet, type LayerId } from '@shared/layers';
+import { netSegments } from '../../lib/netlines';
 
 export type Side = 'top' | 'bottom' | 'both';
 export interface Selection {
@@ -37,6 +39,9 @@ export class BoardCanvas {
   oy = 0;
   sel: Selection = { part: null, pin: null, net: null };
   hover: number | null = null;
+  /** Colour-coded layers to draw (net lines + pin colours). */
+  layers = new Set<LayerId>();
+  private netLayer = new Map<string, LayerId | null>();
   private dirty = true;
   private raf = 0;
   private grid = new Map<string, number[]>();
@@ -53,6 +58,7 @@ export class BoardCanvas {
     this.cx = (b.minx + b.maxx) / 2;
     this.cy = (b.miny + b.maxy) / 2;
     this.buildGrid();
+    for (const net of board.nets.keys()) this.netLayer.set(net, layerOfNet(net));
     // Show the side that has parts first.
     if (!board.parts.some((p: any) => p.side === 'top') && board.parts.some((p: any) => p.side === 'bottom')) this.side = 'bottom';
     const loop = () => {
@@ -160,6 +166,28 @@ export class BoardCanvas {
     return this.side === 'both' || side === 'both' || side === this.side;
   }
 
+  setLayers(l: Set<LayerId>) {
+    this.layers = new Set(l);
+    this.invalidate();
+  }
+
+  /** Board coordinates at the canvas centre and board units per screen pixel. */
+  viewState() {
+    const c = this.toBoard(this.canvas.clientWidth / 2, this.canvas.clientHeight / 2);
+    return { cx: c.x, cy: c.y, upp: 1 / this.scale };
+  }
+
+  /** Centre the view on board point (cx, cy) at the given units-per-pixel. */
+  setViewState(cx: number, cy: number, upp: number) {
+    this.scale = 1 / upp;
+    this.ox = 0;
+    this.oy = 0;
+    const s = this.toScreen(cx, cy);
+    this.ox = this.canvas.clientWidth / 2 - s.x;
+    this.oy = this.canvas.clientHeight / 2 - s.y;
+    this.invalidate();
+  }
+
   setSelection(sel: Selection) {
     this.sel = sel;
     this.netParts = new Set();
@@ -239,6 +267,27 @@ export class BoardCanvas {
     }
     ctx.stroke();
 
+    // Colour-coded net lines for the enabled layers (GND only colours pins).
+    if (this.layers.size) {
+      ctx.lineWidth = 1.4;
+      ctx.globalAlpha = 0.75;
+      const side = this.side === 'both' ? 'both' : this.side;
+      for (const [net, layer] of this.netLayer) {
+        if (!layer || layer === 'gnd' || !this.layers.has(layer)) continue;
+        const segs = netSegments(board, net, side);
+        if (!segs.length) continue;
+        ctx.strokeStyle = LAYER_BY_ID[layer].color;
+        ctx.beginPath();
+        for (const sg of segs) {
+          const a = this.toScreen(sg.x1, sg.y1), b = this.toScreen(sg.x2, sg.y2);
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+        }
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+
     const inView = (s: Pt, m = 50) => s.x > -m && s.y > -m && s.x < w + m && s.y < h + m;
     const selPart = this.sel.part;
     const selNet = this.sel.net;
@@ -282,6 +331,8 @@ export class BoardCanvas {
       const r = Math.max(pin.r * this.scale, 1.2);
       const nc = !pin.net || /^(UNCONNECTED|NC)$/i.test(pin.net);
       let color = pin.testpoint ? COLORS.testpoint : nc ? COLORS.pinNC : isGroundNet(pin.net) ? COLORS.pinGnd : COLORS.pin;
+      const pl = pin.net ? this.netLayer.get(pin.net) : null;
+      if (pl && this.layers.has(pl)) color = LAYER_BY_ID[pl].color;
       if (pin.part === selPart) color = COLORS.pinSelPart;
       if (selNet && pin.net === selNet) color = COLORS.pinNet;
       if (pin.index === this.sel.pin) color = COLORS.pinSel;

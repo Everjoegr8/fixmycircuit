@@ -4,6 +4,11 @@ import { api } from '../api';
 import { Icon } from '../components/Icon';
 import { BoardCanvas, type Side } from './board/BoardCanvas';
 import type { Focus } from '../types';
+import type { Reading } from '@shared/types';
+import LayerToggles, { useLayers } from '../components/LayerToggles';
+import HoverCard, { type HoverData } from '../components/HoverCard';
+import { netsByLayer } from '../lib/netlines';
+import { syncBus } from '../lib/sync';
 
 interface Props {
   fileId: string;
@@ -12,6 +17,11 @@ interface Props {
   onFocus: (f: Focus) => void;
   onFindInSchematic: (q: string) => void;
   onOpenSettings: () => void;
+  modelId?: number | null;
+  rev?: number;
+  /** Split-screen sync: this pane's id and whether sync is on. */
+  syncKey?: string;
+  sync?: boolean;
 }
 
 export default function BoardViewer(p: Props) {
@@ -27,6 +37,9 @@ export default function BoardViewer(p: Props) {
   const [showResults, setShowResults] = useState(false);
   const [cursor, setCursor] = useState(0);
   const [hoverInfo, setHoverInfo] = useState<{ x: number; y: number; text: string } | null>(null);
+  const [hoverCard, setHoverCard] = useState<HoverData | null>(null);
+  const [readings, setReadings] = useState<Reading[]>([]);
+  const [layers] = useLayers();
   const [hiddenNetPins, setHiddenNetPins] = useState(0);
   const [loadNonce, setLoadNonce] = useState(0);
 
@@ -55,11 +68,45 @@ export default function BoardViewer(p: Props) {
     return () => { cancelled = true; };
   }, [p.fileId, loadNonce]);
 
+  useEffect(() => {
+    if (p.modelId == null) { setReadings([]); return; }
+    api.listReadings({ model_id: p.modelId }).then(setReadings);
+  }, [p.modelId, p.rev]);
+
+  const layerCounts = useMemo(() => {
+    if (!board) return {};
+    const out: Record<string, number> = {};
+    for (const [l, nets] of netsByLayer(board)) out[l] = nets.length;
+    return out;
+  }, [board]);
+
+  useEffect(() => { viewRef.current?.setLayers(layers); }, [layers, board]);
+
+  // Split-screen sync
+  const emitView = () => {
+    const v = viewRef.current;
+    if (!v || !p.sync || !p.syncKey) return;
+    syncBus.emit({ type: 'view', source: p.syncKey, ...v.viewState() });
+  };
+  const emitZoom = (factor: number) => {
+    if (p.sync && p.syncKey) syncBus.emit({ type: 'zoom', source: p.syncKey, factor });
+  };
+  useEffect(() => {
+    if (!p.sync) return;
+    return syncBus.on((e) => {
+      const v = viewRef.current;
+      if (!v || e.source === p.syncKey) return;
+      if (e.type === 'view' && v.side !== 'bottom' && v.rotation === 0) v.setViewState(e.cx, e.cy, e.upp);
+      if (e.type === 'zoom' && e.pdf) v.zoomAt(v.canvas.clientWidth / 2, v.canvas.clientHeight / 2, e.factor);
+    });
+  }, [p.sync, p.syncKey]);
+
   // Create renderer
   useEffect(() => {
     if (!board || !canvasRef.current) return;
     const v = new BoardCanvas(canvasRef.current, board);
     viewRef.current = v;
+    v.setLayers(layers);
     setSide(v.side);
     v.resize();
     v.fit();
@@ -171,7 +218,7 @@ export default function BoardViewer(p: Props) {
     if (drag.current && e.buttons) {
       const dx = e.clientX - drag.current.x, dy = e.clientY - drag.current.y;
       if (Math.abs(dx) + Math.abs(dy) > 2) drag.current.moved = true;
-      if (drag.current.moved) { v.pan(dx, dy); drag.current.x = e.clientX; drag.current.y = e.clientY; }
+      if (drag.current.moved) { v.pan(dx, dy); drag.current.x = e.clientX; drag.current.y = e.clientY; emitView(); }
       return;
     }
     const pin = v.pinAt(e.clientX - rect.left, e.clientY - rect.top);
@@ -179,10 +226,30 @@ export default function BoardViewer(p: Props) {
     if (pin != null) {
       const pp = board.pins[pin];
       const part = board.parts[pp.part];
-      setHoverInfo({ x: e.clientX - rect.left, y: e.clientY - rect.top, text: `${part?.testpoint ? 'Test point' : part?.name ?? ''}${pp.snum ? ' pin ' + pp.snum : ''} · ${pp.net || 'no net'}` });
+      const up = (x: string) => (x || '').toUpperCase();
+      const onNet = pp.net ? readings.filter((r) => up(r.net) === up(pp.net)) : [];
+      // ICs on the same net: parts named U… or with many pins, other than this one.
+      const ics: string[] = [];
+      if (pp.net && board.nets.has(pp.net) && board.nets.get(pp.net).length < 2000) {
+        for (const i of board.nets.get(pp.net)) {
+          const q = board.parts[board.pins[i].part];
+          if (q && !q.testpoint && (/^U/i.test(q.name) || q.pins.length >= 8) && !ics.includes(q.name)) ics.push(q.name);
+        }
+      }
+      setHoverInfo(null);
+      setHoverCard({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+        pin: `${part?.testpoint ? 'Test point' : part?.name ?? ''}${pp.snum ? '.' + pp.snum : ''}`,
+        net: pp.net,
+        part: part?.name,
+        readings: onNet,
+        ics: ics.sort((a, b) => (a === part?.name ? -1 : b === part?.name ? 1 : 0)),
+      });
     } else {
+      setHoverCard(null);
       const part = v.partAt(e.clientX - rect.left, e.clientY - rect.top);
-      setHoverInfo(part != null ? { x: e.clientX - rect.left, y: e.clientY - rect.top, text: board.parts[part].name } : null);
+      setHoverInfo(part != null ? { x: e.clientX - rect.left, y: e.clientY - rect.top, text: `${board.parts[part].name}${board.parts[part].mfgcode ? ' · ' + board.parts[part].mfgcode : ''}` } : null);
     }
   };
   const onMouseUp = (e: React.MouseEvent) => {
@@ -206,7 +273,10 @@ export default function BoardViewer(p: Props) {
     const v = viewRef.current;
     if (!v) return;
     const rect = v.canvas.getBoundingClientRect();
-    v.zoomAt(e.clientX - rect.left, e.clientY - rect.top, Math.pow(1.0015, -e.deltaY));
+    const f = Math.pow(1.0015, -e.deltaY);
+    v.zoomAt(e.clientX - rect.left, e.clientY - rect.top, f);
+    emitView();
+    emitZoom(f);
   };
 
   const part = board && sel.part != null ? board.parts[sel.part] : null;
@@ -281,7 +351,7 @@ export default function BoardViewer(p: Props) {
           onMouseDown={onMouseDown}
           onMouseMove={onMouseMove}
           onMouseUp={onMouseUp}
-          onMouseLeave={() => { setHoverInfo(null); if (viewRef.current) { viewRef.current.hover = null; viewRef.current.invalidate(); } }}
+          onMouseLeave={() => { setHoverInfo(null); setHoverCard(null); if (viewRef.current) { viewRef.current.hover = null; viewRef.current.invalidate(); } }}
           onWheel={onWheel}
           data-testid="board-canvas"
         />
@@ -289,6 +359,12 @@ export default function BoardViewer(p: Props) {
         {hoverInfo && (
           <div className="pointer-events-none absolute z-10 rounded bg-black/80 px-2 py-0.5 font-mono text-[11px] text-slate-100" style={{ left: hoverInfo.x + 14, top: hoverInfo.y + 14 }}>
             {hoverInfo.text}
+          </div>
+        )}
+        {hoverCard && <HoverCard d={hoverCard} />}
+        {board && (
+          <div className="absolute right-2 top-2 z-10">
+            <LayerToggles counts={layerCounts} title="Trace layers (nets)" />
           </div>
         )}
         {(part || sel.net) && (
