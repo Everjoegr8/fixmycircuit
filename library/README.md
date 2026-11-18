@@ -24,7 +24,7 @@ upstream commit and keeps its licence and attribution.
 3. Run `npm run library -- out/open-library` and `npm test`, then copy the regenerated
    `library-index.hosted.json` into this folder.
 
-## Boards (21)
+## Boards (30)
 
 | Brand | Series | Model | Device | Licence | Source |
 |---|---|---|---|---|---|
@@ -49,6 +49,15 @@ upstream commit and keeps its licence and attribution.
 | Community | Raspberry Pi CM5 carriers | CM5 Minima | embedded computer | CERN-OHL-S-2.0 | [source](https://github.com/KiCad/kicad-source-mirror) |
 | Lord's Boards | Feather boards | RoyalBlue54L Feather | wireless board | CERN-OHL-P-2.0 | [source](https://github.com/KiCad/kicad-source-mirror) |
 | OpenAir | Air-quality monitors | One Air Max | sensor board | CC-BY-SA-4.0 | [source](https://github.com/KiCad/kicad-source-mirror) |
+| SQFMI | Smartwatch | Watchy | smartwatch | MIT | [source](https://github.com/sqfmi/Watchy-Hardware) |
+| Open-Smartwatch | Smartwatch | Open-Smartwatch Light | smartwatch | GPL-3.0-only | [source](https://github.com/Open-Smartwatch/open-smartwatch-light) |
+| Olimex | ESP32 boards | ESP32-C3-DevKit-Lipo Rev D | battery-powered board | CERN-OHL-S-2.0 | [source](https://github.com/OLIMEX/ESP32-C3-DevKit-Lipo) |
+| Olimex | ESP32 boards | ESP32-S3-DevKit-LiPo Rev B | battery-powered board | CERN-OHL-S-2.0 | [source](https://github.com/OLIMEX/ESP32-S3-DevKit-LiPo) |
+| SoloKeys | Security keys | Solo (USB-C) | security key | CC-BY-SA-4.0 | [source](https://github.com/solokeys/solo-hw) |
+| Electronic Cats | Wireless tools | CatSniffer | wireless board | CERN-OHL-1.2 | [source](https://github.com/ElectronicCats/CatSniffer) |
+| Great Scott Gadgets | USB tools | Cynthion | USB analyzer | CERN-OHL-P-2.0 | [source](https://github.com/greatscottgadgets/cynthion-hardware) |
+| Antmicro | Jetson baseboards | Jetson Orin baseboard | embedded computer | Apache-2.0 | [source](https://github.com/antmicro/jetson-orin-baseboard) |
+| Antmicro | FPGA boards | Kria K26 devboard | embedded computer | Apache-2.0 | [source](https://github.com/antmicro/kria-k26-devboard) |
 
 ## Looked at and left out
 
@@ -60,3 +69,4 @@ upstream commit and keeps its licence and attribution.
 - **MNT Reform / Pocket Reform**: CERN-OHL-S-2.0 KiCad files on source.mnt.re, which the build server could not reach. Add later the same way.
 - **Fairphone**: Fairphone publishes repair guides and spare parts, not open board layouts.
 - **Apple, Samsung, Xiaomi, Tecno, Infinix, Itel boardviews**: The files that circulate online are leaked manufacturer data. They are not redistributable.
+- **Inkplate 6**: Main board is published as schematic and Gerbers only, no layout file the app can open.

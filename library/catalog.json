@@ -11,10 +11,21 @@
       "repo": "https://github.com/V3lectronics/SPIRIT",
       "commit": "af8c98e87de79972452652a8447139ee980d437a",
       "files": [
-        { "src": "EDA-kicad/cm5-carrier.kicad_pcb", "kind": "board" },
-        { "src": "EDA-kicad/output.pdf", "as": "cm5-carrier-schematic.pdf", "kind": "schematic" }
+        {
+          "src": "EDA-kicad/cm5-carrier.kicad_pcb",
+          "kind": "board"
+        },
+        {
+          "src": "EDA-kicad/output.pdf",
+          "as": "cm5-carrier-schematic.pdf",
+          "kind": "schematic"
+        }
       ],
-      "license": { "spdx": "CERN-OHL-S-2.0", "file": "licensing/LICENSE-HARDWARE.txt", "attribution": "Credit: SPIRIT smartphone project and V Electronics community. https://github.com/V3lectronics/SPIRIT" },
+      "license": {
+        "spdx": "CERN-OHL-S-2.0",
+        "file": "licensing/LICENSE-HARDWARE.txt",
+        "attribution": "Credit: SPIRIT smartphone project and V Electronics community. https://github.com/V3lectronics/SPIRIT"
+      },
       "notes": "Open-source smartphone built on a Raspberry Pi CM5. Work in progress upstream."
     },
     {
@@ -26,10 +37,20 @@
       "repo": "https://github.com/antmicro/snapdragon-625-baseboard",
       "commit": "149b52e32c64d0f68454da9ab6b094247ee589e1",
       "files": [
-        { "src": "sc606-baseboard.kicad_pcb", "kind": "board" },
-        { "src": "doc/sc606-baseboard.pdf", "kind": "schematic" }
+        {
+          "src": "sc606-baseboard.kicad_pcb",
+          "kind": "board"
+        },
+        {
+          "src": "doc/sc606-baseboard.pdf",
+          "kind": "schematic"
+        }
       ],
-      "license": { "spdx": "Apache-2.0", "file": "LICENSE", "attribution": "Copyright (c) 2022-2024 Antmicro. https://github.com/antmicro/snapdragon-625-baseboard" },
+      "license": {
+        "spdx": "Apache-2.0",
+        "file": "LICENSE",
+        "attribution": "Copyright (c) 2022-2024 Antmicro. https://github.com/antmicro/snapdragon-625-baseboard"
+      },
       "notes": "Snapdragon 625 is a phone platform (used in many 2016-2018 mid-range phones). Good for learning phone-style PMIC and power rails."
     },
     {
@@ -41,10 +62,20 @@
       "repo": "https://github.com/antmicro/snapdragon-845-baseboard",
       "commit": "66b884d6ff47b087dd29949ac58244aa25093583",
       "files": [
-        { "src": "sa800u-baseboard-hw.kicad_pcb", "kind": "board" },
-        { "src": "doc/sa800u-baseboard-hw.pdf", "kind": "schematic" }
+        {
+          "src": "sa800u-baseboard-hw.kicad_pcb",
+          "kind": "board"
+        },
+        {
+          "src": "doc/sa800u-baseboard-hw.pdf",
+          "kind": "schematic"
+        }
       ],
-      "license": { "spdx": "Apache-2.0", "file": "LICENSE", "attribution": "Copyright (c) Antmicro. https://github.com/antmicro/snapdragon-845-baseboard" },
+      "license": {
+        "spdx": "Apache-2.0",
+        "file": "LICENSE",
+        "attribution": "Copyright (c) Antmicro. https://github.com/antmicro/snapdragon-845-baseboard"
+      },
       "notes": "Snapdragon 845 flagship-phone platform on an open baseboard."
     },
     {
@@ -56,10 +87,20 @@
       "repo": "https://github.com/OLIMEX/DIY-LAPTOP",
       "commit": "36193de48e5ff86c6fa309eb75bd450a9f88c4c7",
       "files": [
-        { "src": "HARDWARE/A64-TERES/TERES-PCB1-A64-MAIN/Rev.C/TERES_PCB1-A64-MAIN_Rev.C.kicad_pcb", "kind": "board" },
-        { "src": "HARDWARE/A64-TERES/TERES-PCB1-A64-MAIN/Rev.C/TERES_PCB1-A64-MAIN_Rev.C.pdf", "kind": "schematic" }
+        {
+          "src": "HARDWARE/A64-TERES/TERES-PCB1-A64-MAIN/Rev.C/TERES_PCB1-A64-MAIN_Rev.C.kicad_pcb",
+          "kind": "board"
+        },
+        {
+          "src": "HARDWARE/A64-TERES/TERES-PCB1-A64-MAIN/Rev.C/TERES_PCB1-A64-MAIN_Rev.C.pdf",
+          "kind": "schematic"
+        }
       ],
-      "license": { "spdx": "Apache-2.0", "file": "LICENSE", "attribution": "TERES-I by Olimex Ltd. https://github.com/OLIMEX/DIY-LAPTOP" },
+      "license": {
+        "spdx": "Apache-2.0",
+        "file": "LICENSE",
+        "attribution": "TERES-I by Olimex Ltd. https://github.com/OLIMEX/DIY-LAPTOP"
+      },
       "notes": "Allwinner A64, the same SoC as the PinePhone, with AXP803 PMIC, eMMC and LPDDR3."
     },
     {
@@ -71,10 +112,20 @@
       "repo": "https://github.com/OLIMEX/DIY-LAPTOP",
       "commit": "36193de48e5ff86c6fa309eb75bd450a9f88c4c7",
       "files": [
-        { "src": "HARDWARE/A64-TERES/TERES-PCB2-IO/Rev.B/TERES-PCB2-IO_Rev.B.kicad_pcb", "kind": "board" },
-        { "src": "HARDWARE/A64-TERES/TERES-PCB2-IO/Rev.B/TERES-PCB2-IO_Rev.B.pdf", "kind": "schematic" }
+        {
+          "src": "HARDWARE/A64-TERES/TERES-PCB2-IO/Rev.B/TERES-PCB2-IO_Rev.B.kicad_pcb",
+          "kind": "board"
+        },
+        {
+          "src": "HARDWARE/A64-TERES/TERES-PCB2-IO/Rev.B/TERES-PCB2-IO_Rev.B.pdf",
+          "kind": "schematic"
+        }
       ],
-      "license": { "spdx": "Apache-2.0", "file": "LICENSE", "attribution": "TERES-I by Olimex Ltd. https://github.com/OLIMEX/DIY-LAPTOP" }
+      "license": {
+        "spdx": "Apache-2.0",
+        "file": "LICENSE",
+        "attribution": "TERES-I by Olimex Ltd. https://github.com/OLIMEX/DIY-LAPTOP"
+      }
     },
     {
       "id": "olimex-teres-keyboard-reva",
@@ -85,9 +136,16 @@
       "repo": "https://github.com/OLIMEX/DIY-LAPTOP",
       "commit": "36193de48e5ff86c6fa309eb75bd450a9f88c4c7",
       "files": [
-        { "src": "HARDWARE/A64-TERES/TERES-PCB5-KEYBOARD/Rev.A/TERES-PCB5-KEYBOARD_Rev.A.kicad_pcb", "kind": "board" }
+        {
+          "src": "HARDWARE/A64-TERES/TERES-PCB5-KEYBOARD/Rev.A/TERES-PCB5-KEYBOARD_Rev.A.kicad_pcb",
+          "kind": "board"
+        }
       ],
-      "license": { "spdx": "Apache-2.0", "file": "LICENSE", "attribution": "TERES-I by Olimex Ltd. https://github.com/OLIMEX/DIY-LAPTOP" }
+      "license": {
+        "spdx": "Apache-2.0",
+        "file": "LICENSE",
+        "attribution": "TERES-I by Olimex Ltd. https://github.com/OLIMEX/DIY-LAPTOP"
+      }
     },
     {
       "id": "olimex-a64-olinuxino-revh",
@@ -98,10 +156,20 @@
       "repo": "https://github.com/OLIMEX/OLINUXINO",
       "commit": "85eee9c17ee13af65617d73bdd94de7ec49cfb42",
       "files": [
-        { "src": "HARDWARE/A64-OLinuXino/1. Latest hardware revision/A64-OLinuXino hardware revision H/A64-OlinuXino_Rev_H.kicad_pcb", "kind": "board" },
-        { "src": "HARDWARE/A64-OLinuXino/1. Latest hardware revision/A64-OLinuXino hardware revision H/A64-OlinuXino_Rev_H.pdf", "kind": "schematic" }
+        {
+          "src": "HARDWARE/A64-OLinuXino/1. Latest hardware revision/A64-OLinuXino hardware revision H/A64-OlinuXino_Rev_H.kicad_pcb",
+          "kind": "board"
+        },
+        {
+          "src": "HARDWARE/A64-OLinuXino/1. Latest hardware revision/A64-OLinuXino hardware revision H/A64-OlinuXino_Rev_H.pdf",
+          "kind": "schematic"
+        }
       ],
-      "license": { "spdx": "CC-BY-SA-3.0-US", "url": "https://creativecommons.org/licenses/by-sa/3.0/us/legalcode", "attribution": "A64-OLinuXino by Olimex Ltd. https://github.com/OLIMEX/OLINUXINO (OLinuXino is a trademark of Olimex Ltd.)" },
+      "license": {
+        "spdx": "CC-BY-SA-3.0-US",
+        "url": "https://creativecommons.org/licenses/by-sa/3.0/us/legalcode",
+        "attribution": "A64-OLinuXino by Olimex Ltd. https://github.com/OLIMEX/OLINUXINO (OLinuXino is a trademark of Olimex Ltd.)"
+      },
       "notes": "Allwinner A64 + AXP803, the PinePhone's SoC and PMIC pair."
     },
     {
@@ -113,10 +181,20 @@
       "repo": "https://github.com/OLIMEX/ESP32-EVB",
       "commit": "a3ec2f448109cb8f35ce7cb21a027bb7c837ab61",
       "files": [
-        { "src": "HARDWARE/REV-L/ESP32-EVB_Rev_L.kicad_pcb", "kind": "board" },
-        { "src": "HARDWARE/REV-L/ESP32-EVB_Rev_L.pdf", "kind": "schematic" }
+        {
+          "src": "HARDWARE/REV-L/ESP32-EVB_Rev_L.kicad_pcb",
+          "kind": "board"
+        },
+        {
+          "src": "HARDWARE/REV-L/ESP32-EVB_Rev_L.pdf",
+          "kind": "schematic"
+        }
       ],
-      "license": { "spdx": "Apache-2.0", "file": "LICENSE", "attribution": "ESP32-EVB by Olimex Ltd. https://github.com/OLIMEX/ESP32-EVB" }
+      "license": {
+        "spdx": "Apache-2.0",
+        "file": "LICENSE",
+        "attribution": "ESP32-EVB by Olimex Ltd. https://github.com/OLIMEX/ESP32-EVB"
+      }
     },
     {
       "id": "olimex-esp32-poe-revm2",
@@ -127,10 +205,20 @@
       "repo": "https://github.com/OLIMEX/ESP32-POE",
       "commit": "deb38a377d50eadb04ddc7118a17a5ae58b1ee53",
       "files": [
-        { "src": "HARDWARE/ESP32-PoE-hardware-revision-M2/ESP32-PoE_Rev_M2.kicad_pcb", "kind": "board" },
-        { "src": "HARDWARE/ESP32-PoE-hardware-revision-M2/ESP32-PoE_Rev_M2.pdf", "kind": "schematic" }
+        {
+          "src": "HARDWARE/ESP32-PoE-hardware-revision-M2/ESP32-PoE_Rev_M2.kicad_pcb",
+          "kind": "board"
+        },
+        {
+          "src": "HARDWARE/ESP32-PoE-hardware-revision-M2/ESP32-PoE_Rev_M2.pdf",
+          "kind": "schematic"
+        }
       ],
-      "license": { "spdx": "Apache-2.0", "file": "LICENSE", "attribution": "ESP32-PoE by Olimex Ltd. https://github.com/OLIMEX/ESP32-POE" }
+      "license": {
+        "spdx": "Apache-2.0",
+        "file": "LICENSE",
+        "attribution": "ESP32-PoE by Olimex Ltd. https://github.com/OLIMEX/ESP32-POE"
+      }
     },
     {
       "id": "gsg-hackrf-one",
@@ -141,9 +229,16 @@
       "repo": "https://github.com/greatscottgadgets/hackrf",
       "commit": "3a63b29953a3b763f428821e02110def9fb1cade",
       "files": [
-        { "src": "hardware/hackrf-one/hackrf-one.kicad_pcb", "kind": "board" }
+        {
+          "src": "hardware/hackrf-one/hackrf-one.kicad_pcb",
+          "kind": "board"
+        }
       ],
-      "license": { "spdx": "CERN-OHL-P-2.0", "file": "hardware/hackrf-one/LICENSE", "attribution": "Copyright (c) 2012-2022, Great Scott Gadgets. https://github.com/greatscottgadgets/hackrf" },
+      "license": {
+        "spdx": "CERN-OHL-P-2.0",
+        "file": "hardware/hackrf-one/LICENSE",
+        "attribution": "Copyright (c) 2012-2022, Great Scott Gadgets. https://github.com/greatscottgadgets/hackrf"
+      },
       "notes": "1 MHz to 6 GHz radio: RF front end, mixers and shields, close to a phone's RF section."
     },
     {
@@ -155,9 +250,16 @@
       "repo": "https://github.com/zswatch/watch-devkit-hw",
       "commit": "bede75a23fa663906a5dfdbf2f2f8dc45037da90",
       "files": [
-        { "src": "devkit/ZSWatch-Watch-DevKit.kicad_pcb", "kind": "board" }
+        {
+          "src": "devkit/ZSWatch-Watch-DevKit.kicad_pcb",
+          "kind": "board"
+        }
       ],
-      "license": { "spdx": "GPL-3.0-only", "file": "devkit/LICENSE", "attribution": "ZSWatch by Jakob Krantz and contributors. https://github.com/zswatch/watch-devkit-hw" },
+      "license": {
+        "spdx": "GPL-3.0-only",
+        "file": "devkit/LICENSE",
+        "attribution": "ZSWatch by Jakob Krantz and contributors. https://github.com/zswatch/watch-devkit-hw"
+      },
       "notes": "nRF5340 smartwatch with charger, display connector and sensors."
     },
     {
@@ -169,9 +271,16 @@
       "repo": "https://github.com/Allegra42/ZEReader-KiCad",
       "commit": "08c0682c11b4d0c3c5c2b0c4e7cad1d863d2261f",
       "files": [
-        { "src": "ZEReader-Pico.kicad_pcb", "kind": "board" }
+        {
+          "src": "ZEReader-Pico.kicad_pcb",
+          "kind": "board"
+        }
       ],
-      "license": { "spdx": "CERN-OHL-S-2.0", "file": "LICENSE", "attribution": "ZEReader by Allegra42. https://github.com/Allegra42/ZEReader-KiCad" },
+      "license": {
+        "spdx": "CERN-OHL-S-2.0",
+        "file": "LICENSE",
+        "attribution": "ZEReader by Allegra42. https://github.com/Allegra42/ZEReader-KiCad"
+      },
       "notes": "Open e-paper reader board with battery charging."
     },
     {
@@ -183,10 +292,20 @@
       "repo": "https://github.com/FrameworkComputer/ExpansionCards",
       "commit": "2904a95d60d4ba771c5c3c56d6fdba7078243fe8",
       "files": [
-        { "src": "Electrical/Microcontroller/Microcontroller.kicad_pcb", "kind": "board" },
-        { "src": "Electrical/Microcontroller/Microcontroller.pdf", "kind": "schematic" }
+        {
+          "src": "Electrical/Microcontroller/Microcontroller.kicad_pcb",
+          "kind": "board"
+        },
+        {
+          "src": "Electrical/Microcontroller/Microcontroller.pdf",
+          "kind": "schematic"
+        }
       ],
-      "license": { "spdx": "CC-BY-4.0", "file": "LICENSE", "attribution": "Framework Laptop Expansion Card reference design, Framework Computer Inc. https://github.com/FrameworkComputer/ExpansionCards" }
+      "license": {
+        "spdx": "CC-BY-4.0",
+        "file": "LICENSE",
+        "attribution": "Framework Laptop Expansion Card reference design, Framework Computer Inc. https://github.com/FrameworkComputer/ExpansionCards"
+      }
     },
     {
       "id": "zokhoi-lte-card",
@@ -197,9 +316,16 @@
       "repo": "https://github.com/Zokhoi/framework-cellular-card",
       "commit": "90e63831ed1ba46d6369a1d1b0980fe6ce5afae8",
       "files": [
-        { "src": "usb-lte/usb-lte.kicad_pcb", "kind": "board" }
+        {
+          "src": "usb-lte/usb-lte.kicad_pcb",
+          "kind": "board"
+        }
       ],
-      "license": { "spdx": "CERN-OHL-W-2.0", "file": "License.txt", "attribution": "framework-cellular-card by Zokhoi. https://github.com/Zokhoi/framework-cellular-card" },
+      "license": {
+        "spdx": "CERN-OHL-W-2.0",
+        "file": "License.txt",
+        "attribution": "framework-cellular-card by Zokhoi. https://github.com/Zokhoi/framework-cellular-card"
+      },
       "notes": "LTE modem with SIM socket and antenna feed, the cellular part of a phone."
     },
     {
@@ -211,10 +337,20 @@
       "repo": "https://github.com/okrasolar/Cicada-HW",
       "commit": "101d41a271a621c0513b5814cdf513bcb0c38191",
       "files": [
-        { "src": "design/source/kicad/cicada-2g/cicada-2g.kicad_pcb", "kind": "board" },
-        { "src": "design/pdfs/cicada-2g-v1.1.pdf", "kind": "schematic" }
+        {
+          "src": "design/source/kicad/cicada-2g/cicada-2g.kicad_pcb",
+          "kind": "board"
+        },
+        {
+          "src": "design/pdfs/cicada-2g-v1.1.pdf",
+          "kind": "schematic"
+        }
       ],
-      "license": { "spdx": "MIT", "file": "LICENSE", "attribution": "Copyright (c) 2019 EnAccess Foundation. https://github.com/okrasolar/Cicada-HW" },
+      "license": {
+        "spdx": "MIT",
+        "file": "LICENSE",
+        "attribution": "Copyright (c) 2019 EnAccess Foundation. https://github.com/okrasolar/Cicada-HW"
+      },
       "notes": "SIM800C GSM module, SIM card and power: the same module family as many feature phones."
     },
     {
@@ -226,10 +362,20 @@
       "repo": "https://github.com/okrasolar/Cicada-HW",
       "commit": "101d41a271a621c0513b5814cdf513bcb0c38191",
       "files": [
-        { "src": "design/source/kicad/cicada-4g/cicada-4g.kicad_pcb", "kind": "board" },
-        { "src": "design/pdfs/cicada-4g-v1.1.pdf", "kind": "schematic" }
+        {
+          "src": "design/source/kicad/cicada-4g/cicada-4g.kicad_pcb",
+          "kind": "board"
+        },
+        {
+          "src": "design/pdfs/cicada-4g-v1.1.pdf",
+          "kind": "schematic"
+        }
       ],
-      "license": { "spdx": "MIT", "file": "LICENSE", "attribution": "Copyright (c) 2019 EnAccess Foundation. https://github.com/okrasolar/Cicada-HW" }
+      "license": {
+        "spdx": "MIT",
+        "file": "LICENSE",
+        "attribution": "Copyright (c) 2019 EnAccess Foundation. https://github.com/okrasolar/Cicada-HW"
+      }
     },
     {
       "id": "antmicro-jetson-nano",
@@ -240,9 +386,16 @@
       "repo": "https://github.com/antmicro/jetson-nano-baseboard",
       "commit": "d8d0b2d71ab4cc4bcdb204a09f78be40d4c8cda3",
       "files": [
-        { "src": "jetson-nano-baseboard.kicad_pcb", "kind": "board" }
+        {
+          "src": "jetson-nano-baseboard.kicad_pcb",
+          "kind": "board"
+        }
       ],
-      "license": { "spdx": "Apache-2.0", "file": "LICENSE", "attribution": "Copyright (c) Antmicro. https://github.com/antmicro/jetson-nano-baseboard" }
+      "license": {
+        "spdx": "Apache-2.0",
+        "file": "LICENSE",
+        "attribution": "Copyright (c) Antmicro. https://github.com/antmicro/jetson-nano-baseboard"
+      }
     },
     {
       "id": "antmicro-jetson-thor",
@@ -253,9 +406,16 @@
       "repo": "https://github.com/KiCad/kicad-source-mirror",
       "commit": "391edc43824b23738fa445436d6a24e8dc105b42",
       "files": [
-        { "src": "demos/jetson-agx-thor-baseboard/jetson-agx-thor-baseboard.kicad_pcb", "kind": "board" }
+        {
+          "src": "demos/jetson-agx-thor-baseboard/jetson-agx-thor-baseboard.kicad_pcb",
+          "kind": "board"
+        }
       ],
-      "license": { "spdx": "Apache-2.0", "file": "demos/jetson-agx-thor-baseboard/LICENSE", "attribution": "Copyright (c) 2025-2026 Antmicro. Shipped as a KiCad demo, https://github.com/KiCad/kicad-source-mirror/tree/master/demos/jetson-agx-thor-baseboard" },
+      "license": {
+        "spdx": "Apache-2.0",
+        "file": "demos/jetson-agx-thor-baseboard/LICENSE",
+        "attribution": "Copyright (c) 2025-2026 Antmicro. Shipped as a KiCad demo, https://github.com/KiCad/kicad-source-mirror/tree/master/demos/jetson-agx-thor-baseboard"
+      },
       "notes": "Large, dense multilayer board: a good stress test for the viewer."
     },
     {
@@ -267,10 +427,20 @@
       "repo": "https://github.com/KiCad/kicad-source-mirror",
       "commit": "391edc43824b23738fa445436d6a24e8dc105b42",
       "files": [
-        { "src": "demos/cm5_minima/CM5_MINIMA_3.kicad_pcb", "kind": "board" },
-        { "src": "demos/cm5_minima/CM5_MINIMA_3.pdf", "kind": "schematic" }
+        {
+          "src": "demos/cm5_minima/CM5_MINIMA_3.kicad_pcb",
+          "kind": "board"
+        },
+        {
+          "src": "demos/cm5_minima/CM5_MINIMA_3.pdf",
+          "kind": "schematic"
+        }
       ],
-      "license": { "spdx": "CERN-OHL-S-2.0", "file": "demos/cm5_minima/LICENSE.txt", "attribution": "CM5 Minima, shipped as a KiCad demo, https://github.com/KiCad/kicad-source-mirror/tree/master/demos/cm5_minima" }
+      "license": {
+        "spdx": "CERN-OHL-S-2.0",
+        "file": "demos/cm5_minima/LICENSE.txt",
+        "attribution": "CM5 Minima, shipped as a KiCad demo, https://github.com/KiCad/kicad-source-mirror/tree/master/demos/cm5_minima"
+      }
     },
     {
       "id": "kicad-royalblue54l-feather",
@@ -281,9 +451,16 @@
       "repo": "https://github.com/KiCad/kicad-source-mirror",
       "commit": "391edc43824b23738fa445436d6a24e8dc105b42",
       "files": [
-        { "src": "demos/royalblue54L_feather/RoyalBlue54L-Feather.kicad_pcb", "kind": "board" }
+        {
+          "src": "demos/royalblue54L_feather/RoyalBlue54L-Feather.kicad_pcb",
+          "kind": "board"
+        }
       ],
-      "license": { "spdx": "CERN-OHL-P-2.0", "file": "demos/royalblue54L_feather/LICENSE", "attribution": "RoyalBlue54L Feather, shipped as a KiCad demo, https://github.com/KiCad/kicad-source-mirror/tree/master/demos/royalblue54L_feather" }
+      "license": {
+        "spdx": "CERN-OHL-P-2.0",
+        "file": "demos/royalblue54L_feather/LICENSE",
+        "attribution": "RoyalBlue54L Feather, shipped as a KiCad demo, https://github.com/KiCad/kicad-source-mirror/tree/master/demos/royalblue54L_feather"
+      }
     },
     {
       "id": "kicad-openair-max",
@@ -294,19 +471,276 @@
       "repo": "https://github.com/KiCad/kicad-source-mirror",
       "commit": "391edc43824b23738fa445436d6a24e8dc105b42",
       "files": [
-        { "src": "demos/openair-max/One-Air-Max.kicad_pcb", "kind": "board" }
+        {
+          "src": "demos/openair-max/One-Air-Max.kicad_pcb",
+          "kind": "board"
+        }
       ],
-      "license": { "spdx": "CC-BY-SA-4.0", "file": "demos/openair-max/LICENSE.txt", "attribution": "One Air Max (OpenAir project), shipped as a KiCad demo, https://github.com/KiCad/kicad-source-mirror/tree/master/demos/openair-max" }
+      "license": {
+        "spdx": "CC-BY-SA-4.0",
+        "file": "demos/openair-max/LICENSE.txt",
+        "attribution": "One Air Max (OpenAir project), shipped as a KiCad demo, https://github.com/KiCad/kicad-source-mirror/tree/master/demos/openair-max"
+      }
+    },
+    {
+      "id": "sqfmi-watchy",
+      "brand": "SQFMI",
+      "series": "Smartwatch",
+      "model": "Watchy",
+      "device": "smartwatch",
+      "repo": "https://github.com/sqfmi/Watchy-Hardware",
+      "commit": "5f147972aa2148d4971f3c41fc3ce39ff8c48131",
+      "files": [
+        {
+          "src": "Watchy.kicad_pcb",
+          "kind": "board"
+        },
+        {
+          "src": "WatchySchematic.pdf",
+          "kind": "schematic"
+        }
+      ],
+      "license": {
+        "spdx": "MIT",
+        "file": "LICENSE",
+        "attribution": "Watchy by SQFMI. https://github.com/sqfmi/Watchy-Hardware"
+      },
+      "notes": "ESP32 e-paper smartwatch with LiPo charging, vibration motor and RTC."
+    },
+    {
+      "id": "osw-light",
+      "brand": "Open-Smartwatch",
+      "series": "Smartwatch",
+      "model": "Open-Smartwatch Light",
+      "device": "smartwatch",
+      "repo": "https://github.com/Open-Smartwatch/open-smartwatch-light",
+      "commit": "55ce0ec0e0254e03b575917788cb001507b01619",
+      "files": [
+        {
+          "src": "osw-light.kicad_pcb",
+          "kind": "board"
+        },
+        {
+          "src": "docs/osw-light-schematic.pdf",
+          "kind": "schematic"
+        }
+      ],
+      "license": {
+        "spdx": "GPL-3.0-only",
+        "file": "LICENSE",
+        "attribution": "Open-Smartwatch Light by the Open-Smartwatch project. https://github.com/Open-Smartwatch/open-smartwatch-light"
+      },
+      "notes": "Round-display smartwatch with GPS, IMU and battery charging."
+    },
+    {
+      "id": "olimex-esp32-c3-devkit-lipo-revd",
+      "brand": "Olimex",
+      "series": "ESP32 boards",
+      "model": "ESP32-C3-DevKit-Lipo Rev D",
+      "device": "battery-powered board",
+      "repo": "https://github.com/OLIMEX/ESP32-C3-DevKit-Lipo",
+      "commit": "5d93e79d46cf3b05782d9fe0f95a8a2e1ca6abbe",
+      "files": [
+        {
+          "src": "HARDWARE/ESP32-C3-DevKit-Lipo_Rev_D/ESP32-C3-DevKit-Lipo_Rev_D.kicad_pcb",
+          "kind": "board"
+        },
+        {
+          "src": "HARDWARE/ESP32-C3-DevKit-Lipo_Rev_D/ESP32-C3-DevKit-Lipo_Rev_D.pdf",
+          "kind": "schematic"
+        }
+      ],
+      "license": {
+        "spdx": "CERN-OHL-S-2.0",
+        "url": "https://spdx.org/licenses/CERN-OHL-S-2.0.html",
+        "attribution": "ESP32-C3-DevKit-Lipo by Olimex Ltd. https://github.com/OLIMEX/ESP32-C3-DevKit-Lipo (hardware licence stated in the repository README; Olimex silkscreen credits must remain)"
+      },
+      "notes": "Single-cell LiPo charger and power path, like a phone's charging section."
+    },
+    {
+      "id": "olimex-esp32-s3-devkit-lipo-revb",
+      "brand": "Olimex",
+      "series": "ESP32 boards",
+      "model": "ESP32-S3-DevKit-LiPo Rev B",
+      "device": "battery-powered board",
+      "repo": "https://github.com/OLIMEX/ESP32-S3-DevKit-LiPo",
+      "commit": "98e62ae2b9b1e52448ec585089730defb45ba869",
+      "files": [
+        {
+          "src": "HARDWARE/ESP32-S3-DevKit-LiPo_Rev_B/ESP32-S3-DevKit-LiPo_Rev_B.kicad_pcb",
+          "kind": "board"
+        },
+        {
+          "src": "HARDWARE/ESP32-S3-DevKit-LiPo_Rev_B/ESP32-S3-DevKit-LiPo_Rev_B.pdf",
+          "kind": "schematic"
+        }
+      ],
+      "license": {
+        "spdx": "CERN-OHL-S-2.0",
+        "url": "https://spdx.org/licenses/CERN-OHL-S-2.0.html",
+        "attribution": "ESP32-S3-DevKit-LiPo by Olimex Ltd. https://github.com/OLIMEX/ESP32-S3-DevKit-LiPo (hardware licence stated in the repository README; Olimex silkscreen credits must remain)"
+      }
+    },
+    {
+      "id": "solokeys-solo-c",
+      "brand": "SoloKeys",
+      "series": "Security keys",
+      "model": "Solo (USB-C)",
+      "device": "security key",
+      "repo": "https://github.com/solokeys/solo-hw",
+      "commit": "fb5f6b4b8dd7732dcec339ded0cc36fe3dec9654",
+      "files": [
+        {
+          "src": "kicad/solo-C.kicad_pcb",
+          "kind": "board"
+        }
+      ],
+      "license": {
+        "spdx": "CC-BY-SA-4.0",
+        "file": "LICENSE-CC-BY-SA",
+        "attribution": "Solo by SoloKeys, dual licensed CERN OHL 1.2 / CC BY-SA 4.0. https://github.com/solokeys/solo-hw"
+      }
+    },
+    {
+      "id": "ecats-catsniffer",
+      "brand": "Electronic Cats",
+      "series": "Wireless tools",
+      "model": "CatSniffer",
+      "device": "wireless board",
+      "repo": "https://github.com/ElectronicCats/CatSniffer",
+      "commit": "f7af615e3b0ca536b1702b3f2f26acada651d687",
+      "files": [
+        {
+          "src": "hardware/CatSniffer.kicad_pcb",
+          "kind": "board"
+        },
+        {
+          "src": "hardware/CatSniffer.pdf",
+          "kind": "schematic"
+        }
+      ],
+      "license": {
+        "spdx": "CERN-OHL-1.2",
+        "file": "LICENSE.md",
+        "attribution": "CatSniffer by Electronic Cats. https://github.com/ElectronicCats/CatSniffer"
+      },
+      "notes": "Multi-radio board (LoRa, BLE, Zigbee) with RF switches and antennas."
+    },
+    {
+      "id": "gsg-cynthion",
+      "brand": "Great Scott Gadgets",
+      "series": "USB tools",
+      "model": "Cynthion",
+      "device": "USB analyzer",
+      "repo": "https://github.com/greatscottgadgets/cynthion-hardware",
+      "commit": "babfb2332e1cb94ea850381e27483d200ad8a1c9",
+      "files": [
+        {
+          "src": "cynthion.kicad_pcb",
+          "kind": "board"
+        }
+      ],
+      "license": {
+        "spdx": "CERN-OHL-P-2.0",
+        "file": "LICENSE",
+        "attribution": "Copyright (c) 2019-2024 Great Scott Gadgets. https://github.com/greatscottgadgets/cynthion-hardware"
+      },
+      "notes": "USB-C power delivery and high-speed USB, useful for charging-port faults."
+    },
+    {
+      "id": "antmicro-jetson-orin",
+      "brand": "Antmicro",
+      "series": "Jetson baseboards",
+      "model": "Jetson Orin baseboard",
+      "device": "embedded computer",
+      "repo": "https://github.com/antmicro/jetson-orin-baseboard",
+      "commit": "34f0e7f5fbca441191e20ed55d93cf8614e12bed",
+      "files": [
+        {
+          "src": "jetson-orin-baseboard.kicad_pcb",
+          "kind": "board"
+        },
+        {
+          "src": "doc/jetson-orin-baseboard-schematic.pdf",
+          "kind": "schematic"
+        }
+      ],
+      "license": {
+        "spdx": "Apache-2.0",
+        "file": "LICENSE",
+        "attribution": "Copyright (c) Antmicro. https://github.com/antmicro/jetson-orin-baseboard"
+      }
+    },
+    {
+      "id": "antmicro-kria-k26",
+      "brand": "Antmicro",
+      "series": "FPGA boards",
+      "model": "Kria K26 devboard",
+      "device": "embedded computer",
+      "repo": "https://github.com/antmicro/kria-k26-devboard",
+      "commit": "9ead4dfc5b29fa9308206ccdfe013dd8f6d93b67",
+      "files": [
+        {
+          "src": "kria-k26-devboard.kicad_pcb",
+          "kind": "board"
+        },
+        {
+          "src": "doc/kria-k26-devboard.pdf",
+          "kind": "schematic"
+        }
+      ],
+      "license": {
+        "spdx": "Apache-2.0",
+        "file": "LICENSE",
+        "attribution": "Copyright (c) Antmicro. https://github.com/antmicro/kria-k26-devboard"
+      }
     }
   ],
   "excluded": [
-    { "name": "M17 LinHT handheld radio", "url": "https://github.com/M17-Project/LinHT-hw", "reason": "CC BY-NC-SA 4.0: non-commercial only, and FixMyCircuit is sold with licence keys." },
-    { "name": "M17_3310 (Nokia 3310 replacement mainboard)", "url": "https://github.com/M17-Project/M17_3310", "reason": "CC BY-NC-SA 4.0: non-commercial only. Techs can still download it themselves and open it in the app." },
-    { "name": "StickHub (KiCad demo)", "url": "https://github.com/KiCad/kicad-source-mirror/tree/master/demos/stickhub", "reason": "CC BY-NC-SA 4.0: non-commercial only." },
-    { "name": "PinePhone / PinePhone Pro", "url": "https://wiki.pine64.org/wiki/PinePhone", "reason": "PINE64 publishes schematic PDFs for reference but no layout or boardview under an open licence. Link only." },
-    { "name": "Librem 5 phone and devkit", "url": "https://source.puri.sm/Librem5", "reason": "Devkit KiCad files are GPL-3.0 on source.puri.sm, which the build server could not reach. Add later by running the build script from a machine that can reach it." },
-    { "name": "MNT Reform / Pocket Reform", "url": "https://source.mnt.re/reform", "reason": "CERN-OHL-S-2.0 KiCad files on source.mnt.re, which the build server could not reach. Add later the same way." },
-    { "name": "Fairphone", "url": "https://www.fairphone.com", "reason": "Fairphone publishes repair guides and spare parts, not open board layouts." },
-    { "name": "Apple, Samsung, Xiaomi, Tecno, Infinix, Itel boardviews", "url": "", "reason": "The files that circulate online are leaked manufacturer data. They are not redistributable." }
+    {
+      "name": "M17 LinHT handheld radio",
+      "url": "https://github.com/M17-Project/LinHT-hw",
+      "reason": "CC BY-NC-SA 4.0: non-commercial only, and FixMyCircuit is sold with licence keys."
+    },
+    {
+      "name": "M17_3310 (Nokia 3310 replacement mainboard)",
+      "url": "https://github.com/M17-Project/M17_3310",
+      "reason": "CC BY-NC-SA 4.0: non-commercial only. Techs can still download it themselves and open it in the app."
+    },
+    {
+      "name": "StickHub (KiCad demo)",
+      "url": "https://github.com/KiCad/kicad-source-mirror/tree/master/demos/stickhub",
+      "reason": "CC BY-NC-SA 4.0: non-commercial only."
+    },
+    {
+      "name": "PinePhone / PinePhone Pro",
+      "url": "https://wiki.pine64.org/wiki/PinePhone",
+      "reason": "PINE64 publishes schematic PDFs for reference but no layout or boardview under an open licence. Link only."
+    },
+    {
+      "name": "Librem 5 phone and devkit",
+      "url": "https://source.puri.sm/Librem5",
+      "reason": "Devkit KiCad files are GPL-3.0 on source.puri.sm, which the build server could not reach. Add later by running the build script from a machine that can reach it."
+    },
+    {
+      "name": "MNT Reform / Pocket Reform",
+      "url": "https://source.mnt.re/reform",
+      "reason": "CERN-OHL-S-2.0 KiCad files on source.mnt.re, which the build server could not reach. Add later the same way."
+    },
+    {
+      "name": "Fairphone",
+      "url": "https://www.fairphone.com",
+      "reason": "Fairphone publishes repair guides and spare parts, not open board layouts."
+    },
+    {
+      "name": "Apple, Samsung, Xiaomi, Tecno, Infinix, Itel boardviews",
+      "url": "",
+      "reason": "The files that circulate online are leaked manufacturer data. They are not redistributable."
+    },
+    {
+      "name": "Inkplate 6",
+      "url": "https://github.com/SolderedElectronics/Inkplate-6-hardware",
+      "reason": "Main board is published as schematic and Gerbers only, no layout file the app can open."
+    }
   ]
 }

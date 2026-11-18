@@ -2,7 +2,7 @@
   "name": "FixMyCircuit open board library",
   "version": 1,
   "generated": "2026-11-18",
-  "count": 21,
+  "count": 30,
   "excluded": [
     {
       "name": "M17 LinHT handheld radio",
@@ -43,6 +43,11 @@
       "name": "Apple, Samsung, Xiaomi, Tecno, Infinix, Itel boardviews",
       "url": "",
       "reason": "The files that circulate online are leaked manufacturer data. They are not redistributable."
+    },
+    {
+      "name": "Inkplate 6",
+      "url": "https://github.com/SolderedElectronics/Inkplate-6-hardware",
+      "reason": "Main board is published as schematic and Gerbers only, no layout file the app can open."
     }
   ],
   "models": [
@@ -84,7 +89,7 @@
         "parts": 138,
         "pins": 838,
         "nets": 449,
-        "parseMs": 231
+        "parseMs": 229
       }
     },
     {
@@ -125,7 +130,7 @@
         "parts": 595,
         "pins": 2274,
         "nets": 656,
-        "parseMs": 4129
+        "parseMs": 3955
       }
     },
     {
@@ -166,7 +171,7 @@
         "parts": 616,
         "pins": 2213,
         "nets": 667,
-        "parseMs": 4244
+        "parseMs": 4403
       }
     },
     {
@@ -207,7 +212,7 @@
         "parts": 453,
         "pins": 2118,
         "nets": 474,
-        "parseMs": 144
+        "parseMs": 150
       }
     },
     {
@@ -248,7 +253,7 @@
         "parts": 46,
         "pins": 127,
         "nets": 27,
-        "parseMs": 6
+        "parseMs": 7
       }
     },
     {
@@ -282,7 +287,7 @@
         "parts": 78,
         "pins": 217,
         "nets": 43,
-        "parseMs": 15
+        "parseMs": 13
       }
     },
     {
@@ -323,7 +328,7 @@
         "parts": 459,
         "pins": 2913,
         "nets": 447,
-        "parseMs": 788
+        "parseMs": 656
       }
     },
     {
@@ -364,7 +369,7 @@
         "parts": 170,
         "pins": 654,
         "nets": 132,
-        "parseMs": 407
+        "parseMs": 313
       }
     },
     {
@@ -405,7 +410,7 @@
         "parts": 143,
         "pins": 603,
         "nets": 119,
-        "parseMs": 377
+        "parseMs": 387
       }
     },
     {
@@ -439,7 +444,7 @@
         "parts": 437,
         "pins": 1639,
         "nets": 379,
-        "parseMs": 185
+        "parseMs": 115
       }
     },
     {
@@ -473,7 +478,7 @@
         "parts": 132,
         "pins": 566,
         "nets": 149,
-        "parseMs": 470
+        "parseMs": 410
       }
     },
     {
@@ -507,7 +512,7 @@
         "parts": 100,
         "pins": 356,
         "nets": 84,
-        "parseMs": 232
+        "parseMs": 222
       }
     },
     {
@@ -548,7 +553,7 @@
         "parts": 34,
         "pins": 165,
         "nets": 38,
-        "parseMs": 14
+        "parseMs": 21
       }
     },
     {
@@ -582,7 +587,7 @@
         "parts": 90,
         "pins": 332,
         "nets": 101,
-        "parseMs": 35
+        "parseMs": 42
       }
     },
     {
@@ -623,7 +628,7 @@
         "parts": 52,
         "pins": 195,
         "nets": 56,
-        "parseMs": 43
+        "parseMs": 63
       }
     },
     {
@@ -664,7 +669,7 @@
         "parts": 87,
         "pins": 321,
         "nets": 96,
-        "parseMs": 133
+        "parseMs": 97
       }
     },
     {
@@ -698,7 +703,7 @@
         "parts": 391,
         "pins": 1528,
         "nets": 488,
-        "parseMs": 3038
+        "parseMs": 2960
       }
     },
     {
@@ -732,7 +737,7 @@
         "parts": 1125,
         "pins": 4862,
         "nets": 1387,
-        "parseMs": 10423
+        "parseMs": 10999
       }
     },
     {
@@ -773,7 +778,7 @@
         "parts": 112,
         "pins": 633,
         "nets": 220,
-        "parseMs": 375
+        "parseMs": 500
       }
     },
     {
@@ -807,7 +812,7 @@
         "parts": 71,
         "pins": 428,
         "nets": 95,
-        "parseMs": 409
+        "parseMs": 371
       }
     },
     {
@@ -841,7 +846,362 @@
         "parts": 210,
         "pins": 655,
         "nets": 156,
-        "parseMs": 282
+        "parseMs": 263
+      }
+    },
+    {
+      "id": "sqfmi-watchy",
+      "brand": "SQFMI",
+      "series": "Smartwatch",
+      "model": "Watchy",
+      "device": "smartwatch",
+      "files": [
+        {
+          "path": "https://raw.githubusercontent.com/sqfmi/Watchy-Hardware/5f147972aa2148d4971f3c41fc3ce39ff8c48131/Watchy.kicad_pcb",
+          "kind": "board",
+          "bytes": 642355,
+          "sha256": "d7f8eb56613968aa061cd612a8679a034430fd9a1fcb08f83690b92c167db217"
+        },
+        {
+          "path": "https://raw.githubusercontent.com/sqfmi/Watchy-Hardware/5f147972aa2148d4971f3c41fc3ce39ff8c48131/WatchySchematic.pdf",
+          "kind": "schematic",
+          "bytes": 416559,
+          "sha256": "0f7e27a9228a7af9361efbc153da0a91a6e0f3fbd9c27259c224389c76c1a0ec"
+        }
+      ],
+      "source": {
+        "url": "https://github.com/sqfmi/Watchy-Hardware",
+        "commit": "5f147972aa2148d4971f3c41fc3ce39ff8c48131",
+        "paths": [
+          "Watchy.kicad_pcb",
+          "WatchySchematic.pdf"
+        ]
+      },
+      "license": {
+        "spdx": "MIT",
+        "attribution": "Watchy by SQFMI. https://github.com/sqfmi/Watchy-Hardware",
+        "url": "https://github.com/sqfmi/Watchy-Hardware/blob/5f147972aa2148d4971f3c41fc3ce39ff8c48131/LICENSE"
+      },
+      "notes": "ESP32 e-paper smartwatch with LiPo charging, vibration motor and RTC.",
+      "check": {
+        "parts": 86,
+        "pins": 312,
+        "nets": 84,
+        "parseMs": 98
+      }
+    },
+    {
+      "id": "osw-light",
+      "brand": "Open-Smartwatch",
+      "series": "Smartwatch",
+      "model": "Open-Smartwatch Light",
+      "device": "smartwatch",
+      "files": [
+        {
+          "path": "https://raw.githubusercontent.com/Open-Smartwatch/open-smartwatch-light/55ce0ec0e0254e03b575917788cb001507b01619/osw-light.kicad_pcb",
+          "kind": "board",
+          "bytes": 612517,
+          "sha256": "1e7924fbb606017f5196a96501359cce87f8c18b6a60e319a8be5b4e72112b4f"
+        },
+        {
+          "path": "https://raw.githubusercontent.com/Open-Smartwatch/open-smartwatch-light/55ce0ec0e0254e03b575917788cb001507b01619/docs/osw-light-schematic.pdf",
+          "kind": "schematic",
+          "bytes": 83197,
+          "sha256": "38f857145522fcc8d238d0d8ee2accadc0f9ac30f19ea7b35871cb1bc7df84ee"
+        }
+      ],
+      "source": {
+        "url": "https://github.com/Open-Smartwatch/open-smartwatch-light",
+        "commit": "55ce0ec0e0254e03b575917788cb001507b01619",
+        "paths": [
+          "osw-light.kicad_pcb",
+          "docs/osw-light-schematic.pdf"
+        ]
+      },
+      "license": {
+        "spdx": "GPL-3.0-only",
+        "attribution": "Open-Smartwatch Light by the Open-Smartwatch project. https://github.com/Open-Smartwatch/open-smartwatch-light",
+        "url": "https://github.com/Open-Smartwatch/open-smartwatch-light/blob/55ce0ec0e0254e03b575917788cb001507b01619/LICENSE"
+      },
+      "notes": "Round-display smartwatch with GPS, IMU and battery charging.",
+      "check": {
+        "parts": 55,
+        "pins": 213,
+        "nets": 60,
+        "parseMs": 26
+      }
+    },
+    {
+      "id": "olimex-esp32-c3-devkit-lipo-revd",
+      "brand": "Olimex",
+      "series": "ESP32 boards",
+      "model": "ESP32-C3-DevKit-Lipo Rev D",
+      "device": "battery-powered board",
+      "files": [
+        {
+          "path": "https://raw.githubusercontent.com/OLIMEX/ESP32-C3-DevKit-Lipo/5d93e79d46cf3b05782d9fe0f95a8a2e1ca6abbe/HARDWARE/ESP32-C3-DevKit-Lipo_Rev_D/ESP32-C3-DevKit-Lipo_Rev_D.kicad_pcb",
+          "kind": "board",
+          "bytes": 862423,
+          "sha256": "119f879a3b10f798a1772ab4edafe79c7e3406a88e0bfbea981a2c66e268bea2"
+        },
+        {
+          "path": "https://raw.githubusercontent.com/OLIMEX/ESP32-C3-DevKit-Lipo/5d93e79d46cf3b05782d9fe0f95a8a2e1ca6abbe/HARDWARE/ESP32-C3-DevKit-Lipo_Rev_D/ESP32-C3-DevKit-Lipo_Rev_D.pdf",
+          "kind": "schematic",
+          "bytes": 1061924,
+          "sha256": "fcae5af9263fae3022ebfc9d7891951baa12dcc00c79a8ff58c92e016b670015"
+        }
+      ],
+      "source": {
+        "url": "https://github.com/OLIMEX/ESP32-C3-DevKit-Lipo",
+        "commit": "5d93e79d46cf3b05782d9fe0f95a8a2e1ca6abbe",
+        "paths": [
+          "HARDWARE/ESP32-C3-DevKit-Lipo_Rev_D/ESP32-C3-DevKit-Lipo_Rev_D.kicad_pcb",
+          "HARDWARE/ESP32-C3-DevKit-Lipo_Rev_D/ESP32-C3-DevKit-Lipo_Rev_D.pdf"
+        ]
+      },
+      "license": {
+        "spdx": "CERN-OHL-S-2.0",
+        "attribution": "ESP32-C3-DevKit-Lipo by Olimex Ltd. https://github.com/OLIMEX/ESP32-C3-DevKit-Lipo (hardware licence stated in the repository README; Olimex silkscreen credits must remain)",
+        "url": "https://spdx.org/licenses/CERN-OHL-S-2.0.html"
+      },
+      "notes": "Single-cell LiPo charger and power path, like a phone's charging section.",
+      "check": {
+        "parts": 61,
+        "pins": 226,
+        "nets": 56,
+        "parseMs": 87
+      }
+    },
+    {
+      "id": "olimex-esp32-s3-devkit-lipo-revb",
+      "brand": "Olimex",
+      "series": "ESP32 boards",
+      "model": "ESP32-S3-DevKit-LiPo Rev B",
+      "device": "battery-powered board",
+      "files": [
+        {
+          "path": "https://raw.githubusercontent.com/OLIMEX/ESP32-S3-DevKit-LiPo/98e62ae2b9b1e52448ec585089730defb45ba869/HARDWARE/ESP32-S3-DevKit-LiPo_Rev_B/ESP32-S3-DevKit-LiPo_Rev_B.kicad_pcb",
+          "kind": "board",
+          "bytes": 712831,
+          "sha256": "381719f1a1124874a4369bfedebbc98d378fe6abf39d009a775668859eee8cab"
+        },
+        {
+          "path": "https://raw.githubusercontent.com/OLIMEX/ESP32-S3-DevKit-LiPo/98e62ae2b9b1e52448ec585089730defb45ba869/HARDWARE/ESP32-S3-DevKit-LiPo_Rev_B/ESP32-S3-DevKit-LiPo_Rev_B.pdf",
+          "kind": "schematic",
+          "bytes": 472096,
+          "sha256": "127a1633ab9d1b7f9d710c5e90832947b03b3b23a545611ebf49e9b957a144a8"
+        }
+      ],
+      "source": {
+        "url": "https://github.com/OLIMEX/ESP32-S3-DevKit-LiPo",
+        "commit": "98e62ae2b9b1e52448ec585089730defb45ba869",
+        "paths": [
+          "HARDWARE/ESP32-S3-DevKit-LiPo_Rev_B/ESP32-S3-DevKit-LiPo_Rev_B.kicad_pcb",
+          "HARDWARE/ESP32-S3-DevKit-LiPo_Rev_B/ESP32-S3-DevKit-LiPo_Rev_B.pdf"
+        ]
+      },
+      "license": {
+        "spdx": "CERN-OHL-S-2.0",
+        "attribution": "ESP32-S3-DevKit-LiPo by Olimex Ltd. https://github.com/OLIMEX/ESP32-S3-DevKit-LiPo (hardware licence stated in the repository README; Olimex silkscreen credits must remain)",
+        "url": "https://spdx.org/licenses/CERN-OHL-S-2.0.html"
+      },
+      "notes": "",
+      "check": {
+        "parts": 64,
+        "pins": 287,
+        "nets": 71,
+        "parseMs": 97
+      }
+    },
+    {
+      "id": "solokeys-solo-c",
+      "brand": "SoloKeys",
+      "series": "Security keys",
+      "model": "Solo (USB-C)",
+      "device": "security key",
+      "files": [
+        {
+          "path": "https://raw.githubusercontent.com/solokeys/solo-hw/fb5f6b4b8dd7732dcec339ded0cc36fe3dec9654/kicad/solo-C.kicad_pcb",
+          "kind": "board",
+          "bytes": 185023,
+          "sha256": "9d53d5e12648166dfa52c089ae1efb50ff2195d83c57042c85fc1e277b0e9b0e"
+        }
+      ],
+      "source": {
+        "url": "https://github.com/solokeys/solo-hw",
+        "commit": "fb5f6b4b8dd7732dcec339ded0cc36fe3dec9654",
+        "paths": [
+          "kicad/solo-C.kicad_pcb"
+        ]
+      },
+      "license": {
+        "spdx": "CC-BY-SA-4.0",
+        "attribution": "Solo by SoloKeys, dual licensed CERN OHL 1.2 / CC BY-SA 4.0. https://github.com/solokeys/solo-hw",
+        "url": "https://github.com/solokeys/solo-hw/blob/fb5f6b4b8dd7732dcec339ded0cc36fe3dec9654/LICENSE-CC-BY-SA"
+      },
+      "notes": "",
+      "check": {
+        "parts": 41,
+        "pins": 252,
+        "nets": 84,
+        "parseMs": 48
+      }
+    },
+    {
+      "id": "ecats-catsniffer",
+      "brand": "Electronic Cats",
+      "series": "Wireless tools",
+      "model": "CatSniffer",
+      "device": "wireless board",
+      "files": [
+        {
+          "path": "https://raw.githubusercontent.com/ElectronicCats/CatSniffer/f7af615e3b0ca536b1702b3f2f26acada651d687/hardware/CatSniffer.kicad_pcb",
+          "kind": "board",
+          "bytes": 1815031,
+          "sha256": "76229a480ef3f0ced49884ead0768c411bf4c629f5851d3744fe800c677f50fb"
+        },
+        {
+          "path": "https://raw.githubusercontent.com/ElectronicCats/CatSniffer/f7af615e3b0ca536b1702b3f2f26acada651d687/hardware/CatSniffer.pdf",
+          "kind": "schematic",
+          "bytes": 189965,
+          "sha256": "1829805519f0d830a5707b390575f82bf329e67781a09d7cb704e2aec0c29431"
+        }
+      ],
+      "source": {
+        "url": "https://github.com/ElectronicCats/CatSniffer",
+        "commit": "f7af615e3b0ca536b1702b3f2f26acada651d687",
+        "paths": [
+          "hardware/CatSniffer.kicad_pcb",
+          "hardware/CatSniffer.pdf"
+        ]
+      },
+      "license": {
+        "spdx": "CERN-OHL-1.2",
+        "attribution": "CatSniffer by Electronic Cats. https://github.com/ElectronicCats/CatSniffer",
+        "url": "https://github.com/ElectronicCats/CatSniffer/blob/f7af615e3b0ca536b1702b3f2f26acada651d687/LICENSE.md"
+      },
+      "notes": "Multi-radio board (LoRa, BLE, Zigbee) with RF switches and antennas.",
+      "check": {
+        "parts": 100,
+        "pins": 418,
+        "nets": 118,
+        "parseMs": 58
+      }
+    },
+    {
+      "id": "gsg-cynthion",
+      "brand": "Great Scott Gadgets",
+      "series": "USB tools",
+      "model": "Cynthion",
+      "device": "USB analyzer",
+      "files": [
+        {
+          "path": "https://raw.githubusercontent.com/greatscottgadgets/cynthion-hardware/babfb2332e1cb94ea850381e27483d200ad8a1c9/cynthion.kicad_pcb",
+          "kind": "board",
+          "bytes": 6257788,
+          "sha256": "51e978f0e3c02f1b22c6e8013f2d26b309a6724749f27b39abd932545bcd5313"
+        }
+      ],
+      "source": {
+        "url": "https://github.com/greatscottgadgets/cynthion-hardware",
+        "commit": "babfb2332e1cb94ea850381e27483d200ad8a1c9",
+        "paths": [
+          "cynthion.kicad_pcb"
+        ]
+      },
+      "license": {
+        "spdx": "CERN-OHL-P-2.0",
+        "attribution": "Copyright (c) 2019-2024 Great Scott Gadgets. https://github.com/greatscottgadgets/cynthion-hardware",
+        "url": "https://github.com/greatscottgadgets/cynthion-hardware/blob/babfb2332e1cb94ea850381e27483d200ad8a1c9/LICENSE"
+      },
+      "notes": "USB-C power delivery and high-speed USB, useful for charging-port faults.",
+      "check": {
+        "parts": 348,
+        "pins": 1472,
+        "nets": 375,
+        "parseMs": 742
+      }
+    },
+    {
+      "id": "antmicro-jetson-orin",
+      "brand": "Antmicro",
+      "series": "Jetson baseboards",
+      "model": "Jetson Orin baseboard",
+      "device": "embedded computer",
+      "files": [
+        {
+          "path": "https://raw.githubusercontent.com/antmicro/jetson-orin-baseboard/34f0e7f5fbca441191e20ed55d93cf8614e12bed/jetson-orin-baseboard.kicad_pcb",
+          "kind": "board",
+          "bytes": 36103434,
+          "sha256": "eaeb87f5bceb46097c8161cf5e990c3609bf667f5a53668f76aa93595bd636ca"
+        },
+        {
+          "path": "https://raw.githubusercontent.com/antmicro/jetson-orin-baseboard/34f0e7f5fbca441191e20ed55d93cf8614e12bed/doc/jetson-orin-baseboard-schematic.pdf",
+          "kind": "schematic",
+          "bytes": 6268745,
+          "sha256": "1f33fda24250a6cf047043faa9a707be00d5cd350550b7eac04a454045f2561f"
+        }
+      ],
+      "source": {
+        "url": "https://github.com/antmicro/jetson-orin-baseboard",
+        "commit": "34f0e7f5fbca441191e20ed55d93cf8614e12bed",
+        "paths": [
+          "jetson-orin-baseboard.kicad_pcb",
+          "doc/jetson-orin-baseboard-schematic.pdf"
+        ]
+      },
+      "license": {
+        "spdx": "Apache-2.0",
+        "attribution": "Copyright (c) Antmicro. https://github.com/antmicro/jetson-orin-baseboard",
+        "url": "https://github.com/antmicro/jetson-orin-baseboard/blob/34f0e7f5fbca441191e20ed55d93cf8614e12bed/LICENSE"
+      },
+      "notes": "",
+      "check": {
+        "parts": 681,
+        "pins": 2827,
+        "nets": 799,
+        "parseMs": 4055
+      }
+    },
+    {
+      "id": "antmicro-kria-k26",
+      "brand": "Antmicro",
+      "series": "FPGA boards",
+      "model": "Kria K26 devboard",
+      "device": "embedded computer",
+      "files": [
+        {
+          "path": "https://raw.githubusercontent.com/antmicro/kria-k26-devboard/9ead4dfc5b29fa9308206ccdfe013dd8f6d93b67/kria-k26-devboard.kicad_pcb",
+          "kind": "board",
+          "bytes": 54220705,
+          "sha256": "9af35d1d14843ddbd92c07785cb08615d4ef0ff47af4b278eb5c67d6c92b8602"
+        },
+        {
+          "path": "https://raw.githubusercontent.com/antmicro/kria-k26-devboard/9ead4dfc5b29fa9308206ccdfe013dd8f6d93b67/doc/kria-k26-devboard.pdf",
+          "kind": "schematic",
+          "bytes": 9276941,
+          "sha256": "3861fe639251b917c3536dc7a3a073b49c8c7d4efdca63b681f3682d081ba1b7"
+        }
+      ],
+      "source": {
+        "url": "https://github.com/antmicro/kria-k26-devboard",
+        "commit": "9ead4dfc5b29fa9308206ccdfe013dd8f6d93b67",
+        "paths": [
+          "kria-k26-devboard.kicad_pcb",
+          "doc/kria-k26-devboard.pdf"
+        ]
+      },
+      "license": {
+        "spdx": "Apache-2.0",
+        "attribution": "Copyright (c) Antmicro. https://github.com/antmicro/kria-k26-devboard",
+        "url": "https://github.com/antmicro/kria-k26-devboard/blob/9ead4dfc5b29fa9308206ccdfe013dd8f6d93b67/LICENSE"
+      },
+      "notes": "",
+      "check": {
+        "parts": 660,
+        "pins": 2728,
+        "nets": 804,
+        "parseMs": 6172
       }
     }
   ]
