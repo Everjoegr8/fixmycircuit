@@ -11,6 +11,8 @@ import { openDb, type DB } from './db';
 import { findTool as findToolAt, installTool, listTools, toolsDir, type ToolId } from './tools';
 import { kindForExt, guessBrand, type FileKind, type ImportRequest } from '../shared/types';
 import { scanFolder, fetchIndex, downloadFile, type ScanEntry } from './library';
+import { buildModelPack, shareSummary, findNotes, importNotes, type ShareOptions } from './share';
+import { SHARE_EMAIL } from '../shared/sharepack.mjs';
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'fmc', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
@@ -233,6 +235,7 @@ function registerIpc() {
     }
     const modelIds: number[] = [];
     let files = 0;
+    const notes = { readings: 0, guides: 0, jumpers: 0 };
     for (const [k, list] of groups) {
       let modelId: number | null = null;
       if (k) {
@@ -244,19 +247,50 @@ function registerIpc() {
         const meta = list.find((x) => x.meta)?.meta;
         db.setModelInfo(m.id, { series: series || undefined, meta: meta ? JSON.stringify(meta) : undefined });
       }
-      files += importFiles({ paths: list.map((x) => x.path), model_id: modelId }).length;
+      // A shared model carries its shop notes (readings, fault solutions, jumpers) in shop-notes.json.
+      const notesFile = findNotes(list.map((x) => x.path));
+      const paths = list.map((x) => x.path).filter((x) => path.basename(x).toLowerCase() !== 'shop-notes.json');
+      files += importFiles({ paths, model_id: modelId }).length;
+      if (notesFile && modelId != null) {
+        const n = importNotes(db, modelId, notesFile);
+        notes.readings += n.readings; notes.guides += n.guides; notes.jumpers += n.jumpers;
+      }
     }
-    return { models: modelIds.length, files, modelIds };
+    return { models: modelIds.length, files, modelIds, notes };
   };
   handle('library:import', (entries: ScanEntry[]) => importPlaced(entries));
   handle('library:fetchIndex', (url: string) => fetchIndex(url, net.fetch as unknown as typeof fetch));
   handle('library:download', async (items: { url: string; sha256?: string; brand: string; series: string; model: string; meta?: unknown }[]) => {
     const dir = path.join(app.getPath('userData'), 'downloads', String(Date.now()));
     const placed: (typeof items[number] & { path: string })[] = [];
-    for (const it of items) placed.push({ ...it, path: await downloadFile(it.url, dir, it.sha256, net.fetch as unknown as typeof fetch) });
+    // One folder per model, so each model's shop-notes.json stays with its own photos.
+    const modelDir = new Map<string, string>();
+    for (const it of items) {
+      const key = `${it.brand}\u0000${it.model}`;
+      if (!modelDir.has(key)) modelDir.set(key, path.join(dir, String(modelDir.size)));
+      placed.push({ ...it, path: await downloadFile(it.url, modelDir.get(key)!, it.sha256, net.fetch as unknown as typeof fetch) });
+    }
     try { return importPlaced(placed); } finally { fs.rmSync(dir, { recursive: true, force: true }); }
   });
   handle('model:delete', (id: number) => db.deleteModel(id));
+
+  // --- share to library: pack the shop's own work on a model for review ------
+  handle('share:summary', (modelId: number) => shareSummary(db, modelId));
+  handle('share:pack', async (modelId: number, opts: ShareOptions) => {
+    const pack = buildModelPack(db, modelId, storedPath, opts, app.getVersion());
+    const base = `${pack.meta.brand} ${pack.meta.model} - FixMyCircuit share`.replace(/[\\/:*?"<>|]/g, '-');
+    const r = await dialog.showSaveDialog(win!, { title: 'Save your share pack', defaultPath: path.join(app.getPath('documents'), base + '.zip'), filters: [{ name: 'Zip', extensions: ['zip'] }] });
+    if (r.canceled || !r.filePath) return null;
+    fs.writeFileSync(r.filePath, pack.zip);
+    return { path: r.filePath, bytes: pack.zip.length, files: pack.meta.files.length - 1, readings: pack.notes.readings.length, guides: pack.notes.guides.length, jumpers: pack.notes.jumpers.length };
+  });
+  handle('share:send', (req: { path: string; via: 'email' | 'whatsapp'; model: string; contributor: string }) => {
+    if (req.path && fs.existsSync(req.path)) shell.showItemInFolder(req.path);
+    const text = `Hello ERA, I'm sharing my FixMyCircuit work on ${req.model} for the library. The pack is attached: ${path.basename(req.path || '')}. From: ${req.contributor}`;
+    if (req.via === 'whatsapp') shell.openExternal(whatsappLink(SUPPORT_WHATSAPP, text));
+    else shell.openExternal(`mailto:${SHARE_EMAIL}?subject=${encodeURIComponent(`FixMyCircuit library share: ${req.model}`)}&body=${encodeURIComponent(text + '\n\n(Please attach the zip file from the folder that just opened.)')}`);
+    return { email: SHARE_EMAIL };
+  });
 
   handle('files:list', (modelId?: number | null, kind?: string) => db.listFiles(modelId, kind));
   handle('files:pick', async (filters?: { name: string; extensions: string[] }[]) => {

@@ -4,6 +4,7 @@ import { api, fileUrl, type TreeModel } from '../api';
 import { Icon } from '../components/Icon';
 import { CATEGORIES, categoryLabel, type Category } from '../types';
 import { GuideCard, GuideEditor, ReadingsTable } from './shared';
+import ShareDialog from '../components/ShareDialog';
 
 interface Props {
   modelId: number | null;
@@ -27,6 +28,7 @@ const fmtSize = (n: number) => (n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math
 export default function ModelView(p: Props) {
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState('');
+  const [sharing, setSharing] = useState(false);
   const model = p.models.find((m) => m.id === p.modelId);
 
   return (
@@ -53,6 +55,12 @@ export default function ModelView(p: Props) {
           )}
           {!p.unsorted && model && <ModelMetaLine series={model.series} meta={model.meta} />}
         </div>
+        {!p.unsorted && !model?.demo && (
+          <button className="btn" data-testid="share-open" title="Share your photos, readings and fault solutions for this model to the FixMyCircuit library" onClick={() => setSharing(true)}>
+            <Icon name="upload" size={13} /> Share to library
+          </button>
+        )}
+        {sharing && p.modelId != null && <ShareDialog modelId={p.modelId} title={p.title} onClose={() => setSharing(false)} />}
         {!p.unsorted && (
           <button className="btn-danger" onClick={async () => { if (confirm(`Delete ${p.title} and all its guides, readings and photos? Library files are kept as unsorted.`)) { await api.deleteModel(p.modelId!); p.onReload(); } }}>
             <Icon name="trash" size={13} /> Delete model

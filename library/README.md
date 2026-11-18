@@ -70,3 +70,22 @@ upstream commit and keeps its licence and attribution.
 - **Fairphone**: Fairphone publishes repair guides and spare parts, not open board layouts.
 - **Apple, Samsung, Xiaomi, Tecno, Infinix, Itel boardviews**: The files that circulate online are leaked manufacturer data. They are not redistributable.
 - **Inkplate 6**: Main board is published as schematic and Gerbers only, no layout file the app can open.
+
+## Community shares
+
+Technicians can share their own work on a model from the app (model page, **Share to library**):
+board photos, diode/voltage readings, fault solutions and jumper wires, plus board or schematic files
+only when they tick that they made them. The app saves a zip with `model.json` (CC BY-SA 4.0, their
+credit, and the ownership declaration) and `shop-notes.json`, then opens an email to
+info@eratechnologiz.com.ng or a WhatsApp chat to send it.
+
+To review and publish a pack:
+
+1. `node scripts/add-contribution.mjs pack.zip --dry-run` shows what is inside and refuses packs
+   without the declaration, with another licence, or with manufacturer-style board files
+   (.pcb, .fz, .brd, .bdv and so on). Pass `--allow-boards` only after checking such a file by hand.
+2. Without `--dry-run`, it writes the pack to `library/community/Brand/Series/Model/` (the contributor's
+   phone or email is not published) and lists it in `library/community/index.json`.
+3. `npm run library -- out/open-library`, copy `out/open-library/library-index.hosted.json` into
+   `library/`, then commit. The online library then offers the model, and importing it brings the
+   readings and fault solutions back onto the right photos.

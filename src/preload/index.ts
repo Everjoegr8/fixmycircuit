@@ -14,6 +14,9 @@ const api = {
   libraryImport: call('library:import'),
   libraryFetchIndex: call('library:fetchIndex'),
   libraryDownload: call('library:download'),
+  shareSummary: call('share:summary'),
+  sharePack: call('share:pack'),
+  shareSend: call('share:send'),
 
   listFiles: call('files:list'),
   pickFiles: call('files:pick'),

@@ -129,6 +129,30 @@ for (const m of catalog.models) {
   notice.push(`## ${m.brand} / ${m.series} / ${m.model}`, '', `- Source: ${m.repo} (commit ${m.commit})`, `- Licence: ${m.license.spdx}`, `- ${m.license.attribution}`, '');
 }
 
+// Community packs reviewed with scripts/add-contribution.mjs live in the repo itself.
+const communityIdx = join(root, 'library', 'community', 'index.json');
+if (existsSync(communityIdx)) {
+  const repoRaw = 'https://raw.githubusercontent.com/Everjoegr8/fixmycircuit/main/library/community/';
+  for (const c of JSON.parse(readFileSync(communityIdx, 'utf8')).models || []) {
+    const src = join(root, 'library', 'community', c.dir);
+    const modelDir = join(outDir, c.dir);
+    mkdirSync(modelDir, { recursive: true });
+    const files = [];
+    for (const f of c.files) {
+      const bytes = readFileSync(join(src, f.path));
+      if (sha256(bytes) !== f.sha256) throw new Error(`${c.dir}/${f.path}: checksum changed since review`);
+      writeFileSync(join(modelDir, f.path), bytes);
+      files.push(f);
+    }
+    writeFileSync(join(modelDir, 'model.json'), readFileSync(join(src, 'model.json')));
+    const { dir, ...meta } = c;
+    index.push({ ...meta, files: files.map((f) => ({ ...f, path: `${dir}/${f.path}` })) });
+    hosted.push({ ...meta, files: files.map((f) => ({ ...f, path: repoRaw + dir.split('/').map(encodeURIComponent).join('/') + '/' + encodeURIComponent(f.path) })) });
+    notice.push(`## ${c.brand} / ${c.series || '-'} / ${c.model} (community)`, '', `- ${c.license.attribution}`, `- Licence: ${c.license.spdx}`, '');
+    console.log(`community: ${c.dir}`);
+  }
+}
+
 const header = { name: 'FixMyCircuit open board library', version: catalog.version, generated: new Date().toISOString().slice(0, 10), count: index.length, excluded: catalog.excluded };
 writeFileSync(join(outDir, 'library-index.json'), JSON.stringify({ ...header, models: index }, null, 2) + '\n');
 writeFileSync(join(outDir, 'library-index.hosted.json'), JSON.stringify({ ...header, models: hosted }, null, 2) + '\n');
