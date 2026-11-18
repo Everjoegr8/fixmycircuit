@@ -107,6 +107,50 @@ function seedDemo() {
   return { added };
 }
 
+/** Bump when samples/ changes so installed demo models get the new board. */
+const DEMO_REV = '2';
+
+/**
+ * Bring demo models from an older install up to the current sample board: the
+ * files are replaced and the demo's own readings and jumpers are rebuilt (they
+ * point at pads on the board). Anything the shop added stays.
+ */
+function upgradeDemo() {
+  const dir = samplesDir();
+  const specFile = path.join(dir, 'demo.json');
+  if (!fs.existsSync(specFile)) return 0;
+  const spec = JSON.parse(fs.readFileSync(specFile, 'utf8'));
+  const author = 'FixMyCircuit demo';
+  const names = new Map<string, string>(Object.values(spec.files as Record<string, string>).map((f) => [f, path.join(dir, f)]));
+  let n = 0;
+  const tx = db.raw.transaction(() => {
+    for (const m of db.raw.prepare('SELECT id, name FROM models WHERE demo = 1').all() as { id: number; name: string }[]) {
+      const sm = spec.models.find((x: any) => x.model === m.name);
+      if (!sm) continue;
+      for (const f of db.raw.prepare('SELECT id, name FROM files WHERE model_id = ?').all(m.id) as { id: string; name: string }[]) {
+        const src = names.get(f.name);
+        if (!src || !fs.existsSync(src)) continue;
+        fs.copyFileSync(src, path.join(fileDir(f.id), f.name));
+        db.raw.prepare('UPDATE files SET size = ? WHERE id = ?').run(fs.statSync(src).size, f.id);
+      }
+      const photo = db.listPhotos(m.id).find((p) => db.getFile(p.file_id)?.name === spec.files.photo);
+      db.raw.prepare('DELETE FROM readings WHERE model_id = ? AND author = ?').run(m.id, author);
+      for (const r of sm.readings) {
+        const onPhoto = photo && r.x != null && r.y != null;
+        db.saveReading({ ...r, model_id: m.id, photo_id: onPhoto ? photo!.id : null, color: r.type === 'voltage' ? '#22c55e' : r.type === 'resistance' ? '#38bdf8' : '#f5a524', author });
+      }
+      if (photo) {
+        db.updatePhoto(photo.id, { align: JSON.stringify(spec.photoAlign) });
+        db.raw.prepare('DELETE FROM jumpers WHERE photo_id = ? AND author = ?').run(photo.id, author);
+        for (const j of sm.jumpers) db.saveJumper({ ...j, photo_id: photo.id, author });
+      }
+      n++;
+    }
+  });
+  tx();
+  return n;
+}
+
 function removeDemo() {
   const models = db.demoModels();
   for (const m of models) {
@@ -547,7 +591,11 @@ if (!gotLock) {
     const settings = db.getSettings() as any;
     if (settings.demoSeeded !== '1' && process.env.FMC_NO_DEMO !== '1') {
       try { seedDemo(); } catch (e) { console.error('demo seed failed', e); }
-      db.setSettings({ demoSeeded: '1' } as any);
+      db.setSettings({ demoSeeded: '1', demoRev: DEMO_REV } as any);
+    } else if (settings.demoRev !== DEMO_REV) {
+      // An older install: give its demo phones the new, dense sample board.
+      try { upgradeDemo(); } catch (e) { console.error('demo upgrade failed', e); }
+      db.setSettings({ demoRev: DEMO_REV } as any);
     }
 
     registerIpc();

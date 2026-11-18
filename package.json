@@ -1,6 +1,6 @@
 {
   "name": "fixmycircuit",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "Free offline schematic, boardview and repair-guide workbench for phone repair technicians",
   "main": "out/main/index.js",
   "scripts": {
