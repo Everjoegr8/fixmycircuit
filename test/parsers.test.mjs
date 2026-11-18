@@ -67,3 +67,41 @@ test('search ranks exact matches first and finds nets', () => {
   assert.ok(n.some((x) => x.kind === 'net' && x.name === 'VBUS'));
   assert.ok(n.some((x) => x.kind === 'net' && x.name === 'VBUS_PROT'));
 });
+
+test('GenCAD: pins from shapes, real pad sizes, body outline, route copper', () => {
+  const b = loadBoard(W.writeGenCAD(demo), 'demo.cad');
+  assert.equal(b.format, 'GenCAD');
+  checkDemo(b, { nails: false });
+  const u1 = b.parts.find((p) => p.name === 'U1');
+  assert.equal(b.pins[u1.pins[0]].shape, 'round');
+  assert.ok(Math.abs(b.pins[u1.pins[0]].pw - 10) < 0.01, 'BGA ball is the 10 mil pad from $PADS');
+  assert.ok(u1.outline && Math.abs(u1.body.w - 140) < 0.5, 'U1 body comes from the shape rectangle');
+  const r1 = b.parts.find((p) => p.name === 'R1').pins.map((i) => b.pins[i]);
+  assert.ok(Math.abs(r1[0].pw - 12) < 0.01 && Math.abs(r1[0].ph - 8) < 0.01, 'R1 pad from $PADS');
+  assert.ok(b.traces.length === 1 && b.traces[0].net === 'VBAT' && b.vias.length === 1, 'routes give copper and vias');
+});
+test('Altium ASCII: pads with sizes, overlay body, keepout outline, copper', () => {
+  const b = loadBoard(W.writeAltium(demo), 'demo.pcbdoc');
+  assert.equal(b.format, 'Altium');
+  checkDemo(b, { nails: false });
+  const u1 = b.parts.find((p) => p.name === 'U1');
+  assert.ok(Math.abs(u1.body.w - 140) < 0.5 && Math.abs(u1.body.h - 240) < 0.5, 'U1 body from overlay');
+  assert.equal(b.outlinePolys.length, 1);
+  assert.equal(b.traces.length, 1);
+});
+test('CAD panel export', () => {
+  const b = loadBoard(W.writeCADPanel(demo), 'demo.cad');
+  assert.equal(b.format, 'CAD');
+  checkDemo(b);
+  assert.equal(b.pins[b.parts.find((p) => p.name === 'U1').pins[0]].snum, 'A1');
+});
+test('CAE without key gives a clear error', () => {
+  const bytes = W.writeFZPlain(demo);
+  bytes[4] = 0;
+  assert.throws(() => loadBoard(bytes, 'x.cae'), /CAE key/);
+});
+test('Allegro binaries get a helpful message', () => {
+  const bytes = new Uint8Array(0x200);
+  bytes.set([0x61, 0x6c, 0x6c], 0xf8);
+  assert.throws(() => loadBoard(bytes, 'x.brd'), /Allegro/);
+});

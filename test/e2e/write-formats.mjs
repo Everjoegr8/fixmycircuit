@@ -20,6 +20,9 @@ const files = {
   'demo-xzz.pcb': W.writeXZZ(b),
   'demo-kicad.kicad_pcb': W.writeKiCad(b),
   'demo-odb.tgz': W.writeODB(b),
+  'demo-gencad.cad': W.writeGenCAD(b),
+  'demo-altium.pcbdoc': W.writeAltium(b),
+  'demo-panel.cad': W.writeCADPanel(b),
 };
 for (const [n, bytes] of Object.entries(files)) fs.writeFileSync(path.join(dir, n), bytes);
 fs.writeFileSync(path.join(dir, 'demo-top.gtl'), W.writeGerberTop(b));

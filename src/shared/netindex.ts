@@ -238,3 +238,29 @@ export function describePart(idx: BoardIndex, name: string) {
   if (!p) return null;
   return { name: p.name, type: p.type, typeGuessedFromName: true, side: p.side, mfgcode: p.mfgcode, pins: p.pins.slice(0, 400), pinCount: p.pins.length };
 }
+
+/**
+ * The power rail a net belongs to: nets joined to it through parts that pass the
+ * supply on (coils, fuses, ferrites, 0 ohm links), plus resistors and diodes only
+ * when the net on the other side is itself a supply rail (so pull-ups to I2C or
+ * reset lines are left out). Used by "Whole rail" on the boardview.
+ */
+export function powerRail(idx: BoardIndex, net: string, maxDepth = 4): string[] {
+  const PASS: Set<PartType> = new Set(['inductor', 'fuse', 'filter', 'jumper']);
+  const seen = new Set<string>([net]);
+  let frontier = [net];
+  for (let d = 1; d <= maxDepth && frontier.length; d++) {
+    const next: string[] = [];
+    for (const n of frontier)
+      for (const t of idx.nets.get(n)?.through || []) {
+        if (seen.has(t.other) || isGround(t.other)) continue;
+        const ok = PASS.has(t.type) || ((t.type === 'resistor' || t.type === 'diode') && idx.nets.get(t.other)?.rail);
+        if (!ok) continue;
+        seen.add(t.other);
+        next.push(t.other);
+      }
+    frontier = next;
+  }
+  seen.delete(net);
+  return [...seen];
+}

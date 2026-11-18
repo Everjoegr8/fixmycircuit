@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { indexBoard, findPath, railFamily, partType } from '../src/shared/netindex.ts';
+import { indexBoard, findPath, railFamily, partType, powerRail } from '../src/shared/netindex.ts';
 
 // Tiny board: J1.1(VBUS) - F1 - VBUS_F - L1 - VSYS - U1 ; C1 VSYS-GND ; C2 VSYS-GND ; R1 VSYS-EN
 function mk() {
@@ -51,4 +51,11 @@ test('path tracer goes through fuse and coil but not ground', () => {
   assert.equal(findPath(idx, 'VBUS', 'SDA'), null);
   const fam = railFamily(idx, 'VBUS', 3).map((x) => x.net);
   assert.ok(fam.includes('EN'));
+});
+
+test('whole rail follows fuses and coils but not pull-up resistors', () => {
+  const idx = indexBoard(mk());
+  const rail = powerRail(idx, 'VBUS');
+  assert.ok(rail.includes('VBUS_F') && rail.includes('VSYS'), 'VBUS -> F1 -> VBUS_F -> L1 -> VSYS');
+  assert.ok(!rail.includes('EN'), 'R1 pull-up to EN is not part of the rail');
 });

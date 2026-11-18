@@ -102,8 +102,37 @@ export function parseKiCad(bytes) {
         net: netOf(pad),
         side: padType === 'thru_hole' || padType === 'np_thru_hole' ? SIDE.BOTH : side,
         radius: size ? (Math.min(num(size[1]), num(size[2])) / 2) * MM : 0,
+        // Real pad: size, absolute angle (KiCad stores pad angles including the footprint's) and shape.
+        pw: size ? num(size[1]) * MM : 0,
+        ph: size ? num(size[2]) * MM : 0,
+        pa: ((pat.r || 0) * Math.PI) / 180,
+        shape: pad[3] === 'circle' ? 'round' : pad[3] === 'oval' ? 'oval' : 'rect',
+        drill: kid(pad, 'drill') ? num(kid(pad, 'drill')[1]) * MM : 0,
       });
     }
+    // Body outline: fabrication layer first (the real package), then courtyard, then silkscreen.
+    const local = (lx, ly) => P(at.x + lx * ca + ly * sa, at.y - lx * sa + ly * ca);
+    const byLayer = { Fab: [], CrtYd: [], SilkS: [] };
+    for (const g of [...kids(fp, 'fp_line'), ...kids(fp, 'fp_rect'), ...kids(fp, 'fp_poly')]) {
+      const lname = String((kid(g, 'layer') || [])[1] || '');
+      const key = /Fab$/.test(lname) ? 'Fab' : /CrtYd$/.test(lname) ? 'CrtYd' : /Silk/.test(lname) ? 'SilkS' : null;
+      if (!key) continue;
+      const out = byLayer[key];
+      if (g[0] === 'fp_poly') {
+        const ptsNode = kid(g, 'pts');
+        const pts = ptsNode ? kids(ptsNode, 'xy').map((q) => local(num(q[1]), num(q[2]))) : [];
+        for (let i = 0; i < pts.length; i++) out.push([pts[i], pts[(i + 1) % pts.length]]);
+        continue;
+      }
+      const a = xy(g, 'start'), b = xy(g, 'end');
+      if (!a || !b) continue;
+      if (g[0] === 'fp_rect') {
+        const c = [local(a.x, a.y), local(b.x, a.y), local(b.x, b.y), local(a.x, b.y)];
+        for (let i = 0; i < 4; i++) out.push([c[i], c[(i + 1) % 4]]);
+      } else out.push([local(a.x, a.y), local(b.x, b.y)]);
+    }
+    parts[pi].outline = byLayer.Fab.length >= 3 ? byLayer.Fab : byLayer.CrtYd.length >= 3 ? byLayer.CrtYd : null;
+    parts[pi].silk = byLayer.SilkS;
   }
 
   // Real copper: tracks, arcs (as short segments) and vias.

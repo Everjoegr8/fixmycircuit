@@ -104,11 +104,29 @@ is the only feature that goes online, and only with your own API key).
   (Ctrl+F, Enter for next match), zoom, drag to pan, page jump. "Find on board"
   sends the selected text to the boardview.
 - **Boardview viewer.** Reads `.brd` (Test_Link, plain and encoded), BRD2,
-  `.bdv`, `.asc`, `.bv`/`.bvr` (BVR1 and BVR3), `.cst`, `.fz` and XZZ `.pcb`.
-  Click a part to list its pins and nets, click a pin to highlight the whole
-  net (with a count of pins on the other side), search parts and nets, flip
-  top/bottom (Space), rotate (R), fit (F). "Schematic" jumps to the part or net
-  in the PDF.
+  `.bdv`, `.asc`, `.bv`/`.bvr` (BVR1 and BVR3), `.cst`, `.fz`, `.cae`, XZZ
+  `.pcb`, GenCAD `.cad`/`.gcd`, Altium ASCII `.pcbdoc`, "Panel" `.cad`
+  exports, KiCad `.kicad_pcb` and ODB++ jobs (all ported from or modelled on
+  OpenBoardView's readers). Cadence Allegro binaries get a clear message.
+  - **Real board view:** the board is filled inside its real outline in a
+    solder-mask colour, parts are drawn at their real angle with real-looking
+    bodies (MLCCs, resistors, ICs, BGAs, connectors, shields) and gold pads with
+    their real size and direction. When the file stores pad sizes and part
+    outlines (KiCad, ODB++, GenCAD, Altium) they are used exactly; when it only
+    stores pin centres (most phone boardviews) the shapes are worked out from
+    the pins (OpenBoardView's method, extended to classify chip, SOT, QFN/QFP,
+    SOIC/connector rows, BGA and irregular parts). A Classic (wireframe) look,
+    five board colours, x-ray of the other side (X) and pin numbers/net names
+    written on pads when zoomed in are in the view menu.
+  - **Net tracing:** click a pin or search a net and the rest of the board dims
+    while every pad, every part and the ratsnest of that net light up; pins on
+    the other side show as rings through the board. Step through the net's
+    pins with N / Shift+N (it flips sides for you), and "Whole rail" also lights
+    every net the rail feeds through coils, fuses, ferrites and 0 Ω links.
+  - Click a part to list its pins and nets, search parts and nets, flip
+    top/bottom (Space), rotate (R), fit (F). "Schematic" jumps to the part or
+    net in the PDF. The app only shows boards from files you open; it does not
+    include any phone maker's boardviews.
 - **Repair panel (split pane).** Next to any open schematic, boardview or
   photo, shows the model's readings and fault solutions, filtered to the part
   or net you selected. Add a reading or a fix right there.
@@ -121,7 +139,7 @@ is the only feature that goes online, and only with your own API key).
 - **Offline storage tools.** Open the data folder, back up the database, or
   export all guides, readings and jumpers as JSON (Settings).
 
-Encrypted `.fz` and XZZ `.pcb` boardviews need a decryption key, which
+Encrypted `.fz`, `.cae` and XZZ `.pcb` boardviews need a decryption key, which
 FixMyCircuit (like OpenBoardView) does not ship. Paste the key you already use
 in Settings.
 

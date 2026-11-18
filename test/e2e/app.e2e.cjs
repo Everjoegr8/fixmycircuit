@@ -310,7 +310,7 @@ async function formatsRun() {
   const paths = [...info.files.map((f) => path.join(dir, f)), path.join(dir, 'asc', 'pins.asc'), path.join(dir, 'demo-photo.png'), SM + 'fmc-demo-x1-schematic.pdf', SM + 'fmc-demo-x1-top.jpg'];
   const imported = await page.evaluate(([paths, id]) => window.fmc.importFiles({ paths, model_id: id }), [paths, modelId]);
   console.log('imported:', imported.map((f) => `${f.name}:${f.kind}`).join(', '));
-  assert.equal(imported.filter((f) => f.kind === 'boardview').length, 12, 'twelve boardview files (incl. KiCad and ODB++ layouts)');
+  assert.equal(imported.filter((f) => f.kind === 'boardview').length, 15, 'fifteen boardview files (incl. KiCad, ODB++, GenCAD, Altium and CAD)');
   assert.equal(imported.filter((f) => f.kind === 'photo').length, 2, 'jpg and png photos');
   assert.equal(imported.filter((f) => f.kind === 'schematic').length, 1, 'pdf schematic');
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
@@ -359,6 +359,25 @@ async function formatsRun() {
       await page.locator('[data-testid="net-copper"]:has-text("Real copper") >> visible=true').waitFor();
       await page.waitForTimeout(500);
       await shot(page, '35-gerber-copper');
+      // Net tracing: step through the pins of the net, light up the whole rail.
+      await page.locator('[data-testid="net-next"] >> visible=true').click();
+      await page.locator('[data-testid="net-next"] >> visible=true').click();
+      await page.locator('[data-testid="rail-btn"] >> visible=true').click();
+      await page.locator('[data-testid="rail-btn"]:has-text("Whole rail on") >> visible=true').waitFor();
+      await shot(page, '37-net-rail');
+      await page.locator('[data-testid="rail-btn"] >> visible=true').click();
+      // Classic look and x-ray from the view menu.
+      await page.locator('[data-testid="view-btn"] >> visible=true').click();
+      await page.locator('[data-testid="look-classic"] >> visible=true').click();
+      await page.locator('[data-testid="xray-toggle"] >> visible=true').check();
+      assert.match(await page.locator('[data-testid="view-btn"] >> visible=true').textContent(), /Classic/);
+      await shot(page, '38-classic-xray');
+      await page.locator('[data-testid="look-real"] >> visible=true').click();
+      await page.locator('[data-testid="xray-toggle"] >> visible=true').uncheck();
+      await page.keyboard.press('Escape');
+    }
+    if (f.name === 'demo-gencad.cad' || f.name === 'demo-altium.pcbdoc') {
+      assert.match(await page.locator('text=/shapes from file/ >> visible=true').textContent(), /shapes from file/);
     }
     if (f.name === 'demo-kicad.kicad_pcb') {
       assert.equal(await page.locator('[data-testid="copper-state"] >> visible=true').textContent(), 'REAL');
@@ -462,7 +481,7 @@ async function formatsRun() {
   assert.match(await page.textContent('[data-testid="about"] >> xpath=..'), /ERA Technologiz and Engineering Services/);
   await shot(page, '34-about');
   await page.keyboard.press('Escape');
-  assert.match(await page.textContent('[data-testid="statusbar"]'), /Ready.*FixMyCircuit v0\.4/);
+  assert.match(await page.textContent('[data-testid="statusbar"]'), new RegExp(`Ready.*FixMyCircuit v${require("../../package.json").version.replace(/\./g, "\\.")}`));
   await app.close();
 }
 

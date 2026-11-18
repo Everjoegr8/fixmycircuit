@@ -2,8 +2,11 @@
 
 ## OpenBoardView (boardview file readers)
 
-The parsers in `src/parsers/` (BRD, BRD2, BDV, ASC, BVR, BVR3, CST, FZ and XZZ
-PCB) are JavaScript ports of the file format readers in OpenBoardView,
+The parsers in `src/parsers/` (BRD, BRD2, BDV, ASC, BVR, BVR3, CST, FZ, CAE,
+XZZ PCB, GenCAD, Altium ASCII and the "Panel" CAD export, plus the Allegro
+format check) are JavaScript ports of the file format readers in OpenBoardView,
+and the part outline method in `src/parsers/geometry.js` follows OpenBoardView's
+BoardView::DrawParts,
 https://github.com/OpenBoardView/OpenBoardView. The DES routine in
 `src/parsers/des.js` is a port of the one OpenBoardView uses, written by
 Daniel Huertas Gonzalez (https://github.com/dhuertas/DES, MIT).
