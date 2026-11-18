@@ -14,7 +14,8 @@
     "dist:win": "electron-vite build && electron-builder --win",
     "dist:linux": "electron-vite build && electron-builder --linux",
     "sample": "node scripts/make-samples.mjs",
-    "test:e2e": "node test/e2e/app.e2e.cjs"
+    "test:e2e": "node test/e2e/app.e2e.cjs",
+    "library": "node scripts/build-open-library.mjs"
   },
   "repository": {
     "type": "git",
