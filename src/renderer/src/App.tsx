@@ -11,6 +11,8 @@ import { Icon } from './components/Icon';
 import { ActivationScreen, LicenseBanner, useLicense } from './components/License';
 import { Splash , EraMark } from './brand/Logo';
 import { forgetSession, saveSession } from './lib/session';
+import { layout, layoutKey, useLayout } from './lib/layout';
+import ViewMenu from './components/ViewMenu';
 import { TOOLS, categoryLabel, type Doc, type Focus, type Nav } from './types';
 
 // Heavy views load on first use so the app starts fast.
@@ -39,7 +41,6 @@ export default function App() {
   const [split, setSplit] = useState<string | null>(null);
   const [syncOn, setSyncOn] = useState(true);
   const [jump, setJump] = useState('');
-  const [showPanel, setShowPanel] = useState(true);
   const [importOpen, setImportOpen] = useState<{ paths?: string[]; modelId?: number | null } | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState<{ paths?: string[]; tab?: 'folder' | 'online' } | null>(null);
@@ -48,6 +49,14 @@ export default function App() {
   const [splash, setSplash] = useState(() => !(window as any).__fmcNoSplash);
   const [version, setVersion] = useState('');
   const lic = useLicense();
+  const lay = useLayout();
+  const on = layout.on;
+  // View shortcuts: F11 full board, Ctrl+B library, Ctrl+J pins, Ctrl+E repair panel.
+  useEffect(() => {
+    const f = (e: KeyboardEvent) => { if (layoutKey(e)) e.preventDefault(); };
+    window.addEventListener('keydown', f, true);
+    return () => window.removeEventListener('keydown', f, true);
+  }, []);
   useEffect(() => {
     api.dataInfo().then((i) => setVersion(i.version));
     const t = setTimeout(() => setSplash(false), 1300);
@@ -255,8 +264,10 @@ export default function App() {
   return (
     <div className="flex h-full flex-col">
     {splash && <Splash version={version} />}
-    {lic && <LicenseBanner st={lic} onOpen={() => setSettingsOpen(true)} />}
+    {lic && on('banner') && <LicenseBanner st={lic} onOpen={() => setSettingsOpen(true)} />}
     <div className="flex min-h-0 flex-1">
+      {/* Hidden, not unmounted, so the tree and search keep their state. */}
+      <div style={{ display: on('sidebar') ? 'contents' : 'none' }} data-testid="sidebar-wrap">
       <Sidebar
         brands={brands}
         models={models}
@@ -273,19 +284,20 @@ export default function App() {
         onAddFolder={() => setLibraryOpen({})}
         recent={recent}
       />
+      </div>
       <div className="flex min-w-0 flex-1 flex-col">
-        <TabBar
+        {on('tabs') && <TabBar
           docs={docs}
           activeKey={activeKey}
           onSelect={setActiveKey}
           onClose={closeDoc}
           onLibrary={() => setActiveKey(null)}
           libraryLabel={nav.kind === 'model' ? `${modelLabel(nav.modelId)} · ${categoryLabel(nav.category)}` : nav.kind === 'unsorted' ? 'Unsorted files' : nav.kind === 'tool' ? TOOLS.find((t) => t.id === nav.tool)!.label : 'Home'}
-          showPanel={showPanel}
-          onTogglePanel={() => setShowPanel((s) => !s)}
+          showPanel={on('repair')}
+          onTogglePanel={() => layout.toggle('repair')}
           split={splitMode}
           onSplit={startSplit}
-        />
+        />}
         {splitMode && (
           <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-bench-700 bg-bench-850 px-2 py-1.5" data-testid="split-bar">
             <span className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-sky-300"><Icon name="split" size={13} /> Split view</span>
@@ -345,7 +357,7 @@ export default function App() {
                 <SplitPane
                   storageKey="fmc.split"
                   right={
-                    showPanel && isActive && !splitMode ? (
+                    on('repair') && isActive && !splitMode ? (
                       <RepairPanel
                         modelId={d.modelId}
                         modelLabel={modelLabel(d.modelId)}
@@ -365,6 +377,13 @@ export default function App() {
               </div>
             );
           })}
+          {(lay.full || !on('tabs')) && (
+            // Panels are hidden: a small corner button brings them back.
+            <div className="absolute bottom-2 left-2 z-40 flex gap-1 opacity-70 transition-opacity hover:opacity-100" data-testid="view-corner">
+              {lay.full && <button className="btn bg-bench-900/90" onClick={() => layout.setFull(false)} title="Show the panels again (F11)" data-testid="leave-full">Show panels</button>}
+              <ViewMenu className="btn bg-bench-900/90" label={!lay.full} up left testid="view-corner-btn" />
+            </div>
+          )}
           {!viewer && (
             <div className="fmc-page absolute inset-0 overflow-auto" key={JSON.stringify(nav)}>
               {nav.kind === 'home' ? (
@@ -462,7 +481,7 @@ export default function App() {
         <div className="fmc-rise fixed bottom-10 left-1/2 z-50 -translate-x-1/2 rounded-md border border-amber-500/50 bg-bench-800 px-4 py-2 text-amber-100 shadow-xl">{toast}</div>
       )}
     </div>
-    <StatusBar version={version} docs={docs.length} models={models.length} onAbout={() => setAboutOpen(true)} lic={lic ? (lic.state === 'trial' ? `Trial · ${lic.daysLeft + 1}d left` : lic.state === 'grace' ? 'Key expired · grace period' : `Licensed · ${lic.daysLeft}d left`) : ''} />
+    {on('status') && <StatusBar version={version} docs={docs.length} models={models.length} onAbout={() => setAboutOpen(true)} lic={lic ? (lic.state === 'trial' ? `Trial · ${lic.daysLeft + 1}d left` : lic.state === 'grace' ? 'Key expired · grace period' : `Licensed · ${lic.daysLeft}d left`) : ''} />}
     </div>
   );
 }

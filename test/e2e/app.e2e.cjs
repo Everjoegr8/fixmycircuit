@@ -638,6 +638,39 @@ async function libraryRun() {
   assert.match(head, /KiCad · 453 parts · 2118 pins/);
   assert.match(await page.textContent('[data-testid="view-btn"] >> visible=true'), /Black & red/);
   await shot(page, '49-real-board');
+  // Every panel can be hidden from View; full board gives the canvas the whole window.
+  const canvasW = async () => (await page.locator('[data-testid="board-canvas"] >> visible=true').boundingBox()).width;
+  const w0 = await canvasW();
+  await page.click('[data-testid="view-menu-btn"]');
+  await page.waitForSelector('[data-testid="view-menu"]');
+  await page.click('[data-testid="view-full"]');
+  await page.waitForTimeout(400);
+  assert.equal(await page.locator('[data-testid="statusbar"]').count(), 0);
+  assert.equal(await page.locator('[data-testid="pins-panel"]').count(), 0);
+  assert.ok(!(await page.locator('[data-testid="board-toolbar"]').isVisible()));
+  const w1 = await canvasW();
+  console.log('canvas width normal/full:', w0, w1);
+  assert.ok(w1 > 1500 && w1 > w0 + 300, 'full board fills the window');
+  assert.equal(JSON.parse(await page.evaluate(() => localStorage.getItem('fmc.layout'))).full, true);
+  await shot(page, '49b-full-board');
+  await page.click('[data-testid="leave-full"]');
+  await page.waitForSelector('[data-testid="statusbar"]');
+  // One panel at a time: hide the library with Ctrl+B, bring it back from the View menu.
+  await page.keyboard.press('Control+b');
+  await page.waitForTimeout(200);
+  assert.ok(!(await page.locator('[data-testid="add-folder"]').isVisible()));
+  await page.click('[data-testid="view-menu-btn"]');
+  await page.click('[data-testid="view-sidebar"]');
+  await page.keyboard.press('Escape');
+  await page.mouse.click(5, 5);
+  await page.waitForSelector('[data-testid="add-folder"] >> visible=true');
+  // Hiding the tabs leaves a corner View button to get them back.
+  await page.click('[data-testid="view-menu-btn"]');
+  await page.click('[data-testid="view-tabs"]');
+  await page.waitForSelector('[data-testid="view-corner-btn"]');
+  await page.click('[data-testid="view-corner-btn"]');
+  await page.click('[data-testid="view-all"]');
+  await page.waitForSelector('[data-testid="view-menu-btn"]');
   await app.evaluate(({ dialog }, dir) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [dir] }); }, lib);
   await page.click('[data-testid="add-folder"]');
   await page.click('[data-testid="lib-pick-folder"]');

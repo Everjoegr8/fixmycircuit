@@ -3,6 +3,7 @@ import { api } from '../api';
 import { Icon } from '../components/Icon';
 import { loadPdfJs } from './pdf/loadPdfJs';
 import { syncBus } from '../lib/sync';
+import { layout, useLayout } from '../lib/layout';
 
 interface Props {
   fileId: string;
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export default function PdfViewer(p: Props) {
+  useLayout();
   const hostRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -158,7 +160,7 @@ export default function PdfViewer(p: Props) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-bench-700 bg-bench-900 px-2 py-1.5">
+      <div className={`${layout.on('toolbar') ? 'flex' : 'hidden'} shrink-0 flex-wrap items-center gap-2 border-b border-bench-700 bg-bench-900 px-2 py-1.5`}>
         <div className="relative w-64">
           <input
             ref={searchRef}

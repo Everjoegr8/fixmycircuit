@@ -6,6 +6,7 @@ import { CATEGORIES, TOOLS, categoryLabel, type Nav } from '../types';
 import { Icon } from './Icon';
 import { AppMark, EraBadge } from '../brand/Logo';
 import { useTheme } from '../lib/theme';
+import { layout } from '../lib/layout';
 
 interface Props {
   brands: Brand[];
@@ -89,6 +90,10 @@ export default function Sidebar(p: Props) {
             <div className="font-display text-[15px] font-semibold leading-tight text-slate-100">Fix<span className="text-amber-300">My</span>Circuit</div>
             <div className="text-[10px] uppercase tracking-wider text-slate-500">Repair workbench</div>
           </div>
+        </button>
+        <div className="flex-1" />
+        <button className="btn-ghost" title="Hide the library for a bigger board (Ctrl+B). Bring it back from View." onClick={() => layout.toggle('sidebar')} data-testid="sidebar-hide" aria-label="Hide library">
+          <Icon name="chevRight" size={14} className="rotate-180" />
         </button>
       </div>
       <div className="relative px-3 py-2">
