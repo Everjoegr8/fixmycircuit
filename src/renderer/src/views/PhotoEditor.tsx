@@ -11,6 +11,7 @@ import LayerToggles, { useLayers } from '../components/LayerToggles';
 import HoverCard, { type HoverData } from '../components/HoverCard';
 import { netSegments, netsByLayer } from '../lib/netlines';
 import { parseAlign, syncBus } from '../lib/sync';
+import { layout, useLayout } from '../lib/layout';
 
 type Tool = 'select' | 'pin' | 'jumper' | 'trace';
 const SHOP_TRACE = '#22c55e';
@@ -33,6 +34,7 @@ interface Props {
 const jumperLayer = (j: Jumper): LayerId | null => (j.layer as LayerId) || layerOfText(`${j.label} ${j.note}`);
 
 export default function PhotoEditor(p: Props) {
+  useLayout();
   const [photo, setPhoto] = useState<Photo | null>(null);
   const [pins, setPins] = useState<Reading[]>([]);
   const [jumpers, setJumpers] = useState<Jumper[]>([]);
@@ -318,7 +320,7 @@ export default function PhotoEditor(p: Props) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-bench-700 bg-bench-900 px-2 py-1.5">
+      <div className={`${layout.on('toolbar') ? 'flex' : 'hidden'} shrink-0 flex-wrap items-center gap-2 border-b border-bench-700 bg-bench-900 px-2 py-1.5`}>
         <span className="mr-1 rounded bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-amber-300">Contributor mode</span>
         <div className="flex overflow-hidden rounded-md border border-bench-600">
           {([['select', 'cursor', 'Select / move (V)'], ['pin', 'pin', 'Drop reading pin (P)'], ['jumper', 'line', 'Draw jumper wire (J)'], ['trace', 'path', 'Trace real copper you can see on the photo (T)']] as const).map(([t, icon, title]) => (

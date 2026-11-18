@@ -92,3 +92,11 @@ not in this repository or in the installer. They are downloaded from the authors
 repositories at a pinned commit, or come in the separate library pack, where every
 model folder carries its LICENSE.txt and the pack root carries NOTICE.md.
 See library/README.md for the full list and attributions.
+
+## Open board shipped in the installer (openboards/)
+
+One open-hardware board is included so a first launch shows a real, full-size
+board: the Olimex TERES-I mainboard (A64) Rev C (KiCad board and schematic PDF).
+TERES-I by Olimex Ltd., https://github.com/OLIMEX/DIY-LAPTOP, commit
+36193de48e5ff86c6fa309eb75bd450a9f88c4c7. Licensed under the Apache License 2.0;
+the full licence text is in its folder's LICENSE.txt. The files are unmodified.

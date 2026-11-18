@@ -18,6 +18,7 @@ import { registerBoard, touchBoard, unregisterBoard } from '../lib/boards';
 import CopperPanel, { type ShopTraceInfo } from './board/CopperPanel';
 import { parseAlign } from '../lib/sync';
 import type { CopperLayer } from '@shared/types';
+import { layout, useLayout } from '../lib/layout';
 
 interface Props {
   fileId: string;
@@ -48,16 +49,25 @@ export default function BoardViewer(p: Props) {
   const [hoverInfo, setHoverInfo] = useState<{ x: number; y: number; text: string } | null>(null);
   const [hoverCard, setHoverCard] = useState<HoverData | null>(null);
   const [readings, setReadings] = useState<Reading[]>([]);
-  const [layers] = useLayers();
+  const [layers] = useLayers('board');
   const [hiddenNetPins, setHiddenNetPins] = useState(0);
   const [loadNonce, setLoadNonce] = useState(0);
   const [netlist, setNetlist] = useState(false);
   const [view, setView] = useState<ViewOptions>(() => {
-    try { return { ...DEFAULT_VIEW, ...JSON.parse(localStorage.getItem('fmc.boardView') || '{}') }; } catch { return { ...DEFAULT_VIEW }; }
+    try {
+      const v = { ...DEFAULT_VIEW, ...JSON.parse(localStorage.getItem('fmc.boardView') || '{}') };
+      // 0.6.2: the black and red repair-tool look is the default; switch older saved defaults once.
+      if (localStorage.getItem('fmc.boardView.v') !== '2') { v.look = 'repair'; localStorage.setItem('fmc.boardView.v', '2'); }
+      return v;
+    } catch { return { ...DEFAULT_VIEW }; }
   });
   const [viewMenu, setViewMenu] = useState(false);
   const [railOn, setRailOn] = useState(false);
-  const [pinsOpen, setPinsOpen] = useState(() => { try { return localStorage.getItem('fmc.pinsPanel') !== '0'; } catch { return true; } });
+  useLayout();
+  const pinsOpen = layout.on('pins');
+  const setPinsOpen = (f: boolean | ((x: boolean) => boolean)) => layout.setShown('pins', typeof f === 'function' ? f(pinsOpen) : f);
+  const toolbarOn = layout.on('toolbar');
+  const infoOn = layout.on('info');
   const [pinsTab, setPinsTab] = useState<PinsTab>('net');
   const [diodeMap, setDiodeMap] = useState(() => { try { return localStorage.getItem('fmc.diodeMap') === '1'; } catch { return false; } });
   const [guides, setGuides] = useState<Guide[]>([]);
@@ -155,7 +165,7 @@ export default function BoardViewer(p: Props) {
     api.listReadings({ model_id: p.modelId }).then(setReadings);
     api.listGuides(p.modelId).then(setGuides);
   }, [p.modelId, p.rev]);
-  useEffect(() => { try { localStorage.setItem('fmc.pinsPanel', pinsOpen ? '1' : '0'); localStorage.setItem('fmc.diodeMap', diodeMap ? '1' : '0'); } catch { /* private mode */ } }, [pinsOpen, diodeMap]);
+  useEffect(() => { try { localStorage.setItem('fmc.diodeMap', diodeMap ? '1' : '0'); } catch { /* private mode */ } }, [diodeMap]);
   // Diode map: each net with a shop diode value gets a label and a leader line to one of its pads.
   const diodeNotes = useMemo(() => {
     if (!board) return [];
@@ -468,7 +478,7 @@ export default function BoardViewer(p: Props) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-bench-700 bg-bench-900 px-2 py-1.5">
+      <div className={`${toolbarOn ? 'flex' : 'hidden'} shrink-0 flex-wrap items-center gap-2 border-b border-bench-700 bg-bench-900 px-2 py-1.5`} data-testid="board-toolbar">
         <div className="relative w-72">
           <input
             ref={searchRef}
@@ -508,7 +518,7 @@ export default function BoardViewer(p: Props) {
         <button className="btn" title="Fit board (F)" onClick={() => viewRef.current?.fit()}><Icon name="fit" size={14} /></button>
         <button className="btn" title="Zoom in (+)" onClick={() => { const v = viewRef.current; v && v.zoomAt(v.canvas.clientWidth / 2, v.canvas.clientHeight / 2, 1.3); }}><Icon name="zoomIn" size={14} /></button>
         <button className="btn" title="Zoom out (-)" onClick={() => { const v = viewRef.current; v && v.zoomAt(v.canvas.clientWidth / 2, v.canvas.clientHeight / 2, 1 / 1.3); }}><Icon name="zoomOut" size={14} /></button>
-        <button className={`btn ${pinsOpen && !netlist ? 'btn-on' : ''}`} title="NET and Component pin tables, part lookup, measurement sheet" onClick={() => { setPinsOpen((x) => !(x && !netlist)); setNetlist(false); }} data-testid="pins-btn"><Icon name="list" size={14} /> Pins</button>
+        <button className={`btn ${pinsOpen && !netlist ? 'btn-on' : ''}`} title="NET and Component pin tables, part lookup, measurement sheet (Ctrl+J)" onClick={() => { setPinsOpen((x) => !(x && !netlist)); setNetlist(false); }} data-testid="pins-btn"><Icon name="list" size={14} /> Pins</button>
         <button className={`btn ${diodeMap ? 'btn-on' : ''}`} title={diodeNotes.length ? 'Write the shop diode values beside the board with a line to each rail' : 'No diode readings for this model yet'} onClick={() => setDiodeMap((x) => !x)} data-testid="diode-map-btn">
           <Icon name="meter" size={14} /> Diode map{diodeNotes.length ? <span className="ml-0.5 text-[10px] text-slate-400">{diodeNotes.length}</span> : null}
         </button>
@@ -559,7 +569,7 @@ export default function BoardViewer(p: Props) {
         {board && (
           <div className={`absolute top-2 z-10 ${netlist ? 'right-[332px]' : 'right-2'}`}>
             <div className="flex flex-col items-end gap-2">
-              <LayerToggles counts={layerCounts} title="Trace layers (nets)" />
+              <LayerToggles counts={layerCounts} title="Trace layers (nets)" scope="board" />
               {copperOpen && (
                 <CopperPanel board={board} fileId={p.fileId} layers={copperLayers} shop={shopInfo} fileTraces={fileTraces.current.length}
                   onChanged={() => setCopperRev((n) => n + 1)} onClose={() => setCopperOpen(false)} />
@@ -567,7 +577,7 @@ export default function BoardViewer(p: Props) {
             </div>
           </div>
         )}
-        {(part || sel.net) && (
+        {infoOn && (part || sel.net) && (
           <div className="absolute left-2 top-2 z-10 max-h-[calc(100%-16px)] w-72 overflow-auto rounded-lg border border-bench-600 bg-bench-900/95 p-3 shadow-2xl" data-testid="board-info">
             {part && (
               <div className="mb-3">
@@ -650,7 +660,7 @@ export default function BoardViewer(p: Props) {
             )}
           </div>
         )}
-        <div className="pointer-events-none absolute bottom-2 right-3 text-right text-[11px] text-slate-600">
+        <div className={`pointer-events-none absolute bottom-2 right-3 text-right text-[11px] text-slate-600 ${layout.get().full ? 'hidden' : ''}`}>
           <div>Drag to pan · wheel to zoom · Space flips · R rotates · F fits · X x-ray · N next pin on net</div>
           <div>The board is drawn from the file you opened. FixMyCircuit does not include any phone maker's boards.</div>
         </div>

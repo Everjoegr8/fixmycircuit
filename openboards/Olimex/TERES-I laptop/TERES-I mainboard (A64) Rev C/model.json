@@ -1,0 +1,41 @@
+{
+  "id": "olimex-teres-main-revc",
+  "brand": "Olimex",
+  "series": "TERES-I laptop",
+  "model": "TERES-I mainboard (A64) Rev C",
+  "device": "laptop",
+  "files": [
+    {
+      "path": "TERES_PCB1-A64-MAIN_Rev.C.kicad_pcb",
+      "kind": "board",
+      "bytes": 2808382,
+      "sha256": "7ba40451dc452f0bc74f8b9e1414a06b9174c18a39acc8b4c211567def7b9eae"
+    },
+    {
+      "path": "TERES_PCB1-A64-MAIN_Rev.C.pdf",
+      "kind": "schematic",
+      "bytes": 1005113,
+      "sha256": "011964ad4856063cbd394a4e83bd15dae8cc23e2f72e9451a4078281f22b2e4e"
+    }
+  ],
+  "source": {
+    "url": "https://github.com/OLIMEX/DIY-LAPTOP",
+    "commit": "36193de48e5ff86c6fa309eb75bd450a9f88c4c7",
+    "paths": [
+      "HARDWARE/A64-TERES/TERES-PCB1-A64-MAIN/Rev.C/TERES_PCB1-A64-MAIN_Rev.C.kicad_pcb",
+      "HARDWARE/A64-TERES/TERES-PCB1-A64-MAIN/Rev.C/TERES_PCB1-A64-MAIN_Rev.C.pdf"
+    ]
+  },
+  "license": {
+    "spdx": "Apache-2.0",
+    "attribution": "TERES-I by Olimex Ltd. https://github.com/OLIMEX/DIY-LAPTOP",
+    "url": "https://github.com/OLIMEX/DIY-LAPTOP/blob/36193de48e5ff86c6fa309eb75bd450a9f88c4c7/LICENSE"
+  },
+  "notes": "Allwinner A64, the same SoC as the PinePhone, with AXP803 PMIC, eMMC and LPDDR3.",
+  "check": {
+    "parts": 453,
+    "pins": 2118,
+    "nets": 474,
+    "parseMs": 144
+  }
+}

@@ -15,6 +15,12 @@ is the only feature that goes online, and only with your own API key).
 
 ### New in 0.6: the repair-tool layout, model library
 
+- **Big screen when you want it.** Every panel (model library, tabs,
+  toolbar, NET/Component panel, part card, repair panel, trial notice and
+  status bar) can be hidden from the **View** button at the right of the tab
+  bar. **Full board** (F11 or Ctrl+Shift+F) hides them all; *Show panels* in
+  the bottom-left corner brings them back. Shortcuts: Ctrl+B library, Ctrl+J
+  NET/Component, Ctrl+E repair panel. The layout is kept for next time.
 - **Model library tree.** Brand, then series, then model, with a "Find a model"
   box and a Recently opened list. Pick a model and its board opens straight
   away.

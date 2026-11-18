@@ -39,7 +39,7 @@ export interface ViewOptions {
   /** Write net names on pads when zoomed in. */
   netNames: boolean;
 }
-export const DEFAULT_VIEW: ViewOptions = { look: 'real', mask: 'green', xray: false, netNames: true };
+export const DEFAULT_VIEW: ViewOptions = { look: 'repair', mask: 'green', xray: false, netNames: true };
 
 interface Pt { x: number; y: number }
 
@@ -380,7 +380,12 @@ export class BoardCanvas {
     this.ox = fw / 2 - ((Math.max(...xs) + Math.min(...xs)) / 2) * this.scale;
     this.oy = h / 2 + topPad / 2 - ((Math.max(...ys) + Math.min(...ys)) / 2) * this.scale;
     this.invalidate();
+    this.fitted = true;
   }
+
+  /** The view is still the whole-board fit (nothing zoomed or panned since). */
+  private fitted = false;
+  private lastSize = { w: 0, h: 0 };
 
   zoomAt(sx: number, sy: number, factor: number) {
     const before = this.toBoard(sx, sy);
@@ -388,12 +393,14 @@ export class BoardCanvas {
     const after = this.toScreen(before.x, before.y);
     this.ox += sx - after.x;
     this.oy += sy - after.y;
+    this.fitted = false;
     this.invalidate();
   }
 
   pan(dx: number, dy: number) {
     this.ox += dx;
     this.oy += dy;
+    this.fitted = false;
     this.invalidate();
   }
 
@@ -415,6 +422,7 @@ export class BoardCanvas {
     this.scale = Math.min(w, h) / span;
     this.ox = inset + w / 2 - ((x0 + x1) / 2) * this.scale;
     this.oy = h / 2 - ((y0 + y1) / 2) * this.scale;
+    this.fitted = false;
     this.invalidate();
   }
 
@@ -425,6 +433,7 @@ export class BoardCanvas {
     const inset = this.canvas.clientWidth > this.insetLeft * 2.2 ? this.insetLeft : 0;
     this.ox = inset + (this.canvas.clientWidth - inset) / 2 - v.x * this.scale;
     this.oy = this.canvas.clientHeight / 2 - v.y * this.scale;
+    this.fitted = false;
     this.invalidate();
   }
 
@@ -453,6 +462,7 @@ export class BoardCanvas {
     const s = this.toScreen(cx, cy);
     this.ox = this.canvas.clientWidth / 2 - s.x;
     this.oy = this.canvas.clientHeight / 2 - s.y;
+    this.fitted = false;
     this.invalidate();
   }
 
@@ -602,6 +612,14 @@ export class BoardCanvas {
     if (this.canvas.width !== Math.round(w * dpr) || this.canvas.height !== Math.round(h * dpr)) {
       this.canvas.width = Math.round(w * dpr);
       this.canvas.height = Math.round(h * dpr);
+    }
+    // Panels shown or hidden: a fitted board refits to the new size, otherwise
+    // the same spot stays in the middle.
+    const was = this.lastSize;
+    if (w && h) this.lastSize = { w, h };
+    if (w && h && was.w && was.h && (w !== was.w || h !== was.h)) {
+      if (this.fitted) this.fit();
+      else { this.ox += (w - was.w) / 2; this.oy += (h - was.h) / 2; }
     }
     this.baseKey = '';
     this.invalidate();

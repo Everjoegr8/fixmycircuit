@@ -31,6 +31,7 @@ export interface FmcApi {
   libraryPickFolder(): Promise<string | null>;
   libraryScan(paths: string[]): Promise<{ entries: LibEntry[]; truncated: boolean }>;
   libraryImport(entries: LibEntry[]): Promise<{ models: number; files: number; modelIds: number[] }>;
+  librarySeedOpen(): Promise<{ models: number; files: number; modelIds: number[] }>;
   libraryFetchIndex(url: string): Promise<LibRemoteModel[]>;
   libraryDownload(items: { url: string; sha256?: string; brand: string; series: string; model: string; meta?: unknown }[]): Promise<{ models: number; files: number; modelIds: number[] }>;
   shareSummary(modelId: number): Promise<ShareSummary>;

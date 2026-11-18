@@ -137,7 +137,7 @@ async function demoRun() {
   await shot(page, '20-home-dashboard');
 
   // Board photo with trace layers, net lines and hover card
-  assert.equal(await page.locator('[data-testid="device-card"]').count(), 4, 'four demo device cards');
+  assert.equal(await page.locator('[data-testid="device-card"][data-demo="1"]').count(), 4, 'four demo device cards');
   await openDemo(page, 'photo');
   await page.waitForSelector('[data-testid="netlines-toggle"]', { timeout: 15000 });
   assert.equal(await page.locator('[data-netlines]').count(), 0, 'net lines off by default on photos');
@@ -290,7 +290,7 @@ async function openDemo(page, what) {
   await page.click('[data-testid="brand-home"]');
   // Use the Home quick action for boards; photos open from the model's Board Photos page.
   if (what === 'board') { await page.locator('button:has-text("Open boardview")').click(); return; }
-  await page.locator('[data-testid="device-card"]').first().click();
+  await page.locator('[data-testid="device-card"][data-demo="1"]').first().click();
   await page.locator('button:has-text("Board Photos") >> nth=-1').click();
   await page.locator('[data-testid="photo-open"], button:has-text("Open"):not([data-recent])').first().click();
 }
@@ -629,6 +629,48 @@ async function libraryRun() {
   await app.evaluate(({ BrowserWindow }) => { BrowserWindow.getAllWindows()[0].setSize(1600, 940); });
   page.on('pageerror', e => console.log('[pageerror]', e.message));
   await page.waitForSelector('[data-testid="splash"]', { state: 'detached', timeout: 10000 });
+  // First launch installs a real open-hardware board; Home opens it in one click, in the repair-tool look.
+  await page.click('[data-testid="open-real-board"]');
+  await page.waitForSelector('[data-testid="board-canvas"] >> visible=true', { timeout: 20000 });
+  await page.waitForTimeout(800);
+  const head = await page.locator('text=/KiCad · \\d+ parts/ >> visible=true').first().textContent();
+  console.log('real board:', head);
+  assert.match(head, /KiCad · 453 parts · 2118 pins/);
+  assert.match(await page.textContent('[data-testid="view-btn"] >> visible=true'), /Black & red/);
+  await shot(page, '49-real-board');
+  // Every panel can be hidden from View; full board gives the canvas the whole window.
+  const canvasW = async () => (await page.locator('[data-testid="board-canvas"] >> visible=true').boundingBox()).width;
+  const w0 = await canvasW();
+  await page.click('[data-testid="view-menu-btn"]');
+  await page.waitForSelector('[data-testid="view-menu"]');
+  await page.click('[data-testid="view-full"]');
+  await page.waitForTimeout(400);
+  assert.equal(await page.locator('[data-testid="statusbar"]').count(), 0);
+  assert.equal(await page.locator('[data-testid="pins-panel"]').count(), 0);
+  assert.ok(!(await page.locator('[data-testid="board-toolbar"]').isVisible()));
+  const w1 = await canvasW();
+  console.log('canvas width normal/full:', w0, w1);
+  assert.ok(w1 > 1500 && w1 > w0 + 300, 'full board fills the window');
+  assert.equal(JSON.parse(await page.evaluate(() => localStorage.getItem('fmc.layout'))).full, true);
+  await shot(page, '49b-full-board');
+  await page.click('[data-testid="leave-full"]');
+  await page.waitForSelector('[data-testid="statusbar"]');
+  // One panel at a time: hide the library with Ctrl+B, bring it back from the View menu.
+  await page.keyboard.press('Control+b');
+  await page.waitForTimeout(200);
+  assert.ok(!(await page.locator('[data-testid="add-folder"]').isVisible()));
+  await page.click('[data-testid="view-menu-btn"]');
+  await page.click('[data-testid="view-sidebar"]');
+  await page.keyboard.press('Escape');
+  await page.mouse.click(5, 5);
+  await page.waitForSelector('[data-testid="add-folder"] >> visible=true');
+  // Hiding the tabs leaves a corner View button to get them back.
+  await page.click('[data-testid="view-menu-btn"]');
+  await page.click('[data-testid="view-tabs"]');
+  await page.waitForSelector('[data-testid="view-corner-btn"]');
+  await page.click('[data-testid="view-corner-btn"]');
+  await page.click('[data-testid="view-all"]');
+  await page.waitForSelector('[data-testid="view-menu-btn"]');
   await app.evaluate(({ dialog }, dir) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [dir] }); }, lib);
   await page.click('[data-testid="add-folder"]');
   await page.click('[data-testid="lib-pick-folder"]');
