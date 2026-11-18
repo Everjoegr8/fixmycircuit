@@ -8,7 +8,7 @@ const APP = path.resolve(__dirname, '../..'); const SM = path.join(APP, 'samples
 const S = process.env.E2E_OUT || fs.mkdtempSync(path.join(os.tmpdir(), 'fmc-e2e-'));
 const shot = (page, n) => page.screenshot({ path: `${S}/${n}.png` });
 (async () => {
-  if (process.env.E2E_ONLY) { await ({ license: licenseRun, tools: toolsRun, formats: formatsRun, demo: demoRun, library: libraryRun })[process.env.E2E_ONLY](); console.log('E2E OK (' + process.env.E2E_ONLY + ')'); return; }
+  if (process.env.E2E_ONLY) { await ({ license: licenseRun, tools: toolsRun, formats: formatsRun, demo: demoRun, library: libraryRun, share: shareRun })[process.env.E2E_ONLY](); console.log('E2E OK (' + process.env.E2E_ONLY + ')'); return; }
   const data = path.join(S, 'data'); fs.rmSync(data, { recursive: true, force: true });
   const app = await _electron.launch({ args: ['--no-sandbox', APP], env: { ...process.env, FMC_DATA_DIR: data, FMC_NO_DEMO: '1' } });
   const page = await app.firstWindow();
@@ -112,6 +112,7 @@ const shot = (page, n) => page.screenshot({ path: `${S}/${n}.png` });
   await demoRun();
   await formatsRun();
   await libraryRun();
+  await shareRun();
   await licenseRun();
   await toolsRun();
   console.log('E2E OK, screenshots in', S);
@@ -680,4 +681,75 @@ async function libraryRun() {
   assert.match(sheet, /VBUS/); assert.match(sheet, /synthetic demo data/);
   await shot(page, '52-diode-map-sheet');
   await app.close();
+}
+
+// Fifth launch: "Share to library" packs a model's own work, and importing the pack brings it back.
+async function shareRun() {
+  const data = path.join(S, 'data-share'); fs.rmSync(data, { recursive: true, force: true });
+  const out = path.join(S, 'share'); fs.rmSync(out, { recursive: true, force: true }); fs.mkdirSync(out, { recursive: true });
+  const app = await _electron.launch({ args: ['--no-sandbox', APP], env: { ...process.env, FMC_DATA_DIR: data, FMC_NO_DEMO: '1' } });
+  const page = await app.firstWindow();
+  page.on('pageerror', e => console.log('[pageerror]', e.message));
+  await page.waitForSelector('[data-testid="splash"]', { state: 'detached', timeout: 10000 });
+  const ids = await page.evaluate(async (photo) => {
+    const f = window.fmc;
+    const b = await f.addBrand('Tecno'); const m = await f.addModel(b.id, 'Spark 20 (KJ5)');
+    await f.setModelInfo(m.id, { series: 'Spark' });
+    await f.importFiles({ paths: [photo], model_id: m.id });
+    const ph = (await f.listPhotos(m.id))[0];
+    await f.saveReading({ model_id: m.id, photo_id: ph.id, x: 0.4, y: 0.5, type: 'diode', part: 'U2', pin: '1', net: 'VBUS', value: '0.452', author: 'Tunde' });
+    await f.saveReading({ model_id: m.id, type: 'voltage', part: 'C10', net: 'VBAT', value: '3.8', author: 'Tunde' });
+    await f.saveGuide({ model_id: m.id, title: 'Not charging', symptom: 'No charge icon', steps: 'Check F1', author: 'Tunde', photo_ids: String(ph.id) });
+    await f.saveJumper({ photo_id: ph.id, points: [{ x: 0.1, y: 0.1 }, { x: 0.2, y: 0.3 }], label: 'VBUS fix', author: 'Tunde' });
+    return { model: m.id, photo: ph.id };
+  }, SM + 'fmc-demo-x1-top.jpg');
+  await page.reload();
+  await page.waitForSelector('[data-testid="model-filter"]');
+  await page.fill('[data-testid="model-filter"]', 'spark 20');
+  await page.locator('[data-model="Spark 20 (KJ5)"]').first().click();
+  await page.click('[data-testid="share-open"]');
+  await page.waitForSelector('[data-testid="share-summary"]');
+  assert.match(await page.textContent('[data-testid="share-summary"]'), /1\s*board photos, 2\s*readings, 1\s*fault solutions, 1\s*jumpers/);
+  assert.ok(await page.isDisabled('[data-testid="share-save"]'), 'save needs the declaration');
+  await page.fill('[data-testid="share-name"]', 'Tunde Phone Clinic');
+  await page.fill('[data-testid="share-contact"]', '+234 800 000 0000');
+  await page.check('[data-testid="share-agree"]');
+  await shot(page, '59-share-form');
+  const zip = path.join(out, 'pack.zip');
+  await app.evaluate(({ dialog, shell }, z) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath: z }); global.__opened = []; shell.openExternal = async (u) => { global.__opened.push(u); }; shell.showItemInFolder = () => {}; }, zip);
+  await page.click('[data-testid="share-save"]');
+  await page.waitForSelector('[data-testid="share-done"]');
+  await page.click('[data-testid="share-email"]');
+  await page.click('[data-testid="share-whatsapp"]');
+  const opened = await app.evaluate(() => global.__opened);
+  assert.match(opened[0], /^mailto:info@eratechnologiz\.com\.ng\?subject=/);
+  assert.match(opened[1], /wa\.me\/2348102514461/);
+  await shot(page, '60-share-done');
+  const { readSharePack, checkSharePack } = await import(path.join(APP, 'src/shared/sharepack.mjs'));
+  const pack = readSharePack(new Uint8Array(fs.readFileSync(zip)));
+  assert.equal(pack.dir, 'Tecno/Spark/Spark 20 (KJ5)');
+  assert.equal(pack.meta.license.spdx, 'CC-BY-SA-4.0');
+  assert.equal(pack.notes.readings.length, 2); assert.equal(pack.notes.guides[0].photos.length, 1);
+  assert.equal(pack.files.length, 1, 'only the photo, no board files');
+  assert.ok(checkSharePack(pack).ok, JSON.stringify(checkSharePack(pack)));
+  console.log('share pack:', pack.dir, pack.files.map((f) => f.name).join(', '), `${pack.notes.readings.length} readings`);
+  // Import it back as a fresh model through the library folder scan.
+  const lib = path.join(out, 'lib');
+  for (const f of [...pack.files, { name: 'model.json', data: Buffer.from(JSON.stringify({ ...pack.meta, model: 'Spark 20 (shared)' })) }, { name: 'shop-notes.json', data: Buffer.from(JSON.stringify(pack.notes)) }]) {
+    const dest = path.join(lib, 'Tecno/Spark/Spark 20 (shared)', f.name); fs.mkdirSync(path.dirname(dest), { recursive: true }); fs.writeFileSync(dest, f.data);
+  }
+  const r = await page.evaluate(async (dir) => { const s = await window.fmc.libraryScan([dir]); return window.fmc.libraryImport(s.entries); }, lib);
+  assert.deepEqual(r.notes, { readings: 2, guides: 1, jumpers: 1 });
+  const again = await page.evaluate(async (dir) => { const s = await window.fmc.libraryScan([dir]); return window.fmc.libraryImport(s.entries.filter((e) => !e.dup)); }, lib);
+  assert.deepEqual(again.notes, { readings: 0, guides: 0, jumpers: 0 }, 'importing twice adds nothing');
+  const back = await page.evaluate(async (id) => {
+    const f = window.fmc; const ph = (await f.listPhotos(id))[0];
+    return { readings: (await f.listReadings({ model_id: id })).map((x) => `${x.part}.${x.pin} ${x.net} ${x.value} ${x.photo_id === ph.id ? 'on-photo' : 'no-photo'} by ${x.author}`), guide: (await f.listGuides(id))[0], photo: ph.id, jumpers: (await f.listJumpers(ph.id)).length };
+  }, r.modelIds[0]);
+  console.log('imported back:', back.readings);
+  assert.ok(back.readings.includes('U2.1 VBUS 0.452 on-photo by Tunde'));
+  assert.equal(back.guide.photo_ids, String(back.photo));
+  assert.equal(back.jumpers, 1);
+  await app.close();
+  console.log('share to library OK');
 }

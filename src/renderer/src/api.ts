@@ -16,6 +16,8 @@ export interface LibRemoteModel {
   files: { path: string; url: string; kind?: string; sha256?: string }[];
   source?: { url?: string; commit?: string }; license?: { spdx?: string; attribution?: string };
 }
+export interface ShareSummary { photos: number; readings: number; guides: number; jumpers: number; files: { id: string; name: string; kind: string; size: number }[] }
+export interface SharePackResult { path: string; bytes: number; files: number; readings: number; guides: number; jumpers: number }
 export type DayCount = { d: string; n: number };
 export type ActivityItem = { type: 'file' | 'guide' | 'photo' | 'reading'; sub: string; ref: string; title: string; model_id: number | null; at: string };
 
@@ -31,6 +33,9 @@ export interface FmcApi {
   libraryImport(entries: LibEntry[]): Promise<{ models: number; files: number; modelIds: number[] }>;
   libraryFetchIndex(url: string): Promise<LibRemoteModel[]>;
   libraryDownload(items: { url: string; sha256?: string; brand: string; series: string; model: string; meta?: unknown }[]): Promise<{ models: number; files: number; modelIds: number[] }>;
+  shareSummary(modelId: number): Promise<ShareSummary>;
+  sharePack(modelId: number, opts: { contributor: string; contact?: string; declaration: boolean; ownFileIds?: string[]; includePhotos?: boolean }): Promise<SharePackResult | null>;
+  shareSend(req: { path: string; via: 'email' | 'whatsapp'; model: string; contributor: string }): Promise<{ email: string }>;
   listFiles(modelId?: number | null, kind?: string): Promise<LibraryFile[]>;
   pickFiles(filters?: { name: string; extensions: string[] }[]): Promise<string[]>;
   importFiles(req: ImportRequest): Promise<LibraryFile[]>;

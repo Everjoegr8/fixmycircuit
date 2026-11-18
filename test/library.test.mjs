@@ -28,8 +28,14 @@ test('every catalog model has a source, pinned commit and redistributable licenc
 });
 
 test('hosted index matches the catalog and pins files by sha256', () => {
-  assert.equal(hosted.models.length, catalog.models.length);
-  for (const m of hosted.models) {
+  const open = hosted.models.filter((m) => !String(m.id).startsWith('community-'));
+  assert.equal(open.length, catalog.models.length);
+  for (const m of hosted.models.filter((x) => String(x.id).startsWith('community-'))) {
+    assert.equal(m.license.spdx, 'CC-BY-SA-4.0');
+    assert.ok(m.contribution?.agreed, `${m.id}: ownership declaration`);
+    for (const f of m.files) assert.match(f.sha256, /^[0-9a-f]{64}$/);
+  }
+  for (const m of open) {
     const c = catalog.models.find((x) => x.id === m.id);
     assert.ok(c, `${m.id} in catalog`);
     assert.equal(m.source.commit, c.commit);
