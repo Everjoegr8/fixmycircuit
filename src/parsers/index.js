@@ -7,11 +7,22 @@ import { parseFZ } from './fz.js';
 import { isXZZ, parseXZZ } from './xzz.js';
 import { isKiCad, parseKiCad } from './kicad.js';
 import { parseODB } from './odb.js';
+import { isGenCAD, parseGenCAD } from './gencad.js';
+import { isAltiumAscii, parseAltiumAscii } from './altium.js';
+import { isCADPanel, parseCADPanel } from './cadpanel.js';
+
+/** Allegro .brd binaries: same check as OpenBoardView BRDAllegroFile. */
+function isAllegro(bytes) {
+  if (bytes.length < 0xfb) return false;
+  const s = String.fromCharCode(bytes[0xf8], bytes[0xf9], bytes[0xfa]);
+  return s === 'all' || s === 'vie';
+}
 import { SIDE } from './util.js';
+import { computeGeometry, chainOutline, polyArea } from './geometry.js';
 
 export { SIDE };
 
-export const BOARD_EXTENSIONS = ['brd', 'bdv', 'bv', 'bvr', 'cst', 'fz', 'asc', 'pcb', 'kicad_pcb', 'tgz', 'zip'];
+export const BOARD_EXTENSIONS = ['brd', 'bdv', 'bv', 'bvr', 'cst', 'fz', 'cae', 'asc', 'pcb', 'cad', 'gcd', 'gencad', 'pcbdoc', 'kicad_pcb', 'tgz', 'zip'];
 /** ODB++ jobs come as archives. */
 export const ODB_EXTENSIONS = ['tgz', 'gz', 'tar', 'zip'];
 
@@ -25,22 +36,46 @@ export function extOf(name) {
  * extension and everything else by content.
  * @param {Uint8Array} bytes
  * @param {string} fileName
- * @param {{fzKey?: string, xzzKey?: string, ascFiles?: Record<string, Uint8Array>}} opts
+ * @param {{fzKey?: string, caeKey?: string, xzzKey?: string, ascFiles?: Record<string, Uint8Array>}} opts
  */
 export function parseRawBoard(bytes, fileName, opts = {}) {
   const ext = extOf(fileName);
   if (ext === 'fz') return parseFZ(bytes, opts.fzKey);
+  if (ext === 'cae') return parseFZ(bytes, opts.caeKey, { cae: true });
   if (ext === 'asc') return parseASC(opts.ascFiles || { [String(fileName).split(/[\\/]/).pop().toLowerCase()]: bytes });
   if (ext === 'cst') return parseCST(bytes);
   if (ext === 'kicad_pcb' || isKiCad(bytes)) return parseKiCad(bytes);
   if (ODB_EXTENSIONS.includes(ext)) return parseODB(bytes);
+  if (isGenCAD(bytes)) return parseGenCAD(bytes);
+  if (isAltiumAscii(bytes)) return parseAltiumAscii(bytes);
+  if (isCADPanel(bytes)) return parseCADPanel(bytes);
   if (isBRD(bytes)) return parseBRD(bytes);
   if (isBRD2(bytes)) return parseBRD2(bytes);
   if (isBDV(bytes)) return parseBDV(bytes);
   if (isBVR1(bytes)) return parseBVR1(bytes);
   if (isBVR3(bytes)) return parseBVR3(bytes);
+  if (isAllegro(bytes)) throw new Error('This is a Cadence Allegro board (.brd). Allegro files are a closed format: open it in the free Allegro Free Physical Viewer and export it, or ask for the boardview (.brd/.bvr/.fz) version.');
   if (isXZZ(bytes)) return parseXZZ(bytes, opts.xzzKey);
   throw new Error('Unrecognised boardview format. Supported: ' + BOARD_EXTENSIONS.map((e) => '.' + e).join(', '));
+}
+
+/** Formats whose pin radius is a real pad size. */
+const REAL_PAD_FORMATS = new Set(['FZ', 'BVR3', 'KiCad', 'ODB++', 'GenCAD', 'Altium', 'CAD']);
+
+/** Outline as closed polygons, biggest first. */
+function outlinePolygons(outline, segs, size) {
+  const polys = [];
+  if (outline.length > 2) {
+    // A polyline outline may jump between islands: split where it repeats its start.
+    let cur = [];
+    for (const p of outline) {
+      cur.push(p);
+      if (cur.length > 3 && Math.hypot(p.x - cur[0].x, p.y - cur[0].y) < size * 1e-4) { polys.push(cur); cur = []; }
+    }
+    if (cur.length > 2) polys.push(cur);
+  }
+  if (segs.length) for (const l of chainOutline(segs, size * 2e-4)) if (l.length > 2) polys.push(l);
+  return polys.map((p) => ({ pts: p, area: polyArea(p) })).sort((a, b) => b.area - a.area).map((p) => p.pts);
 }
 
 export const NO_NET = new Set(['', 'UNCONNECTED', 'NC', 'N/C', 'NONE']);
@@ -63,7 +98,7 @@ export function buildBoard(raw) {
   // Nets
   const nets = new Map();
   for (const pin of pins) {
-    if (NO_NET.has(pin.net.toUpperCase())) continue;
+    if (NO_NET.has(pin.net.toUpperCase()) || pin.net.startsWith('NC@')) continue;
     if (!nets.has(pin.net)) nets.set(pin.net, []);
     nets.get(pin.net).push(pin.index);
   }
@@ -83,38 +118,8 @@ export function buildBoard(raw) {
   if (!Number.isFinite(minx)) { minx = miny = 0; maxx = maxy = 100; }
   const size = Math.max(maxx - minx, maxy - miny, 1);
 
-  // Pin radius: half of the closest neighbour distance inside each part.
-  const defaultR = size / 400;
-  for (const part of parts) {
-    const ps = part.pins.map((i) => pins[i]);
-    let minD = Infinity;
-    if (ps.length > 1 && ps.length < 400) {
-      for (let i = 0; i < ps.length; i++)
-        for (let j = i + 1; j < ps.length; j++) {
-          const d = Math.hypot(ps[i].x - ps[j].x, ps[i].y - ps[j].y);
-          if (d > 0 && d < minD) minD = d;
-        }
-    } else if (ps.length >= 400) {
-      // Big BGA: sample neighbours along sorted x
-      const sorted = ps.slice().sort((a, b) => a.x - b.x || a.y - b.y);
-      for (let i = 1; i < sorted.length; i++) {
-        const d = Math.hypot(sorted[i].x - sorted[i - 1].x, sorted[i].y - sorted[i - 1].y);
-        if (d > 0 && d < minD) minD = d;
-      }
-    }
-    const r = Number.isFinite(minD) ? Math.min(minD * 0.4, defaultR * 4) : defaultR;
-    for (const p of ps) p.r = p.radius && p.radius > 0.5 && (raw.format === 'BVR3' || raw.format === 'KiCad') ? p.radius : r;
-    if (ps.length) {
-      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-      for (const p of ps) {
-        x0 = Math.min(x0, p.x - p.r); y0 = Math.min(y0, p.y - p.r);
-        x1 = Math.max(x1, p.x + p.r); y1 = Math.max(y1, p.y + p.r);
-      }
-      const pad = r * 0.6;
-      part.bbox = { x0: x0 - pad, y0: y0 - pad, x1: x1 + pad, y1: y1 + pad };
-    }
-  }
-  for (const p of pins) if (!p.r) p.r = defaultR;
+  const board = { parts, pins, bounds: { minx, miny, maxx, maxy }, realPads: REAL_PAD_FORMATS.has(raw.format) };
+  computeGeometry(board);
 
   return {
     format: raw.format,
@@ -127,6 +132,11 @@ export function buildBoard(raw) {
     traces,
     vias,
     bounds: { minx, miny, maxx, maxy },
+    smallPad: board.smallPad,
+    /** 'file' = pad sizes/outlines from the file, 'pins' = shapes worked out from pin positions. */
+    geometry: board.geometry,
+    /** Board outline chained into polygons (for drawing the board itself). */
+    outlinePolys: outlinePolygons(outline, segs, size),
     stats: { parts: parts.filter((p) => !p.testpoint && !p.name.startsWith('...')).length, pins: pins.length, nets: nets.size },
   };
 }

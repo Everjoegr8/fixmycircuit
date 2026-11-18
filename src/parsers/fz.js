@@ -14,12 +14,15 @@ export function parseFZKey(text) {
   return words.map((w) => parseInt(w.replace(/^0x/i, ''), 16) >>> 0);
 }
 
-export function checkFZKey(key) {
+/** CAE files (OpenBoardView CAEFile.cpp) are FZ files with a different key family. */
+export const CAE_KEY_PARITY = [1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0];
+
+export function checkFZKey(key, parity = KEY_PARITY) {
   if (!key || key.length !== 44) return false;
   return key.every((w, i) => {
     let t = w >>> 0;
     t ^= t >>> 16; t ^= t >>> 8; t ^= t >>> 4; t ^= t >>> 2; t ^= t >>> 1;
-    return ((~t) & 1) === KEY_PARITY[i];
+    return ((~t) & 1) === parity[i];
   });
 }
 
@@ -77,14 +80,15 @@ function inflateLoose(data) {
   }
 }
 
-export function parseFZ(bytes, keyText) {
+export function parseFZ(bytes, keyText, { cae = false } = {}) {
+  const label = cae ? 'CAE' : 'FZ';
   const buf = new Uint8Array(bytes);
   if (buf.length < 8) throw new Error('FZ file is too small');
   const isZlib = buf[4] === 0x78 && (buf[5] === 0x9c || buf[5] === 0xda);
   if (!isZlib) {
     const key = parseFZKey(keyText);
-    if (!key) throw new Error('This FZ file is encrypted. Add your FZ key (44 hex words) in Settings to open it.');
-    if (!checkFZKey(key)) throw new Error('The FZ key in Settings is not valid (parity check failed).');
+    if (!key) throw new Error(`This ${label} file is encrypted. Add your ${label} key (44 hex words) in Settings to open it.`);
+    if (!checkFZKey(key, cae ? CAE_KEY_PARITY : KEY_PARITY)) throw new Error(`The ${label} key in Settings is not valid (parity check failed).`);
     fzDecode(buf, key);
   }
   const n = buf.length;

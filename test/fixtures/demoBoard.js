@@ -419,3 +419,60 @@ export function writeODB(b, { gzip = true } = {}) {
   const t = tar(files);
   return gzip ? deflate(t, { gzip: true }) : t;
 }
+
+/** GenCAD 1.4 in THOU with pads, padstacks, shapes (one rotated and one flipped part) and a route. */
+export function writeGenCAD(b) {
+  const L = ['$HEADER', 'GENCAD 1.4', 'USER "FixMyCircuit synthetic"', 'UNITS THOU', '$ENDHEADER', '$BOARD'];
+  for (let i = 1; i < b.outline.length; i++) L.push(`LINE ${b.outline[i - 1].x} ${b.outline[i - 1].y} ${b.outline[i].x} ${b.outline[i].y}`);
+  L.push('$ENDBOARD', '$PADS', 'PAD P12 RECTANGULAR 0', 'RECTANGLE -6 -4 12 8', 'PAD R10 ROUND 0', 'CIRCLE 0 0 5', '$ENDPADS');
+  L.push('$PADSTACKS', 'PADSTACK S_TOP 0', 'PAD P12 TOP 0 0', 'PADSTACK S_BOT 0', 'PAD P12 BOTTOM 0 0', 'PADSTACK S_BGA 0', 'PAD R10 TOP 0 0', '$ENDPADSTACKS');
+  L.push('$SHAPES');
+  const place = [];
+  b.parts.forEach((part, pi) => {
+    const ps = b.pins.filter((p) => p.part === pi);
+    const cx = Math.round(ps.reduce((s, p) => s + p.x, 0) / ps.length), cy = Math.round(ps.reduce((s, p) => s + p.y, 0) / ps.length);
+    const rot = part.name === 'R1' ? 90 : 0;
+    const r = (-rot * Math.PI) / 180, c = Math.cos(r), s = Math.sin(r);
+    L.push(`SHAPE SH_${part.name}`);
+    for (const p of ps) {
+      const dx = p.x - cx, dy = p.y - cy;
+      const lx = dx * c - dy * s, ly = dx * s + dy * c;
+      const stack = part.name === 'U1' ? 'S_BGA' : part.side === 'bottom' ? 'S_BOT' : 'S_TOP';
+      L.push(`PIN "${p.snum}" ${stack} ${lx.toFixed(3)} ${ly.toFixed(3)} ${part.side === 'bottom' ? 'BOTTOM' : 'TOP'} 0 0`);
+    }
+    if (part.name === 'U1') L.push('RECTANGLE -70 -70 140 140');
+    place.push(['COMPONENT ' + part.name, `PLACE ${cx} ${cy}`, `LAYER ${part.side === 'bottom' ? 'BOTTOM' : 'TOP'}`, `ROTATION ${rot}`, `SHAPE SH_${part.name} 0 0`, `DEVICE DEV_${part.name}`]);
+  });
+  L.push('$ENDSHAPES', '$COMPONENTS', ...place.flat(), '$ENDCOMPONENTS', '$SIGNALS');
+  const nets = new Map();
+  for (const p of b.pins) if (p.net && p.net !== 'UNCONNECTED') { if (!nets.has(p.net)) nets.set(p.net, []); nets.get(p.net).push(p); }
+  for (const [n, ps] of nets) { L.push(`SIGNAL ${n}`); for (const p of ps) L.push(`NODE ${b.parts[p.part].name} "${p.snum}"`); }
+  L.push('$ENDSIGNALS', '$TRACKS', 'TRACK T6 6', '$ENDTRACKS', '$ROUTES', 'ROUTE VBAT', 'LAYER TOP', 'TRACK T6', 'LINE 600 1500 1000 1300', 'VIA S_BGA 1000 1250 ALL 4 V1', '$ENDROUTES');
+  return new TextEncoder().encode(L.join('\r\n') + '\r\n');
+}
+
+/** Altium ASCII: nets, components, pads with sizes, keepout outline and overlay outlines. */
+export function writeAltium(b) {
+  const L = ['|RECORD=Board|KIND=Protel_Advanced_PCB|VERSION=5.0'];
+  const nets = [...new Set(b.pins.map((p) => p.net).filter((n) => n && n !== 'UNCONNECTED'))];
+  nets.forEach((n, i) => L.push(`|RECORD=Net|ID=${i}|NAME=${n}`));
+  b.parts.forEach((part, i) => L.push(`|RECORD=Component|ID=${i}|LAYER=${part.side === 'bottom' ? 'BOTTOM' : 'TOP'}|X=0mil|Y=0mil|ROTATION=0|SOURCEDESIGNATOR=${part.name}|SOURCEDESCRIPTION=Synthetic ${part.name}`));
+  for (const p of b.pins) {
+    const ni = nets.indexOf(p.net);
+    L.push(`|RECORD=Pad|INDEXFORSAVE=0|LAYER=${b.parts[p.part].side === 'bottom' ? 'BOTTOM' : 'TOP'}${ni >= 0 ? `|NET=${ni}` : ''}|COMPONENT=${p.part}|NAME=${p.snum}|X=${p.x}mil|Y=${p.y}mil|XSIZE=12mil|YSIZE=8mil|SHAPE=RECTANGLE|ROTATION= 0.000`);
+  }
+  for (let i = 1; i < b.outline.length; i++) L.push(`|RECORD=Track|LAYER=KEEPOUT|X1=${b.outline[i - 1].x}mil|Y1=${b.outline[i - 1].y}mil|X2=${b.outline[i].x}mil|Y2=${b.outline[i].y}mil|WIDTH=10mil`);
+  const u1 = [[730, 1730], [870, 1730], [870, 1970], [730, 1970]];
+  for (let i = 0; i < 4; i++) { const a = u1[i], c = u1[(i + 1) % 4]; L.push(`|RECORD=Track|LAYER=TOPOVERLAY|COMPONENT=0|X1=${a[0]}mil|Y1=${a[1]}mil|X2=${c[0]}mil|Y2=${c[1]}mil|WIDTH=5mil`); }
+  L.push(`|RECORD=Track|LAYER=TOP|NET=${nets.indexOf('VBAT')}|X1=600mil|Y1=1500mil|X2=1000mil|Y2=1300mil|WIDTH=6mil`);
+  return new TextEncoder().encode(L.join('\r\n') + '\r\n');
+}
+
+/** "###Panel Added" CAD export (inches). */
+export function writeCADPanel(b) {
+  const L = ['###Panel Added', 'UNITS INCH'];
+  b.parts.forEach((part, i) => L.push(`COMP ${part.name} ${i + 1} 0 0 0 0 ${part.side === 'bottom' ? 2 : 1} 0`));
+  for (const p of b.pins) L.push(`C_PIN ${b.parts[p.part].name}-${p.snum} ${(p.x / 1000).toFixed(4)} ${(p.y / 1000).toFixed(4)} 0 0 0 X ${p.net === 'UNCONNECTED' ? 'UNCONNECTED' : '/' + p.net}`);
+  for (const n of b.nails) { L.push(`NET /${n.net}`); L.push(`N_VIA ${(n.x / 1000).toFixed(4)} ${(n.y / 1000).toFixed(4)} X ${n.side === 'top' ? 1 : 2} 0`); }
+  return new TextEncoder().encode(L.join('\r\n') + '\r\n');
+}

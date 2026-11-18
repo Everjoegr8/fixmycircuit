@@ -61,7 +61,7 @@ export default function PhotoEditor(p: Props) {
       if (!files.length) return;
       const [{ file, bytes }, st] = await Promise.all([api.readFile(files[0].id), api.getSettings()]);
       try {
-        const b = loadBoard(new Uint8Array(bytes), file.name, { fzKey: st.fzKey, xzzKey: st.xzzKey });
+        const b = loadBoard(new Uint8Array(bytes), file.name, { fzKey: st.fzKey, caeKey: st.caeKey, xzzKey: st.xzzKey });
         if (!dead) setBoard(b);
       } catch { /* photo still works without it */ }
     })();

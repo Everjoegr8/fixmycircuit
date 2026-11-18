@@ -150,7 +150,7 @@ function FilesSection(p: Props & { kinds: string[] }) {
         <Empty
           icon={isBoard ? 'board' : 'doc'}
           title={p.unsorted ? 'Nothing unsorted' : isBoard ? 'No boardview files yet' : 'No schematics yet'}
-          text={isBoard ? 'Import .brd, .bdv, .bv, .bvr, .cst, .fz, .asc or XZZ .pcb files. Click a part to see its pins and nets; click a pin to light up the whole net.' : 'Import schematic PDFs. They are copied into your offline library and are searchable by part and net name.'}
+          text={isBoard ? 'Import .brd, .bdv, .bv, .bvr, .cst, .fz, .cae, .asc, XZZ .pcb, GenCAD .cad, Altium ASCII .pcbdoc, KiCad or ODB++ files. The board is drawn from your file; click a part to see its pins and nets, click a pin to light up the whole net.' : 'Import schematic PDFs. They are copied into your offline library and are searchable by part and net name.'}
         />
       )}
       <div className="card divide-y divide-bench-700 overflow-hidden">

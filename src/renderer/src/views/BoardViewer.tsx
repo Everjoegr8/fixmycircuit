@@ -2,14 +2,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { loadBoard, searchBoard, extOf } from '@parsers/index.js';
 import { api } from '../api';
 import { Icon } from '../components/Icon';
-import { BoardCanvas, type Side } from './board/BoardCanvas';
+import { BoardCanvas, DEFAULT_VIEW, type Side, type ViewOptions } from './board/BoardCanvas';
+import BoardViewMenu from './board/BoardViewMenu';
 import type { Focus } from '../types';
 import type { Reading } from '@shared/types';
 import LayerToggles, { useLayers } from '../components/LayerToggles';
 import HoverCard, { type HoverData } from '../components/HoverCard';
 import { netsByLayer } from '../lib/netlines';
 import { syncBus } from '../lib/sync';
-import { indexBoard, railFamily, TYPE_LABEL } from '@shared/netindex';
+import { indexBoard, railFamily, powerRail, TYPE_LABEL } from '@shared/netindex';
 import NetlistPanel from './board/NetlistPanel';
 import { indexModelSchematics, schematicPages, type SchIndex } from '../lib/schindex';
 import { registerBoard, touchBoard, unregisterBoard } from '../lib/boards';
@@ -50,6 +51,12 @@ export default function BoardViewer(p: Props) {
   const [hiddenNetPins, setHiddenNetPins] = useState(0);
   const [loadNonce, setLoadNonce] = useState(0);
   const [netlist, setNetlist] = useState(false);
+  const [view, setView] = useState<ViewOptions>(() => {
+    try { return { ...DEFAULT_VIEW, ...JSON.parse(localStorage.getItem('fmc.boardView') || '{}') }; } catch { return { ...DEFAULT_VIEW }; }
+  });
+  const [viewMenu, setViewMenu] = useState(false);
+  const [railOn, setRailOn] = useState(false);
+  const pinStep = useRef(-1);
   const [pathNets, setPathNets] = useState<string[]>([]);
   const [sch, setSch] = useState<SchIndex[]>([]);
   const [copperOpen, setCopperOpen] = useState(false);
@@ -59,6 +66,7 @@ export default function BoardViewer(p: Props) {
   const fileTraces = useRef<any[]>([]);
   const idx = useMemo(() => (board ? indexBoard(board) : null), [board]);
   const fileName = useRef('');
+  const pathFromRail = useRef(false);
 
   // Load + parse
   useEffect(() => {
@@ -72,6 +80,7 @@ export default function BoardViewer(p: Props) {
         await new Promise((r) => setTimeout(r, 30));
         const b = loadBoard(new Uint8Array(bytes), file.name, {
           fzKey: settings.fzKey,
+          caeKey: settings.caeKey,
           xzzKey: settings.xzzKey,
           ascFiles: extOf(file.name) === 'asc' ? { ...extras, [file.name.toLowerCase()]: new Uint8Array(bytes) } : undefined,
         });
@@ -149,6 +158,20 @@ export default function BoardViewer(p: Props) {
   }, [board]);
 
   useEffect(() => { viewRef.current?.setLayers(layers); }, [layers, board]);
+  useEffect(() => {
+    viewRef.current?.setOptions(view);
+    try { localStorage.setItem('fmc.boardView', JSON.stringify(view)); } catch { /* private mode */ }
+  }, [view]);
+  // Rail mode: light up every net the selected rail feeds through series parts (coils, fuses, 0 ohm, ferrites).
+  useEffect(() => {
+    if (railOn && sel.net && idx) {
+      pathFromRail.current = true;
+      setPathNets(powerRail(idx, sel.net));
+    } else if (pathFromRail.current) {
+      pathFromRail.current = false;
+      setPathNets([]);
+    }
+  }, [railOn, sel.net, idx]);
 
   // Split-screen sync
   const emitView = () => {
@@ -174,6 +197,7 @@ export default function BoardViewer(p: Props) {
     if (!board || !canvasRef.current) return;
     const v = new BoardCanvas(canvasRef.current, board);
     viewRef.current = v;
+    v.setOptions(view);
     v.setLayers(layers);
     setSide(v.side);
     v.resize();
@@ -205,15 +229,17 @@ export default function BoardViewer(p: Props) {
     const part = board.parts[index];
     setSel({ part: index, pin: null, net: null });
     const v = viewRef.current!;
+    v.insetLeft = 300;
     if (part.side !== 'both' && v.side !== 'both' && part.side !== v.side) { v.side = part.side; setSide(part.side); }
     if (zoom) v.zoomTo(part.pins.map((i: number) => board.pins[i]), 8);
   };
   const selectNet = (net: string, zoom = true) => {
     setSel({ part: null, pin: null, net });
     const v = viewRef.current!;
+    v.insetLeft = 300;
     if (zoom) {
       const pins = (board.nets.get(net) || []).map((i: number) => board.pins[i]).filter((pin: any) => v.visible(pin.side));
-      if (pins.length) v.zoomTo(pins, 2);
+      if (pins.length) v.zoomTo(pins, 4);
     }
   };
   const choose = (r: any) => {
@@ -248,11 +274,34 @@ export default function BoardViewer(p: Props) {
       else if (e.key.toLowerCase() === 'f') v.fit();
       else if (e.key === '+' || e.key === '=') v.zoomAt(v.canvas.clientWidth / 2, v.canvas.clientHeight / 2, 1.3);
       else if (e.key === '-') v.zoomAt(v.canvas.clientWidth / 2, v.canvas.clientHeight / 2, 1 / 1.3);
-      else if (e.key === 'Escape') setSel({ part: null, pin: null, net: null });
+      else if (e.key === 'Escape') { setSel({ part: null, pin: null, net: null }); setRailOn(false); }
+      else if (e.key.toLowerCase() === 'n' && sel.net) stepPin(e.shiftKey ? -1 : 1);
+      else if (e.key.toLowerCase() === 'x') setView((o) => ({ ...o, xray: !o.xray }));
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   });
+
+  /** Jump to the next/previous pin of the selected net (switching side when needed). */
+  const stepPin = (dir: number) => {
+    const v = viewRef.current;
+    if (!v || !board || !sel.net) return;
+    const list: number[] = (board.nets.get(sel.net) || []).slice().sort((a: number, b: number) => {
+      const A = board.pins[a], B = board.pins[b];
+      return (A.side === B.side ? 0 : A.side === 'top' ? -1 : 1) || board.parts[A.part].name.localeCompare(board.parts[B.part].name) || a - b;
+    });
+    if (!list.length) return;
+    const cur = list.indexOf(sel.pin ?? -1);
+    const nextI = ((cur < 0 ? (dir > 0 ? -1 : 0) : cur) + dir + list.length) % list.length;
+    pinStep.current = nextI;
+    const pin = board.pins[list[nextI]];
+    if (!v.visible(pin.side) && pin.side !== 'both') { v.side = pin.side; setSide(pin.side); }
+    v.insetLeft = 300;
+    const host = board.parts[pin.part];
+    v.zoomTo(host && !host.testpoint && host.pins.length < 60 ? host.pins.map((i: number) => board.pins[i]) : [pin], 14);
+    const part = board.parts[pin.part];
+    setSel({ part: part && !part.testpoint ? pin.part : null, pin: list[nextI], net: sel.net });
+  };
 
   const flip = () => {
     const v = viewRef.current;
@@ -414,8 +463,14 @@ export default function BoardViewer(p: Props) {
           <Icon name="layers" size={14} /> Copper
           {board && <span className={`ml-0.5 rounded px-1 text-[9.5px] font-semibold ${(board.traces || []).length ? 'bg-amber-500/20 text-amber-200' : 'bg-bench-700 text-slate-400'}`} data-testid="copper-state">{(board.traces || []).length ? 'REAL' : 'COMPUTED'}</span>}
         </button>
+        <div className="relative">
+          <button className={`btn ${viewMenu ? 'btn-on' : ''}`} title="How the board is drawn (real look, classic, board colour, x-ray)" onClick={() => setViewMenu((x) => !x)} data-testid="view-btn">
+            <Icon name="board" size={14} /> {view.look === 'real' ? 'Real view' : 'Classic'}
+          </button>
+          {viewMenu && <BoardViewMenu view={view} onChange={(o) => setView((v) => ({ ...v, ...o }))} onClose={() => setViewMenu(false)} geometry={board?.geometry} />}
+        </div>
         <div className="flex-1" />
-        {board && <span className="text-[11px] text-slate-500">{board.format} · {board.stats.parts} parts · {board.stats.pins} pins · {board.stats.nets} nets</span>}
+        {board && <span className="text-[11px] text-slate-500" title={board.geometry === 'file' ? 'Pad sizes and part outlines are read from the file.' : 'This file only stores pin positions; part bodies and pad shapes are worked out from them.'}>{board.format} · {board.stats.parts} parts · {board.stats.pins} pins · {board.stats.nets} nets · {board.geometry === 'file' ? 'shapes from file' : 'shapes from pins'}</span>}
       </div>
       <div className="relative min-h-0 flex-1">
         <canvas
@@ -498,6 +553,13 @@ export default function BoardViewer(p: Props) {
                   {netPins.length} pins on {netPartNames.length} parts
                   {hiddenNetPins > 0 && <span className="text-amber-200/80"> · {hiddenNetPins} on the other side</span>}
                 </div>
+                <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                  <button className="btn-ghost" title="Previous pin on this net (Shift+N)" onClick={() => stepPin(-1)} data-testid="net-prev">‹ Pin</button>
+                  <button className="btn-ghost" title="Next pin on this net (N)" onClick={() => stepPin(1)} data-testid="net-next">Pin ›</button>
+                  <button className={`btn-ghost ${railOn ? 'text-cyan-300' : ''}`} title="Also light up the nets this one feeds through coils, fuses, 0 ohm resistors and ferrites" onClick={() => setRailOn((x) => !x)} data-testid="rail-btn">
+                    <Icon name="net" size={12} /> {railOn ? `Whole rail on (${pathNets.length + 1} nets)` : 'Whole rail'}
+                  </button>
+                </div>
                 {idx?.nets.get(sel.net) && (() => {
                   const ni = idx.nets.get(sel.net!)!;
                   const fam = railFamily(idx, sel.net!, 2).filter((f) => f.depth > 0);
@@ -533,7 +595,10 @@ export default function BoardViewer(p: Props) {
             )}
           </div>
         )}
-        <div className="pointer-events-none absolute bottom-2 right-3 text-[11px] text-slate-600">Drag to pan · wheel to zoom · Space flips · R rotates · F fits</div>
+        <div className="pointer-events-none absolute bottom-2 right-3 text-right text-[11px] text-slate-600">
+          <div>Drag to pan · wheel to zoom · Space flips · R rotates · F fits · X x-ray · N next pin on net</div>
+          <div>The board is drawn from the file you opened. FixMyCircuit does not include any phone maker's boards.</div>
+        </div>
       </div>
     </div>
   );

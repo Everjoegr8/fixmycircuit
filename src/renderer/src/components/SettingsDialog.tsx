@@ -96,6 +96,10 @@ export default function SettingsDialog({ onClose, onReload }: { onClose: () => v
         <div>
           <label className="label flex items-center gap-1"><Icon name="key" size={12} /> FZ key (44 hex words)</label>
           <textarea className="input h-20 font-mono text-[11px]" value={s.fzKey} onChange={(e) => setS({ ...s, fzKey: e.target.value })} placeholder="Needed only for encrypted .fz boardviews" />
+        </div>
+        <div>
+          <label className="label flex items-center gap-1"><Icon name="key" size={12} /> CAE key (44 hex words)</label>
+          <textarea className="input h-14 font-mono text-[11px]" value={s.caeKey || ''} onChange={(e) => setS({ ...s, caeKey: e.target.value })} placeholder="Needed only for encrypted .cae boardviews" />
           <p className="mt-1 text-[11px] text-slate-500">Like OpenBoardView, FixMyCircuit does not ship these decryption keys. Paste the key you already use in your existing boardview software.</p>
         </div>
         <div className="card p-3" data-testid="tools-settings">

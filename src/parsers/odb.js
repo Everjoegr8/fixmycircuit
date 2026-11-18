@@ -118,6 +118,17 @@ function unitsOf(text, def = 'INCH') {
   return m ? m[1].toUpperCase() : def;
 }
 
+/** Pad symbol size and shape in file units: r10 (round), s10 (square), rect20x10, oval20x10. */
+function symbolPad(name) {
+  let m = /^r([\d.]+)$/i.exec(name);
+  if (m) return { w: +m[1], h: +m[1], shape: 'round' };
+  m = /^s([\d.]+)$/i.exec(name);
+  if (m) return { w: +m[1], h: +m[1], shape: 'rect' };
+  m = /^(rect|oval)([\d.]+)x([\d.]+)/i.exec(name);
+  if (m) return { w: +m[2], h: +m[3], shape: m[1].toLowerCase() === 'oval' ? 'oval' : 'rect' };
+  return null;
+}
+
 /** Symbol width in file units (mils for INCH files, microns for MM files). */
 function symbolWidth(name) {
   const m = /^(?:r|s)([\d.]+)/i.exec(name) || /^(?:rect|oval)([\d.]+)x([\d.]+)/i.exec(name);
@@ -201,12 +212,13 @@ export function parseODB(bytes) {
     const k = mm ? 1 / 0.0254 : 1000; // coordinates -> mils
     const kw = mm ? 1 / 25.4 : 1; // symbol sizes (microns or mils) -> mils
     const syms = [];
+    const symPads = [];
     const side = sideOfLayer(layer);
     let idx = -1;
     for (const raw of text.split(/\r?\n/)) {
       const l = raw.trim();
       if (!l || l[0] === '#') continue;
-      if (l[0] === '$') { const m = /^\$(\d+)\s+(\S+)/.exec(l); if (m) syms[+m[1]] = symbolWidth(m[2]); continue; }
+      if (l[0] === '$') { const m = /^\$(\d+)\s+(\S+)/.exec(l); if (m) { syms[+m[1]] = symbolWidth(m[2]); symPads[+m[1]] = symbolPad(m[2]); } continue; }
       const c = l[0];
       if (!'LPATBS'.includes(c) || l[1] !== ' ') continue;
       idx++;
@@ -226,7 +238,35 @@ export function parseODB(bytes) {
           traces.push({ x1: px * k, y1: py * k, x2: qx * k, y2: qy * k, w: (syms[+t[7]] || 0) * kw, net, side });
           px = qx; py = qy;
         }
-      } else if (c === 'P') pads.push({ x: +t[1] * k, y: +t[2] * k, net, side });
+      } else if (c === 'P') {
+        const sp = symPads[+t[3]];
+        const o = +t[6] || 0;
+        const ang = o >= 8 ? +(t[7] || 0) : (o % 4) * 90; // ODB rotates clockwise
+        pads.push({ x: +t[1] * k, y: +t[2] * k, net, side, w: sp ? sp.w * kw : 0, h: sp ? sp.h * kw : 0, shape: sp ? sp.shape : '', a: (-ang * Math.PI) / 180 });
+      }
+    }
+  }
+
+  // Real pad sizes: the copper pad under each component pin.
+  if (pads.length) {
+    const cell = 20;
+    const grid = new Map();
+    for (const p of pads) {
+      if (!(p.w > 0)) continue;
+      const key = Math.floor(p.x / cell) + ',' + Math.floor(p.y / cell);
+      let a = grid.get(key);
+      if (!a) grid.set(key, (a = []));
+      a.push(p);
+    }
+    for (const pin of pins) {
+      const gx = Math.floor(pin.x / cell), gy = Math.floor(pin.y / cell);
+      let best = null, bd = Infinity;
+      for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (const p of grid.get(gx + i + ',' + (gy + j)) || []) {
+        if (p.side !== pin.side && pin.side !== 'both') continue;
+        const d = Math.hypot(p.x - pin.x, p.y - pin.y);
+        if (d < bd && d < Math.max(p.w, p.h) / 2) { bd = d; best = p; }
+      }
+      if (best) { pin.pw = best.w; pin.ph = best.h; pin.pa = best.a; pin.shape = best.shape; }
     }
   }
 

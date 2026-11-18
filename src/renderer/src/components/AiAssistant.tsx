@@ -45,7 +45,7 @@ async function ensureBoard(modelId: number | null): Promise<OpenBoard | null> {
   if (!files.length) return null;
   try {
     const [{ file, bytes, extras }, s] = await Promise.all([api.readFile(files[0].id), api.getSettings()]);
-    const board = loadBoard(new Uint8Array(bytes), file.name, { fzKey: s.fzKey, xzzKey: s.xzzKey, ascFiles: extOf(file.name) === 'asc' ? { ...extras, [file.name.toLowerCase()]: new Uint8Array(bytes) } : undefined });
+    const board = loadBoard(new Uint8Array(bytes), file.name, { fzKey: s.fzKey, caeKey: s.caeKey, xzzKey: s.xzzKey, ascFiles: extOf(file.name) === 'asc' ? { ...extras, [file.name.toLowerCase()]: new Uint8Array(bytes) } : undefined });
     const ob = { fileId: file.id, name: file.name, modelId, board };
     registerBoard(ob);
     return { ...ob, at: Date.now() };

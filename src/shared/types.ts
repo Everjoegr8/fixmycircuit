@@ -128,6 +128,8 @@ export interface ImportRequest {
 
 export interface Settings {
   fzKey: string;
+  /** Key for encrypted CAE boardviews (same 44-word form as FZ). */
+  caeKey?: string;
   xzzKey: string;
   author: string;
   /** Optional AI assistant: the user's own Claude API key (stored only on this PC). */
@@ -157,7 +159,7 @@ export function guessBrand(fileName: string): string | null {
 export function kindForExt(ext: string): FileKind {
   const e = ext.toLowerCase();
   if (e === 'pdf') return 'schematic';
-  if (['brd', 'bdv', 'bv', 'bvr', 'cst', 'fz', 'asc', 'pcb', 'kicad_pcb', 'tgz', 'gz', 'tar', 'zip'].includes(e)) return 'boardview';
+  if (['brd', 'bdv', 'bv', 'bvr', 'cst', 'fz', 'cae', 'asc', 'pcb', 'cad', 'gcd', 'gencad', 'pcbdoc', 'kicad_pcb', 'tgz', 'gz', 'tar', 'zip'].includes(e)) return 'boardview';
   if (['jpg', 'jpeg', 'png', 'webp', 'bmp'].includes(e)) return 'photo';
   return 'other';
 }
