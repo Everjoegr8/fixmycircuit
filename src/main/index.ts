@@ -193,6 +193,21 @@ function currentLicense() {
   return st;
 }
 
+/** Set by registerIpc: import scanned library entries into brands and models. */
+let importPlacedRef: (entries: (Pick<ScanEntry, 'path' | 'brand' | 'series' | 'model'> & { meta?: unknown })[]) => { models: number; files: number; modelIds: number[] } = () => ({ models: 0, files: 0, modelIds: [] });
+
+function openBoardsDir() {
+  return app.isPackaged ? path.join(process.resourcesPath, 'openboards') : path.join(app.getAppPath(), 'openboards');
+}
+
+/** Install the open-hardware boards that ship with the app (real, licensed boards, not phone makers'). */
+function seedOpenBoards() {
+  const dir = openBoardsDir();
+  if (!fs.existsSync(dir)) return { models: 0, files: 0, modelIds: [] as number[] };
+  const r = scanFolder(dir, (n, size) => db.hasFile(n, size));
+  return importPlacedRef(r.entries.filter((e) => !e.dup && e.how !== 'unknown'));
+}
+
 function registerIpc() {
   handle('tree', () => db.tree());
   handle('brand:add', (name: string) => db.addBrand(name));
@@ -225,7 +240,7 @@ function registerIpc() {
     return { entries, truncated };
   });
   /** Import scanned entries, creating brands and models (with series and licence notes) as needed. */
-  const importPlaced = (entries: (Pick<ScanEntry, 'path' | 'brand' | 'series' | 'model'> & { meta?: unknown })[]) => {
+  const importPlaced = importPlacedRef = (entries: (Pick<ScanEntry, 'path' | 'brand' | 'series' | 'model'> & { meta?: unknown })[]) => {
     const groups = new Map<string, typeof entries>();
     for (const e of entries) {
       const k = e.brand.trim() && e.model.trim() ? `${e.brand.trim()}\u0000${e.model.trim()}` : '';
@@ -259,6 +274,7 @@ function registerIpc() {
     return { models: modelIds.length, files, modelIds, notes };
   };
   handle('library:import', (entries: ScanEntry[]) => importPlaced(entries));
+  handle('library:seedOpen', () => seedOpenBoards());
   handle('library:fetchIndex', (url: string) => fetchIndex(url, net.fetch as unknown as typeof fetch));
   handle('library:download', async (items: { url: string; sha256?: string; brand: string; series: string; model: string; meta?: unknown }[]) => {
     const dir = path.join(app.getPath('userData'), 'downloads', String(Date.now()));
@@ -535,6 +551,11 @@ if (!gotLock) {
     }
 
     registerIpc();
+    // Real open-hardware boards (once, also for people upgrading from an older version).
+    if (settings.openSeeded !== '1' && process.env.FMC_NO_DEMO !== '1') {
+      try { seedOpenBoards(); } catch (e) { console.error('open board seed failed', e); }
+      db.setSettings({ openSeeded: '1' } as any);
+    }
     currentLicense();
     createWindow();
     app.on('activate', () => {

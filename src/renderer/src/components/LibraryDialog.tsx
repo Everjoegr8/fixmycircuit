@@ -8,6 +8,7 @@ import { Icon } from './Icon';
 
 interface Props {
   initialPaths?: string[];
+  initialTab?: 'folder' | 'online';
   onClose: () => void;
   onDone: (r: { models: number; files: number; modelIds: number[] }) => void;
 }
@@ -19,7 +20,7 @@ const HOW: Record<LibEntry['how'], string> = { 'model.json': 'model.json', index
 const KIND: Record<string, string> = { boardview: 'Board', schematic: 'PDF', photo: 'Photo' };
 
 export default function LibraryDialog(p: Props) {
-  const [tab, setTab] = useState<'folder' | 'online'>('folder');
+  const [tab, setTab] = useState<'folder' | 'online'>(p.initialTab || 'folder');
   const [entries, setEntries] = useState<(LibEntry & { on: boolean })[]>([]);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');

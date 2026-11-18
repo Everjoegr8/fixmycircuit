@@ -18,6 +18,8 @@ interface Props {
   onOpenPhoto: (id: number, title: string, modelId: number | null) => void;
   onOpenDoc: (d: LastSession) => void;
   onReload: () => void;
+  onOpenModel: (m: TreeModel) => void;
+  onLibrary: (tab: 'folder' | 'online') => void;
   rev: number;
 }
 
@@ -115,6 +117,9 @@ export default function Home(p: Props) {
           <ContinueCard last={last} hist={hist} onOpen={p.onOpenDoc} />
         </div>
       </section>
+
+      {/* Real boards: open-hardware boards that ship with the app or came from the open library. */}
+      <RealBoards models={p.models} brands={p.brands} onOpen={p.onOpenModel} onLibrary={p.onLibrary} onReload={p.onReload} />
 
       {/* Demo label */}
       {demo.length > 0 ? (
@@ -341,7 +346,7 @@ function Ring({ pct }: { pct: number }) {
 function DeviceCard({ m, brand, i, onNav }: { m: TreeModel; brand: string; i: number; onNav: (n: Nav) => void }) {
   const pct = completeness(m);
   return (
-    <button className="card lift fmc-rise group overflow-hidden text-left" style={{ animationDelay: `${Math.min(i, 12) * 35}ms` }} onClick={() => onNav({ kind: 'model', modelId: m.id, category: 'faults' })} data-testid="device-card">
+    <button className="card lift fmc-rise group overflow-hidden text-left" style={{ animationDelay: `${Math.min(i, 12) * 35}ms` }} onClick={() => onNav({ kind: 'model', modelId: m.id, category: 'faults' })} data-testid="device-card" data-demo={m.demo ? "1" : undefined}>
       <div className="relative h-28 overflow-hidden">
         <DeviceImage m={m} brand={brand} className="h-full w-full transition duration-300 group-hover:scale-105" />
         <div className="absolute inset-0 bg-gradient-to-t from-bench-850 via-transparent to-transparent" />
@@ -446,5 +451,44 @@ function Spark({ data, color }: { data: number[]; color: string }): ReactNode {
         return <rect key={i} x={i * 4.6} y={26 - h} width="3.2" height={h} rx="1" fill={color} opacity={v ? 0.9 : 0.25} className="fmc-bar" style={{ animationDelay: `${i * 25}ms` }} />;
       })}
     </svg>
+  );
+}
+
+/** "See a real board": the open-hardware boards in the library, one click to open them like a repair tool. */
+function RealBoards({ models, brands, onOpen, onLibrary, onReload }: { models: TreeModel[]; brands: Brand[]; onOpen: (m: TreeModel) => void; onLibrary: (tab: 'folder' | 'online') => void; onReload: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const real = models.filter((m) => !m.demo && m.boardviews > 0 && m.meta && /"spdx"/.test(m.meta));
+  const brand = (id: number) => brands.find((b) => b.id === id)?.name || '';
+  const lic = (m: TreeModel) => { try { return JSON.parse(m.meta || '{}')?.license?.spdx || ''; } catch { return ''; } };
+  const install = async () => { setBusy(true); try { await api.librarySeedOpen(); onReload(); } finally { setBusy(false); } };
+  return (
+    <section className="fmc-rise rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-transparent p-4" data-testid="real-boards">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <h2 className="section-title mb-0">See a real board</h2>
+        <span className="text-[12px] text-slate-400">Full-size boards with real pads, real copper and every net, drawn the way repair tools show them (black and red, both sides). They are open-hardware designs that may be shared.</span>
+      </div>
+      <div className="flex flex-wrap items-stretch gap-2">
+        {real.slice(0, 4).map((m, i) => (
+          <button key={m.id} className="group flex min-w-[240px] flex-1 items-center gap-3 rounded-lg border border-bench-600 bg-black/60 p-3 text-left hover:border-amber-400" onClick={() => onOpen(m)} data-testid={i === 0 ? 'open-real-board' : undefined}>
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-[#d8343f]/20 text-[#ff6b5e]"><Icon name="board" size={20} /></span>
+            <span className="min-w-0">
+              <span className="block truncate font-semibold text-slate-100 group-hover:text-amber-200">{brand(m.brand_id)} {m.name}</span>
+              <span className="block truncate text-[11.5px] text-slate-400">{m.series ? m.series + ' · ' : ''}{lic(m)} · click to open the board</span>
+            </span>
+          </button>
+        ))}
+        {!real.length && (
+          <button className="btn-primary" disabled={busy} onClick={install} data-testid="install-real-board"><Icon name="download" size={13} /> {busy ? 'Installing…' : 'Install the real sample board'}</button>
+        )}
+        <button className="btn flex-col items-start justify-center px-4 text-left" onClick={() => onLibrary('online')} data-testid="home-online-library">
+          <span className="flex items-center gap-1.5 font-semibold"><Icon name="download" size={13} /> Open library</span>
+          <span className="text-[11px] text-slate-400">Open-hardware boards to download</span>
+        </button>
+        <button className="btn flex-col items-start justify-center px-4 text-left" onClick={() => onLibrary('folder')} data-testid="home-add-folder">
+          <span className="flex items-center gap-1.5 font-semibold"><Icon name="folder" size={13} /> Add a folder of boards</span>
+          <span className="text-[11px] text-slate-400">Your own .pcb .fz .brd files, sorted by model</span>
+        </button>
+      </div>
+    </section>
   );
 }

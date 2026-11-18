@@ -12,6 +12,7 @@ const api = {
   libraryPickFolder: call('library:pickFolder'),
   libraryScan: call('library:scan'),
   libraryImport: call('library:import'),
+  librarySeedOpen: call('library:seedOpen'),
   libraryFetchIndex: call('library:fetchIndex'),
   libraryDownload: call('library:download'),
   shareSummary: call('share:summary'),

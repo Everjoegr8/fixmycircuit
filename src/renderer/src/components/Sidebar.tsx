@@ -120,17 +120,6 @@ export default function Sidebar(p: Props) {
         >
           <Icon name="home" size={13} /> Command centre
         </button>
-        <div className="px-2 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Workbench</div>
-        {TOOLS.map((t) => (
-          <button
-            key={t.id}
-            className={`flex w-full items-center gap-2 rounded px-2 py-1 text-left ${p.nav?.kind === 'tool' && p.nav.tool === t.id ? 'bg-amber-500/15 text-amber-200' : 'text-slate-300 hover:bg-bench-800'}`}
-            onClick={() => p.onNav({ kind: 'tool', tool: t.id })}
-            data-tool={t.id}
-          >
-            <Icon name={t.icon} size={13} /> {t.label}
-          </button>
-        ))}
         <div className="flex items-center px-2 pb-1 pt-3">
           <span className="flex-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Model library</span>
         </div>
@@ -256,6 +245,17 @@ export default function Sidebar(p: Props) {
         >
           <Icon name="inbox" size={13} /> Unsorted files
         </button>
+        <div className="px-2 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Workbench</div>
+        {TOOLS.map((t) => (
+          <button
+            key={t.id}
+            className={`flex w-full items-center gap-2 rounded px-2 py-1 text-left ${p.nav?.kind === 'tool' && p.nav.tool === t.id ? 'bg-amber-500/15 text-amber-200' : 'text-slate-300 hover:bg-bench-800'}`}
+            onClick={() => p.onNav({ kind: 'tool', tool: t.id })}
+            data-tool={t.id}
+          >
+            <Icon name={t.icon} size={13} /> {t.label}
+          </button>
+        ))}
       </nav>
       <div className="flex gap-2 border-t border-bench-700 p-2">
         <button className="btn-primary flex-1 justify-center" onClick={p.onImport}><Icon name="upload" size={13} /> Import files</button>

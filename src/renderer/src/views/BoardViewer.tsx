@@ -48,12 +48,17 @@ export default function BoardViewer(p: Props) {
   const [hoverInfo, setHoverInfo] = useState<{ x: number; y: number; text: string } | null>(null);
   const [hoverCard, setHoverCard] = useState<HoverData | null>(null);
   const [readings, setReadings] = useState<Reading[]>([]);
-  const [layers] = useLayers();
+  const [layers] = useLayers('board');
   const [hiddenNetPins, setHiddenNetPins] = useState(0);
   const [loadNonce, setLoadNonce] = useState(0);
   const [netlist, setNetlist] = useState(false);
   const [view, setView] = useState<ViewOptions>(() => {
-    try { return { ...DEFAULT_VIEW, ...JSON.parse(localStorage.getItem('fmc.boardView') || '{}') }; } catch { return { ...DEFAULT_VIEW }; }
+    try {
+      const v = { ...DEFAULT_VIEW, ...JSON.parse(localStorage.getItem('fmc.boardView') || '{}') };
+      // 0.6.2: the black and red repair-tool look is the default; switch older saved defaults once.
+      if (localStorage.getItem('fmc.boardView.v') !== '2') { v.look = 'repair'; localStorage.setItem('fmc.boardView.v', '2'); }
+      return v;
+    } catch { return { ...DEFAULT_VIEW }; }
   });
   const [viewMenu, setViewMenu] = useState(false);
   const [railOn, setRailOn] = useState(false);
@@ -559,7 +564,7 @@ export default function BoardViewer(p: Props) {
         {board && (
           <div className={`absolute top-2 z-10 ${netlist ? 'right-[332px]' : 'right-2'}`}>
             <div className="flex flex-col items-end gap-2">
-              <LayerToggles counts={layerCounts} title="Trace layers (nets)" />
+              <LayerToggles counts={layerCounts} title="Trace layers (nets)" scope="board" />
               {copperOpen && (
                 <CopperPanel board={board} fileId={p.fileId} layers={copperLayers} shop={shopInfo} fileTraces={fileTraces.current.length}
                   onChanged={() => setCopperRev((n) => n + 1)} onClose={() => setCopperOpen(false)} />

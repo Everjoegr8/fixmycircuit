@@ -39,7 +39,7 @@ export interface ViewOptions {
   /** Write net names on pads when zoomed in. */
   netNames: boolean;
 }
-export const DEFAULT_VIEW: ViewOptions = { look: 'real', mask: 'green', xray: false, netNames: true };
+export const DEFAULT_VIEW: ViewOptions = { look: 'repair', mask: 'green', xray: false, netNames: true };
 
 interface Pt { x: number; y: number }
 

@@ -4,10 +4,15 @@ import { LAYERS, type LayerId } from '@shared/layers';
 const KEY = 'fmc.layers';
 const DEFAULT: LayerId[] = ['charging', 'display', 'touch', 'audio', 'rf'];
 
-/** Enabled layers, shared by every board and photo and remembered between runs. */
-export function useLayers(): [Set<LayerId>, (id: LayerId, on: boolean) => void, (all: boolean) => void] {
+/**
+ * Enabled layers, remembered between runs. Photos and boards keep their own
+ * set: boards start with none, so the board looks clean like a repair tool.
+ */
+export function useLayers(scope: 'photo' | 'board' = 'photo'): [Set<LayerId>, (id: LayerId, on: boolean) => void, (all: boolean) => void] {
+  const key = scope === 'board' ? 'fmc.boardLayers' : KEY;
+  const def: LayerId[] = scope === 'board' ? [] : DEFAULT;
   const read = () => {
-    try { const v = JSON.parse(localStorage.getItem(KEY) || 'null'); return new Set<LayerId>(Array.isArray(v) ? v : DEFAULT); } catch { return new Set<LayerId>(DEFAULT); }
+    try { const v = JSON.parse(localStorage.getItem(key) || 'null'); return new Set<LayerId>(Array.isArray(v) ? v : def); } catch { return new Set<LayerId>(def); }
   };
   const [set, setSet] = useState<Set<LayerId>>(read);
   useEffect(() => {
@@ -16,7 +21,7 @@ export function useLayers(): [Set<LayerId>, (id: LayerId, on: boolean) => void, 
     return () => window.removeEventListener('fmc-layers', f);
   }, []);
   const write = (next: Set<LayerId>) => {
-    try { localStorage.setItem(KEY, JSON.stringify([...next])); } catch { /* ignore */ }
+    try { localStorage.setItem(key, JSON.stringify([...next])); } catch { /* ignore */ }
     window.dispatchEvent(new Event('fmc-layers'));
     setSet(next);
   };
@@ -29,9 +34,9 @@ export function useLayers(): [Set<LayerId>, (id: LayerId, on: boolean) => void, 
   return [set, toggle, all];
 }
 
-export default function LayerToggles({ counts, title = 'Trace layers', extra }: { counts?: Partial<Record<LayerId, number>>; title?: string; extra?: React.ReactNode }) {
-  const [on, toggle, all] = useLayers();
-  const [open, setOpen] = useState(true);
+export default function LayerToggles({ counts, title = 'Trace layers', extra, scope = 'photo' }: { counts?: Partial<Record<LayerId, number>>; title?: string; extra?: React.ReactNode; scope?: 'photo' | 'board' }) {
+  const [on, toggle, all] = useLayers(scope);
+  const [open, setOpen] = useState(scope !== 'board');
   return (
     <div className="w-52 rounded-lg border border-bench-600 bg-bench-900/95 p-2 text-[12px] shadow-2xl" onMouseDown={(e) => e.stopPropagation()} onWheel={(e) => e.stopPropagation()} data-testid="layer-toggles">
       <div className="flex items-center">

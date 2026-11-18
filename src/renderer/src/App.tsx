@@ -42,7 +42,7 @@ export default function App() {
   const [showPanel, setShowPanel] = useState(true);
   const [importOpen, setImportOpen] = useState<{ paths?: string[]; modelId?: number | null } | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [libraryOpen, setLibraryOpen] = useState<{ paths?: string[] } | null>(null);
+  const [libraryOpen, setLibraryOpen] = useState<{ paths?: string[]; tab?: 'folder' | 'online' } | null>(null);
   const [recent, setRecent] = useState<LibraryFile[]>(() => { try { return JSON.parse(localStorage.getItem('fmc.recent') || '[]'); } catch { return []; } });
   const [aboutOpen, setAboutOpen] = useState(false);
   const [splash, setSplash] = useState(() => !(window as any).__fmcNoSplash);
@@ -376,6 +376,8 @@ export default function App() {
                   onOpenFile={openFile}
                   onOpenPhoto={openPhoto}
                   onReload={reload}
+                  onOpenModel={openModel}
+                  onLibrary={(tab) => setLibraryOpen({ tab })}
                   onOpenDoc={async (d) => {
                     if (d.type === 'photo') {
                       if (await api.getPhoto(Number(d.id))) return openPhoto(Number(d.id), d.title, d.modelId);
@@ -443,6 +445,7 @@ export default function App() {
         {libraryOpen && (
           <LibraryDialog
             initialPaths={libraryOpen.paths}
+            initialTab={libraryOpen.tab}
             onClose={() => setLibraryOpen(null)}
             onDone={async (r) => {
               setLibraryOpen(null);
