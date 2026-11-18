@@ -120,6 +120,8 @@ export function openDb(file: string) {
   addCol('guides', 'photo_ids', "TEXT NOT NULL DEFAULT ''");
   addCol('photos', 'align', "TEXT NOT NULL DEFAULT ''");
   addCol('models', 'demo', 'INTEGER NOT NULL DEFAULT 0');
+  addCol('models', 'series', "TEXT NOT NULL DEFAULT ''");
+  addCol('models', 'meta', "TEXT NOT NULL DEFAULT ''");
   addCol('ic_xref', 'verified_by', "TEXT NOT NULL DEFAULT ''");
   addCol('ic_xref', 'verified_at', "TEXT NOT NULL DEFAULT ''");
   if (!(db.prepare('SELECT COUNT(*) AS n FROM ic_xref').get() as { n: number }).n) {
@@ -139,7 +141,7 @@ export function openDb(file: string) {
       const brands = db.prepare('SELECT id, name FROM brands ORDER BY name').all();
       const models = db
         .prepare(
-          `SELECT m.id, m.brand_id, m.name, m.demo,
+          `SELECT m.id, m.brand_id, m.name, m.demo, m.series, m.meta,
             (SELECT COUNT(*) FROM files f WHERE f.model_id = m.id AND f.kind != 'photo') AS files,
             (SELECT COUNT(*) FROM guides g WHERE g.model_id = m.id) AS guides,
             (SELECT COUNT(*) FROM readings r WHERE r.model_id = m.id) AS readings,
@@ -181,6 +183,14 @@ export function openDb(file: string) {
     addModel(brandId: number, name: string) {
       db.prepare('INSERT OR IGNORE INTO models(brand_id, name) VALUES (?, ?)').run(brandId, name.trim());
       return db.prepare('SELECT id, brand_id, name FROM models WHERE brand_id = ? AND name = ?').get(brandId, name.trim());
+    },
+    /** Series (for the library tree) and source/licence notes from a model.json. */
+    setModelInfo(id: number, info: { series?: string; meta?: string }) {
+      if (info.series != null) db.prepare('UPDATE models SET series = ? WHERE id = ?').run(info.series.trim(), id);
+      if (info.meta != null) db.prepare('UPDATE models SET meta = ? WHERE id = ?').run(info.meta, id);
+    },
+    hasFile(name: string, size: number) {
+      return !!db.prepare('SELECT 1 FROM files WHERE name = ? AND size = ? LIMIT 1').get(name, size);
     },
     renameModel(id: number, name: string) {
       db.prepare('UPDATE models SET name = ? WHERE id = ?').run(name.trim(), id);

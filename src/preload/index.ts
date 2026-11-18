@@ -8,6 +8,12 @@ const api = {
   addModel: call('model:add'),
   renameModel: call('model:rename'),
   deleteModel: call('model:delete'),
+  setModelInfo: call('model:info'),
+  libraryPickFolder: call('library:pickFolder'),
+  libraryScan: call('library:scan'),
+  libraryImport: call('library:import'),
+  libraryFetchIndex: call('library:fetchIndex'),
+  libraryDownload: call('library:download'),
 
   listFiles: call('files:list'),
   pickFiles: call('files:pick'),

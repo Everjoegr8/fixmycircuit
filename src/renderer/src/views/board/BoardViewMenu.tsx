@@ -8,7 +8,7 @@ export default function BoardViewMenu({ view, onChange, onClose, geometry }: { v
     <div className="absolute left-0 top-8 z-30 w-72 rounded-lg border border-bench-600 bg-bench-850 p-3 shadow-2xl" data-testid="view-menu" onMouseLeave={onClose}>
       <div className="label">Look</div>
       <div className="mb-3 flex overflow-hidden rounded-md border border-bench-600">
-        {([['real', 'Real board'], ['classic', 'Classic lines']] as const).map(([k, l]) => (
+        {([['real', 'Real board'], ['repair', 'Black & red'], ['classic', 'Classic lines']] as const).map(([k, l]) => (
           <button key={k} className={`flex-1 px-2 py-1 ${view.look === k ? 'bg-amber-500/20 text-amber-200' : 'bg-bench-800 text-slate-300 hover:bg-bench-700'}`} onClick={() => onChange({ look: k })} data-testid={`look-${k}`}>{l}</button>
         ))}
       </div>
@@ -22,6 +22,7 @@ export default function BoardViewMenu({ view, onChange, onClose, geometry }: { v
           </div>
         </>
       )}
+      {view.look === 'repair' && <p className="mb-3 text-[11px] leading-snug text-slate-500">Black background, red pads, teal shields and connectors, picked part in yellow: the picture repair techs know from the Chinese repair tools.</p>}
       <label className="mb-1.5 flex items-center gap-2 text-[12.5px]">
         <input type="checkbox" checked={view.xray} onChange={(e) => onChange({ xray: e.target.checked })} data-testid="xray-toggle" /> X-ray: show the other side faintly (X)
       </label>

@@ -5,13 +5,14 @@ import { Icon } from '../components/Icon';
 import { BoardCanvas, DEFAULT_VIEW, type Side, type ViewOptions } from './board/BoardCanvas';
 import BoardViewMenu from './board/BoardViewMenu';
 import type { Focus } from '../types';
-import type { Reading } from '@shared/types';
+import type { Guide, Reading } from '@shared/types';
 import LayerToggles, { useLayers } from '../components/LayerToggles';
 import HoverCard, { type HoverData } from '../components/HoverCard';
 import { netsByLayer } from '../lib/netlines';
 import { syncBus } from '../lib/sync';
 import { indexBoard, railFamily, powerRail, TYPE_LABEL } from '@shared/netindex';
 import NetlistPanel from './board/NetlistPanel';
+import PinsPanel, { readingsByNet, type PinsTab } from './board/PinsPanel';
 import { indexModelSchematics, schematicPages, type SchIndex } from '../lib/schindex';
 import { registerBoard, touchBoard, unregisterBoard } from '../lib/boards';
 import CopperPanel, { type ShopTraceInfo } from './board/CopperPanel';
@@ -56,6 +57,10 @@ export default function BoardViewer(p: Props) {
   });
   const [viewMenu, setViewMenu] = useState(false);
   const [railOn, setRailOn] = useState(false);
+  const [pinsOpen, setPinsOpen] = useState(() => { try { return localStorage.getItem('fmc.pinsPanel') !== '0'; } catch { return true; } });
+  const [pinsTab, setPinsTab] = useState<PinsTab>('net');
+  const [diodeMap, setDiodeMap] = useState(() => { try { return localStorage.getItem('fmc.diodeMap') === '1'; } catch { return false; } });
+  const [guides, setGuides] = useState<Guide[]>([]);
   const pinStep = useRef(-1);
   const [pathNets, setPathNets] = useState<string[]>([]);
   const [sch, setSch] = useState<SchIndex[]>([]);
@@ -146,9 +151,39 @@ export default function BoardViewer(p: Props) {
   }, [board, p.fileId, p.modelId, p.rev, copperRev]);
 
   useEffect(() => {
-    if (p.modelId == null) { setReadings([]); return; }
+    if (p.modelId == null) { setReadings([]); setGuides([]); return; }
     api.listReadings({ model_id: p.modelId }).then(setReadings);
+    api.listGuides(p.modelId).then(setGuides);
   }, [p.modelId, p.rev]);
+  useEffect(() => { try { localStorage.setItem('fmc.pinsPanel', pinsOpen ? '1' : '0'); localStorage.setItem('fmc.diodeMap', diodeMap ? '1' : '0'); } catch { /* private mode */ } }, [pinsOpen, diodeMap]);
+  // Diode map: each net with a shop diode value gets a label and a leader line to one of its pads.
+  const diodeNotes = useMemo(() => {
+    if (!board) return [];
+    const byUp = new Map<string, string>();
+    for (const n of board.nets.keys()) byUp.set(String(n).toUpperCase(), n);
+    const out: { net: string; text: string }[] = [];
+    for (const [k, v] of readingsByNet(readings)) {
+      const net = byUp.get(k);
+      if (!net || !v.diode) continue;
+      out.push({ net, text: v.diode + (v.voltage ? ` · ${v.voltage}` : '') });
+    }
+    return out;
+  }, [board, readings]);
+  useEffect(() => {
+    const v = viewRef.current;
+    if (!v) return;
+    const had = v.notesReserve;
+    v.setNotes(diodeMap ? diodeNotes : []);
+    if (had !== v.notesReserve && !sel.net && sel.part == null) v.fit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [diodeMap, diodeNotes, board]);
+  // The inspector follows what is picked on the board.
+  useEffect(() => {
+    if (pinsTab === 'sheet') return;
+    if (sel.net) setPinsTab('net');
+    else if (sel.part != null) setPinsTab('part');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sel.net, sel.part]);
 
   const layerCounts = useMemo(() => {
     if (!board) return {};
@@ -230,7 +265,7 @@ export default function BoardViewer(p: Props) {
     setSel({ part: index, pin: null, net: null });
     const v = viewRef.current!;
     v.insetLeft = 300;
-    if (part.side !== 'both' && v.side !== 'both' && part.side !== v.side) { v.side = part.side; setSide(part.side); }
+    if (part.side !== 'both' && v.side !== 'both' && v.side !== 'split' && part.side !== v.side) { v.side = part.side; setSide(part.side); }
     if (zoom) v.zoomTo(part.pins.map((i: number) => board.pins[i]), 8);
   };
   const selectNet = (net: string, zoom = true) => {
@@ -303,9 +338,22 @@ export default function BoardViewer(p: Props) {
     setSel({ part: part && !part.testpoint ? pin.part : null, pin: list[nextI], net: sel.net });
   };
 
+  /** Jump to one pin (from the NET / Component tables). */
+  const goPin = (i: number) => {
+    const v = viewRef.current;
+    if (!v || !board) return;
+    const pin = board.pins[i];
+    if (!v.visible(pin.side) && pin.side !== 'both') { v.side = pin.side; setSide(pin.side); }
+    v.insetLeft = 300;
+    const host = board.parts[pin.part];
+    v.zoomTo(host && !host.testpoint && host.pins.length < 60 ? host.pins.map((k: number) => board.pins[k]) : [pin], 14);
+    setSel({ part: host && !host.testpoint ? pin.part : null, pin: i, net: pin.net && board.nets.has(pin.net) ? pin.net : null });
+  };
+
   const flip = () => {
     const v = viewRef.current;
     if (!v) return;
+    if (v.side === 'split') return;
     const next: Side = v.side === 'top' ? 'bottom' : 'top';
     setSideMode(next);
   };
@@ -376,6 +424,8 @@ export default function BoardViewer(p: Props) {
     if (!v || !d || d.moved) return;
     const rect = v.canvas.getBoundingClientRect();
     const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+    const noteNet = v.noteAt(sx, sy);
+    if (noteNet) { selectNet(noteNet); return; }
     const pin = v.pinAt(sx, sy);
     if (pin != null) {
       const pp = board.pins[pin];
@@ -449,8 +499,8 @@ export default function BoardViewer(p: Props) {
           )}
         </div>
         <div className="flex overflow-hidden rounded-md border border-bench-600">
-          {(['top', 'bottom', 'both'] as Side[]).map((s) => (
-            <button key={s} className={`px-2.5 py-1 capitalize ${side === s ? 'bg-amber-500/20 text-amber-200' : 'bg-bench-800 text-slate-300 hover:bg-bench-700'}`} onClick={() => setSideMode(s)}>{s}</button>
+          {([['top', 'Top', 'Top side'], ['bottom', 'Bottom', 'Bottom side (mirrored)'], ['both', 'Both', 'Both sides on top of each other'], ['split', 'Side by side', 'Both halves next to each other, bottom mirrored on the right']] as [Side, string, string][]).map(([s, l, t]) => (
+            <button key={s} title={t} className={`px-2.5 py-1 ${side === s ? 'bg-amber-500/20 text-amber-200' : 'bg-bench-800 text-slate-300 hover:bg-bench-700'}`} onClick={() => setSideMode(s)} data-testid={`side-${s}`}>{l}</button>
           ))}
         </div>
         <button className="btn" title="Flip side (Space)" onClick={flip}><Icon name="flip" size={14} /></button>
@@ -458,6 +508,10 @@ export default function BoardViewer(p: Props) {
         <button className="btn" title="Fit board (F)" onClick={() => viewRef.current?.fit()}><Icon name="fit" size={14} /></button>
         <button className="btn" title="Zoom in (+)" onClick={() => { const v = viewRef.current; v && v.zoomAt(v.canvas.clientWidth / 2, v.canvas.clientHeight / 2, 1.3); }}><Icon name="zoomIn" size={14} /></button>
         <button className="btn" title="Zoom out (-)" onClick={() => { const v = viewRef.current; v && v.zoomAt(v.canvas.clientWidth / 2, v.canvas.clientHeight / 2, 1 / 1.3); }}><Icon name="zoomOut" size={14} /></button>
+        <button className={`btn ${pinsOpen && !netlist ? 'btn-on' : ''}`} title="NET and Component pin tables, part lookup, measurement sheet" onClick={() => { setPinsOpen((x) => !(x && !netlist)); setNetlist(false); }} data-testid="pins-btn"><Icon name="list" size={14} /> Pins</button>
+        <button className={`btn ${diodeMap ? 'btn-on' : ''}`} title={diodeNotes.length ? 'Write the shop diode values beside the board with a line to each rail' : 'No diode readings for this model yet'} onClick={() => setDiodeMap((x) => !x)} data-testid="diode-map-btn">
+          <Icon name="meter" size={14} /> Diode map{diodeNotes.length ? <span className="ml-0.5 text-[10px] text-slate-400">{diodeNotes.length}</span> : null}
+        </button>
         <button className={`btn ${netlist ? 'btn-on' : ''}`} title="Every net and part, board health and path tracer" onClick={() => setNetlist((x) => !x)} data-testid="netlist-btn"><Icon name="net" size={14} /> Netlist</button>
         <button className={`btn ${copperOpen ? 'btn-on' : ''}`} title="Real copper traces vs computed connections" onClick={() => setCopperOpen((x) => !x)} data-testid="copper-btn">
           <Icon name="layers" size={14} /> Copper
@@ -465,14 +519,15 @@ export default function BoardViewer(p: Props) {
         </button>
         <div className="relative">
           <button className={`btn ${viewMenu ? 'btn-on' : ''}`} title="How the board is drawn (real look, classic, board colour, x-ray)" onClick={() => setViewMenu((x) => !x)} data-testid="view-btn">
-            <Icon name="board" size={14} /> {view.look === 'real' ? 'Real view' : 'Classic'}
+            <Icon name="board" size={14} /> {view.look === 'real' ? 'Real view' : view.look === 'repair' ? 'Black & red' : 'Classic'}
           </button>
           {viewMenu && <BoardViewMenu view={view} onChange={(o) => setView((v) => ({ ...v, ...o }))} onClose={() => setViewMenu(false)} geometry={board?.geometry} />}
         </div>
         <div className="flex-1" />
         {board && <span className="text-[11px] text-slate-500" title={board.geometry === 'file' ? 'Pad sizes and part outlines are read from the file.' : 'This file only stores pin positions; part bodies and pad shapes are worked out from them.'}>{board.format} · {board.stats.parts} parts · {board.stats.pins} pins · {board.stats.nets} nets · {board.geometry === 'file' ? 'shapes from file' : 'shapes from pins'}</span>}
       </div>
-      <div className="relative min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1">
+      <div className="relative min-w-0 flex-1">
         <canvas
           ref={canvasRef}
           className="absolute inset-0 h-full w-full cursor-crosshair"
@@ -525,7 +580,7 @@ export default function BoardViewer(p: Props) {
                 <div className="mt-1 text-[12px] text-slate-400">{TYPE_LABEL[idx?.parts.get(part.name)?.type || 'other']}{part.mfgcode ? ` · ${part.mfgcode}` : ''}</div>
                 <SchLinks sch={sch} name={part.name} onOpen={() => p.onFindInSchematic(part.name)} />
                 <div className="mt-2 text-[11px] uppercase tracking-wide text-slate-500">{part.pins.length} pins</div>
-                <table className="mt-1 w-full font-mono text-[12px]">
+                {pinsOpen && !netlist ? <div className="text-[11px] text-slate-500">Pins and nets are in the Component tab on the right.</div> : <table className="mt-1 w-full font-mono text-[12px]">
                   <tbody>
                     {part.pins.slice(0, 300).map((i: number) => {
                       const pin = board.pins[i];
@@ -537,7 +592,7 @@ export default function BoardViewer(p: Props) {
                       );
                     })}
                   </tbody>
-                </table>
+                </table>}
               </div>
             )}
             {sel.net && (
@@ -599,6 +654,11 @@ export default function BoardViewer(p: Props) {
           <div>Drag to pan · wheel to zoom · Space flips · R rotates · F fits · X x-ray · N next pin on net</div>
           <div>The board is drawn from the file you opened. FixMyCircuit does not include any phone maker's boards.</div>
         </div>
+      </div>
+      {pinsOpen && !netlist && idx && board && (
+        <PinsPanel board={board} idx={idx} sel={sel} tab={pinsTab} onTab={setPinsTab} readings={readings} guides={guides}
+          onPin={goPin} onNet={(n) => selectNet(n)} onPart={(i) => selectPart(i)} onClose={() => setPinsOpen(false)} />
+      )}
       </div>
     </div>
   );

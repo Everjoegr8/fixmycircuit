@@ -6,6 +6,11 @@
 //    resistors black, ICs, connectors, shields), gold pads with their real size
 //    and direction, pin 1 dots and silkscreen-style labels.
 //  - "classic": the OpenBoardView-style wireframe.
+//  - "repair": the black and red picture repair techs know from the
+//    Chinese repair tools: black background, red pads, teal shields and
+//    connectors, a pink board edge and the picked part in yellow.
+// Sides: top, bottom, both (overlaid) or "split": both halves side by side,
+// the bottom mirrored on the right, like a board opened out on the bench.
 // Shapes come from parsers/geometry.js (real geometry when the file has it,
 // otherwise worked out from the pins).
 //
@@ -18,8 +23,8 @@ import { rectCorners, inRect } from '@parsers/geometry.js';
 import { LAYER_BY_ID, layerOfNet, type LayerId } from '@shared/layers';
 import { netSegments } from '../../lib/netlines';
 
-export type Side = 'top' | 'bottom' | 'both';
-export type Look = 'real' | 'classic';
+export type Side = 'top' | 'bottom' | 'both' | 'split';
+export type Look = 'real' | 'classic' | 'repair';
 export type MaskColor = 'green' | 'black' | 'blue' | 'red' | 'purple';
 export interface Selection {
   part: number | null;
@@ -123,8 +128,31 @@ const LIGHT: typeof DARK = {
   shop: '#15803d',
   path: '#0891b2',
 };
+// Black and red repair-tool look (same in light and dark app themes).
+const REPAIR: typeof DARK = {
+  ...DARK,
+  bg: '#000000',
+  scrim: 'rgba(0,0,0,0.7)',
+  labelBg: '#000000cc',
+  hover: '#ffffff',
+  outline: '#e0457b',
+  part: '#3f8f86',
+  partHull: '#2e5f5a',
+  partSel: '#ffd400',
+  partNet: '#4fd1c5',
+  pin: '#d8343f',
+  pinGnd: '#8a2a31',
+  pinNC: '#5a5a5a',
+  pinSelPart: '#ffd400',
+  pinNet: '#ffe14d',
+  pinNetGlow: 'rgba(255,225,77,0.9)',
+  pinSel: '#ffffff',
+  label: '#d9dde2',
+  testpoint: '#4fb3d9',
+  path: '#4fd1c5',
+};
 let COLORS = DARK;
-const pickColors = () => (COLORS = document.documentElement.dataset.theme === 'light' ? LIGHT : DARK);
+const pickColors = (look?: Look) => (COLORS = look === 'repair' ? REPAIR : document.documentElement.dataset.theme === 'light' ? LIGHT : DARK);
 
 export class BoardCanvas {
   board: any;
@@ -224,8 +252,9 @@ export class BoardCanvas {
   }
 
   private traceVisible(t: any) {
-    if (t.side === 'inner') return this.side === 'both';
-    return this.side === 'both' || t.side === this.side || t.side === 'both';
+    const e = this.eff();
+    if (t.side === 'inner') return e === 'both';
+    return e === 'both' || t.side === e || t.side === 'both';
   }
 
   private strokeTraces(ctx: CanvasRenderingContext2D, list: any[], color: string, alpha: number, minW: number, scaleW = true) {
@@ -261,23 +290,65 @@ export class BoardCanvas {
 
   // --- transforms ------------------------------------------------------------
   /** Board -> view space (rotation, bottom mirroring, y up). */
+  /** In split mode, the half being drawn or hit-tested. */
+  private half: 'top' | 'bottom' = 'top';
+  /** True while a split-mode pass draws (or tests) one half only. */
+  private inHalf = false;
+  get split() {
+    return this.side === 'split';
+  }
+  /** The side the transforms use right now. */
+  private eff(): 'top' | 'bottom' | 'both' {
+    return this.side === 'split' ? this.half : this.side;
+  }
+  /** Run fn once per half in split mode (once otherwise). */
+  private eachHalf(fn: () => void) {
+    if (!this.split) { fn(); return; }
+    const keep = this.half;
+    this.inHalf = true;
+    for (const h of ['top', 'bottom'] as const) { this.half = h; fn(); }
+    this.inHalf = false;
+    this.half = keep;
+  }
+  private withHalf<T>(h: 'top' | 'bottom', fn: () => T): T {
+    const keep = this.half, was = this.inHalf;
+    this.half = h;
+    this.inHalf = true;
+    try { return fn(); } finally { this.half = keep; this.inHalf = was; }
+  }
+  /** Which half a screen x falls in (split mode). */
+  halfAt(sx: number): 'top' | 'bottom' {
+    return sx < this.ox ? 'top' : 'bottom';
+  }
+  private halfOf(p: any): 'top' | 'bottom' {
+    return p && p.side === 'bottom' ? 'bottom' : 'top';
+  }
+  /** Distance of each half's centre from the middle, in view units. */
+  private splitOff() {
+    const b = this.board.bounds;
+    const r = ((this.rotation % 360) + 360) % 360;
+    const w = r === 90 || r === 270 ? b.maxy - b.miny : b.maxx - b.minx;
+    return (w / 2) * 1.12 + Math.max(b.maxx - b.minx, b.maxy - b.miny) * 0.01;
+  }
   private toView(x: number, y: number): Pt {
     let dx = x - this.cx;
     let dy = -(y - this.cy);
-    if (this.side === 'bottom') dx = -dx;
+    if (this.eff() === 'bottom') dx = -dx;
     const r = ((this.rotation % 360) + 360) % 360;
     if (r === 90) [dx, dy] = [-dy, dx];
     else if (r === 180) [dx, dy] = [-dx, -dy];
     else if (r === 270) [dx, dy] = [dy, -dx];
+    if (this.split) dx += this.half === 'top' ? -this.splitOff() : this.splitOff();
     return { x: dx, y: dy };
   }
   private fromView(vx: number, vy: number): Pt {
     let dx = vx, dy = vy;
+    if (this.split) dx -= this.half === 'top' ? -this.splitOff() : this.splitOff();
     const r = ((this.rotation % 360) + 360) % 360;
     if (r === 90) [dx, dy] = [dy, -dx];
     else if (r === 180) [dx, dy] = [-dx, -dy];
     else if (r === 270) [dx, dy] = [-dy, dx];
-    if (this.side === 'bottom') dx = -dx;
+    if (this.eff() === 'bottom') dx = -dx;
     return { x: dx + this.cx, y: -dy + this.cy };
   }
   toScreen(x: number, y: number): Pt {
@@ -285,18 +356,29 @@ export class BoardCanvas {
     return { x: v.x * this.scale + this.ox, y: v.y * this.scale + this.oy };
   }
   toBoard(sx: number, sy: number): Pt {
+    if (this.split && !this.inHalf) return this.withHalf(this.halfAt(sx), () => this.toBoard(sx, sy));
     return this.fromView((sx - this.ox) / this.scale, (sy - this.oy) / this.scale);
+  }
+  /** Screen point of a pin or part on whichever half shows it. */
+  toScreenOn(p: any, x: number, y: number): Pt {
+    if (this.split && !this.inHalf) return this.withHalf(this.halfOf(p), () => this.toScreen(x, y));
+    return this.toScreen(x, y);
   }
 
   fit() {
     const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
     const b = this.board.bounds;
-    const corners = [this.toView(b.minx, b.miny), this.toView(b.maxx, b.maxy)];
-    const vw = Math.abs(corners[0].x - corners[1].x) || 1;
-    const vh = Math.abs(corners[0].y - corners[1].y) || 1;
-    this.scale = Math.min(w / vw, h / vh) * 0.92;
-    this.ox = w / 2;
-    this.oy = h / 2;
+    const corners: Pt[] = [];
+    const add = () => corners.push(this.toView(b.minx, b.miny), this.toView(b.maxx, b.maxy));
+    if (this.split) { this.withHalf('top', add); this.withHalf('bottom', add); } else add();
+    const xs = corners.map((c) => c.x), ys = corners.map((c) => c.y);
+    const vw = Math.max(...xs) - Math.min(...xs) || 1;
+    const vh = Math.max(...ys) - Math.min(...ys) || 1;
+    const topPad = this.split ? 22 : 0;
+    const fw = this.notesReserve && w > this.notesReserve * 2 ? w - this.notesReserve : w;
+    this.scale = Math.min(fw / vw, (h - topPad) / vh) * 0.92;
+    this.ox = fw / 2 - ((Math.max(...xs) + Math.min(...xs)) / 2) * this.scale;
+    this.oy = h / 2 + topPad / 2 - ((Math.max(...ys) + Math.min(...ys)) / 2) * this.scale;
     this.invalidate();
   }
 
@@ -322,7 +404,7 @@ export class BoardCanvas {
     if (!points.length) return;
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     for (const p of points) {
-      const v = this.toView(p.x, p.y);
+      const v = this.split ? this.withHalf(this.halfOf(p), () => this.toView(p.x, p.y)) : this.toView(p.x, p.y);
       x0 = Math.min(x0, v.x); y0 = Math.min(y0, v.y); x1 = Math.max(x1, v.x); y1 = Math.max(y1, v.y);
     }
     const inset = this.canvas.clientWidth > this.insetLeft * 2.2 ? this.insetLeft : 0;
@@ -339,7 +421,7 @@ export class BoardCanvas {
   /** Centre on one board point keeping the zoom (stepping through a net's pins). */
   centerOn(p: Pt, minScale = 0) {
     if (minScale && this.scale < minScale) this.scale = minScale;
-    const v = this.toView(p.x, p.y);
+    const v = this.split ? this.withHalf(this.halfOf(p), () => this.toView(p.x, p.y)) : this.toView(p.x, p.y);
     const inset = this.canvas.clientWidth > this.insetLeft * 2.2 ? this.insetLeft : 0;
     this.ox = inset + (this.canvas.clientWidth - inset) / 2 - v.x * this.scale;
     this.oy = this.canvas.clientHeight / 2 - v.y * this.scale;
@@ -347,7 +429,9 @@ export class BoardCanvas {
   }
 
   visible(side: string) {
-    return this.side === 'both' || side === 'both' || side === this.side;
+    if (this.split && !this.inHalf) return true;
+    const e = this.eff();
+    return e === 'both' || side === 'both' || side === e;
   }
 
   setLayers(l: Set<LayerId>) {
@@ -372,6 +456,88 @@ export class BoardCanvas {
     this.invalidate();
   }
 
+  /** Diode-map labels: each net's shop values, written in a column beside the board with a leader line to one of its pads. */
+  notes: { net: string; text: string }[] = [];
+  private notesKey = '';
+  setNotes(n: { net: string; text: string }[]) {
+    this.notes = n;
+    this.notesKey = n.map((x) => x.net + '=' + x.text).join(';');
+    // Room on the right for the label column (Consolas 13px is about 7.2 px a character).
+    this.notesReserve = n.length ? Math.max(...n.map((x) => (x.net.length + x.text.length + 2) * 7.3)) + 64 : 0;
+    this.invalidate();
+  }
+  /** Pixels kept free on the right of the board for the diode-map labels. */
+  notesReserve = 0;
+  /** Screen boxes of the drawn labels, for clicks (net per label). */
+  noteBoxes: { net: string; x: number; y: number; w: number; h: number }[] = [];
+  noteAt(sx: number, sy: number) {
+    const b = this.noteBoxes.find((n) => sx >= n.x && sx <= n.x + n.w && sy >= n.y && sy <= n.y + n.h);
+    return b ? b.net : null;
+  }
+
+  private drawNotes(ctx: CanvasRenderingContext2D) {
+    this.noteBoxes = [];
+    if (!this.notes.length) return;
+    const board = this.board;
+    const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
+    // Board's screen box (both halves in split mode).
+    const b = board.bounds;
+    const xs: number[] = [], ys: number[] = [];
+    const addBox = () => { for (const [x, y] of [[b.minx, b.miny], [b.maxx, b.maxy], [b.minx, b.maxy], [b.maxx, b.miny]]) { const q = this.toScreen(x, y); xs.push(q.x); ys.push(q.y); } };
+    if (this.split) { this.withHalf('top', addBox); this.withHalf('bottom', addBox); } else addBox();
+    const right = Math.max(...xs);
+    ctx.save();
+    ctx.font = '600 13px Consolas, monospace';
+    const widest = Math.max(...this.notes.map((n) => ctx.measureText(n.net + '  ' + n.text).width));
+    const colX = Math.min(right + 48, w - widest - 10);
+    // One anchor pad per net: a pad on a 2-pin part (decoupling cap) on a side we show, else any shown pad.
+    const items: { net: string; text: string; ax: number; ay: number; y: number }[] = [];
+    for (const n of this.notes) {
+      const list: number[] = board.nets.get(n.net) || [];
+      let best: any = null, bestScore = -Infinity;
+      for (const i of list) {
+        const pin = board.pins[i];
+        const part = board.parts[pin.part];
+        const shown = this.split ? true : this.visible(pin.side);
+        if (!shown) continue;
+        const s2 = this.toScreenOn(pin, pin.x, pin.y);
+        if (s2.x < 0 || s2.y < 0 || s2.x > w || s2.y > h) continue;
+        const score = (part && part.pins.length === 2 ? 1000 : 0) + s2.x * 0.5;
+        if (score > bestScore) { bestScore = score; best = s2; }
+      }
+      if (best) items.push({ net: n.net, text: n.text, ax: best.x, ay: best.y, y: best.y });
+    }
+    items.sort((a, c) => a.ay - c.ay);
+    const gap = 19;
+    for (let i = 0; i < items.length; i++) items[i].y = Math.max(items[i].ay, i ? items[i - 1].y + gap : 14);
+    // Pull the column back up if it runs off the bottom.
+    const over = items.length ? items[items.length - 1].y - (h - 10) : 0;
+    if (over > 0) for (let i = items.length - 1; i >= 0; i--) items[i].y = Math.max(14 + i * gap, Math.min(items[i].y - over, i < items.length - 1 ? items[i + 1].y - gap : Infinity));
+    const line = this.opts.look === 'real' ? '#ff5a4a' : '#ff3b3b';
+    for (const it of items) {
+      const lit = this.sel.net === it.net;
+      ctx.strokeStyle = lit ? COLORS.pinNet : line;
+      ctx.lineWidth = lit ? 2 : 1.3;
+      ctx.beginPath();
+      ctx.moveTo(it.ax, it.ay);
+      ctx.lineTo(colX - 18, it.y);
+      ctx.lineTo(colX - 4, it.y);
+      ctx.stroke();
+      ctx.strokeRect(it.ax - 4, it.ay - 4, 8, 8);
+      ctx.textBaseline = 'middle';
+      const label = it.net + '  ' + it.text;
+      const tw = ctx.measureText(label).width;
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(colX - 2, it.y - 9, tw + 6, 18);
+      ctx.fillStyle = lit ? COLORS.pinNet : '#ff6b5e';
+      ctx.fillText(it.net, colX + 1, it.y);
+      ctx.fillStyle = lit ? COLORS.pinNet : '#ffd7d2';
+      ctx.fillText(it.text, colX + 1 + ctx.measureText(it.net + '  ').width, it.y);
+      this.noteBoxes.push({ net: it.net, x: colX - 2, y: it.y - 9, w: tw + 6, h: 18 });
+    }
+    ctx.restore();
+  }
+
   /** Nets on a traced path or rail, drawn in cyan. */
   highlight = new Set<string>();
   private highlightParts = new Set<number>();
@@ -391,6 +557,7 @@ export class BoardCanvas {
 
   // --- hit testing -----------------------------------------------------------
   pinAt(sx: number, sy: number): number | null {
+    if (this.split && !this.inHalf) return this.withHalf(this.halfAt(sx), () => this.pinAt(sx, sy));
     const p = this.toBoard(sx, sy);
     const cx = Math.floor(p.x / this.cell), cy = Math.floor(p.y / this.cell);
     let best: number | null = null;
@@ -412,6 +579,7 @@ export class BoardCanvas {
   }
 
   partAt(sx: number, sy: number): number | null {
+    if (this.split && !this.inHalf) return this.withHalf(this.halfAt(sx), () => this.partAt(sx, sy));
     const p = this.toBoard(sx, sy);
     let best: number | null = null;
     let bestA = Infinity;
@@ -443,13 +611,13 @@ export class BoardCanvas {
     const s = this.sel;
     return [this.scale, this.ox, this.oy, this.side, this.rotation, this.opts.look, this.opts.mask, this.opts.xray, this.opts.netNames,
       s.part, s.pin, s.net, [...this.layers].join(','), [...this.highlight].join(','), document.documentElement.dataset.theme,
-      this.canvas.width, this.canvas.height, (this.board.traces || []).length].join('|');
+      this.canvas.width, this.canvas.height, (this.board.traces || []).length, this.notesKey].join('|');
   }
 
   draw() {
     const ctx = this.ctx;
     const dpr = window.devicePixelRatio || 1;
-    pickColors();
+    pickColors(this.opts.look);
     const k = this.key();
     if (k !== this.baseKey) {
       if (this.base.width !== this.canvas.width || this.base.height !== this.canvas.height) {
@@ -540,9 +708,10 @@ export class BoardCanvas {
     const by: Record<string, any[]> = { top: [], bottom: [], inner: [], shop: [] };
     for (const t of traces) (t.src === 'shop' ? by.shop : by[t.side] || by.top).push(t);
     this.strokeTraces(ctx, by.inner, COLORS.copperInner, 0.35, 0.8);
-    const under = this.side === 'bottom' ? 'top' : 'bottom';
-    this.strokeTraces(ctx, by[under], under === 'top' ? COLORS.copperTop : COLORS.copperBottom, 0.3, 0.8);
-    this.strokeTraces(ctx, by[this.side === 'bottom' ? 'bottom' : 'top'], this.side === 'bottom' ? COLORS.copperBottom : COLORS.copperTop, 0.6, 0.8);
+    const cur = this.eff() === 'bottom' ? 'bottom' : 'top';
+    const under = cur === 'bottom' ? 'top' : 'bottom';
+    if (!this.split) this.strokeTraces(ctx, by[under], under === 'top' ? COLORS.copperTop : COLORS.copperBottom, 0.3, 0.8);
+    this.strokeTraces(ctx, by[cur], cur === 'bottom' ? COLORS.copperBottom : COLORS.copperTop, 0.6, 0.8);
     this.strokeTraces(ctx, by.shop, COLORS.shop, 0.9, 2);
     const vias: any[] = board.vias || [];
     if (vias.length && this.scale * (vias[0].r || 1) > 0.8) {
@@ -559,7 +728,7 @@ export class BoardCanvas {
 
   private drawLayerNets(ctx: CanvasRenderingContext2D) {
     if (!this.layers.size) return;
-    const side = this.side === 'both' ? 'both' : this.side;
+    const side = this.eff();
     ctx.save();
     ctx.lineWidth = 1.4;
     ctx.globalAlpha = 0.75;
@@ -599,6 +768,8 @@ export class BoardCanvas {
   private drawParts(ctx: CanvasRenderingContext2D, list: number[], mode: 'normal' | 'focus') {
     const board = this.board;
     const real = this.opts.look === 'real';
+    const repair = this.opts.look === 'repair';
+    const shields = new Path2D();
     const ghosts: any[] = [];
     const shown: any[] = [];
     for (const i of list) {
@@ -684,7 +855,11 @@ export class BoardCanvas {
             marks.arc(s.x, s.y, r, 0, Math.PI * 2);
           }
         }
-      } else if (!real) {
+      } else if (repair) {
+        // Repair look: only shields, connectors and ICs get an outline (teal), like the repair tools.
+        const kind = part.kind || 'other';
+        if (kind === 'shield' || kind === 'connector' || ((kind === 'ic' || part.pkg === 'bga' || part.pkg === 'quad') && Math.max(bw, bh) > 6)) this.addPoly(kind === 'shield' ? shields : hulls, bodyScreen);
+      } else {
         this.addPoly(hulls, bodyScreen);
       }
       // Label
@@ -726,6 +901,12 @@ export class BoardCanvas {
       ctx.strokeStyle = mode === 'focus' ? COLORS.partNet : COLORS.part;
       ctx.lineWidth = 1;
       ctx.stroke(hulls);
+      if (repair) {
+        ctx.strokeStyle = '#6fb3a8';
+        ctx.lineWidth = 2.5;
+        ctx.lineJoin = 'round';
+        ctx.stroke(shields);
+      }
     }
     ctx.fillStyle = padFill;
     ctx.fill(padsOver);
@@ -821,10 +1002,39 @@ export class BoardCanvas {
 
   private drawStatic(ctx: CanvasRenderingContext2D) {
     const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
-    const board = this.board;
-    const real = this.opts.look === 'real';
     ctx.fillStyle = COLORS.bg;
     ctx.fillRect(0, 0, w, h);
+    this.eachHalf(() => this.drawBase(ctx));
+    if (this.split) this.drawHalfTitles(ctx);
+    const s = this.sel;
+    const focusNet = s.net && this.board.nets.has(s.net) ? s.net : null;
+    if (!(focusNet || s.part != null || this.highlight.size)) { this.drawNotes(ctx); return; }
+    ctx.fillStyle = COLORS.scrim;
+    ctx.fillRect(0, 0, w, h);
+    this.eachHalf(() => this.drawFocus(ctx, focusNet));
+    this.drawNotes(ctx);
+  }
+
+  /** "TOP" / "BOTTOM (mirrored)" over each half in split mode. */
+  private drawHalfTitles(ctx: CanvasRenderingContext2D) {
+    const b = this.board.bounds;
+    ctx.save();
+    ctx.font = '600 12px Segoe UI, system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillStyle = this.opts.look === 'repair' ? '#4fd1c5' : COLORS.label;
+    for (const h of ['top', 'bottom'] as const) {
+      const pts = this.withHalf(h, () => [this.toScreen(b.minx, b.miny), this.toScreen(b.maxx, b.maxy), this.toScreen(b.minx, b.maxy), this.toScreen(b.maxx, b.miny)]);
+      const x = (Math.min(...pts.map((q) => q.x)) + Math.max(...pts.map((q) => q.x))) / 2;
+      const y = Math.min(...pts.map((q) => q.y)) - 6;
+      ctx.fillText(h === 'top' ? 'TOP' : 'BOTTOM (mirrored)', x, Math.max(y, 14));
+    }
+    ctx.restore();
+  }
+
+  private drawBase(ctx: CanvasRenderingContext2D) {
+    const board = this.board;
+    const real = this.opts.look === 'real';
     this.drawOutline(ctx, real);
     this.drawCopper(ctx);
     this.drawLayerNets(ctx);
@@ -850,14 +1060,12 @@ export class BoardCanvas {
       }
       for (const [c, p] of byColor) { ctx.fillStyle = c; ctx.fill(p); }
     }
+  }
 
-    // Focus: dim the board and redraw what is selected, fully lit.
+  /** Focus: the board is dimmed; redraw what is selected, fully lit. */
+  private drawFocus(ctx: CanvasRenderingContext2D, focusNet: string | null) {
+    const board = this.board;
     const s = this.sel;
-    const focusNet = s.net && board.nets.has(s.net) ? s.net : null;
-    const hasFocus = focusNet || s.part != null || this.highlight.size;
-    if (!hasFocus) return;
-    ctx.fillStyle = COLORS.scrim;
-    ctx.fillRect(0, 0, w, h);
     const lit = new Set<number>();
     if (s.part != null) lit.add(s.part);
     for (const i of this.netParts) if (!board.parts[i]?.testpoint) lit.add(i);
@@ -929,6 +1137,12 @@ export class BoardCanvas {
   }
 
   private drawDynamic(ctx: CanvasRenderingContext2D) {
+    let hidden = 0;
+    this.eachHalf(() => { hidden += this.drawDynamicHalf(ctx); });
+    this.lastHiddenNetPins = this.split ? 0 : hidden;
+  }
+
+  private drawDynamicHalf(ctx: CanvasRenderingContext2D): number {
     const board = this.board;
     const t = (performance.now() - this.t0) / 1000;
     const anim = this.layersPulse;
@@ -946,6 +1160,7 @@ export class BoardCanvas {
         const s = this.toScreen(pin.x, pin.y);
         if (!this.visible(pin.side)) {
           hidden++;
+          if (this.split) continue;
           if (!this.inView(s)) continue;
           const r = Math.max(pin.r * this.scale, 3) + 2;
           ring.moveTo(s.x + r, s.y);
@@ -967,10 +1182,9 @@ export class BoardCanvas {
       ctx.stroke(ring);
       ctx.restore();
     }
-    this.lastHiddenNetPins = hidden;
     if (this.hover != null) {
       const pin = board.pins[this.hover];
-      if (pin) {
+      if (pin && this.visible(pin.side)) {
         const p = new Path2D();
         this.addPad(p, pin, 2);
         ctx.strokeStyle = COLORS.hover;
@@ -978,6 +1192,7 @@ export class BoardCanvas {
         ctx.stroke(p);
       }
     }
+    return hidden;
   }
 
   lastHiddenNetPins = 0;
@@ -986,7 +1201,7 @@ export class BoardCanvas {
   private drawRats(ctx: CanvasRenderingContext2D, net: string, color: string, t: number, width: number) {
     const real = this.realByNet.get(net);
     if (real) { this.strokeTraces(ctx, real, color, 0.65 + 0.3 * Math.sin(t * 4), width); return; }
-    const segs = netSegments(this.board, net, this.side === 'both' ? 'both' : this.side);
+    const segs = netSegments(this.board, net, this.eff());
     if (!segs.length) return;
     ctx.save();
     ctx.strokeStyle = color;

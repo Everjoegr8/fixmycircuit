@@ -3,9 +3,19 @@ import type { LicenseStatus } from '@shared/license';
 import type { Brand, CopperLayer, Guide, IcXref, Jumper, LibraryFile, Model, Photo, Reading, Settings, ImportRequest } from '@shared/types';
 
 export type TreeModel = Model & {
-  demo?: number; files: number; guides: number; readings: number; photos: number;
+  demo?: number; series?: string; meta?: string; files: number; guides: number; readings: number; photos: number;
   schematics: number; boardviews: number; jumpers: number; photo_file: string | null; last_activity: string | null;
 };
+export interface LibEntry {
+  path: string; name: string; rel: string; kind: string; size: number; dup: boolean;
+  brand: string; series: string; model: string; how: 'model.json' | 'index' | 'folders' | 'name' | 'unknown';
+  meta?: { source?: { url?: string; commit?: string }; license?: { spdx?: string; attribution?: string }; notes?: string };
+}
+export interface LibRemoteModel {
+  brand?: string; series?: string; model?: string; notes?: string;
+  files: { path: string; url: string; kind?: string; sha256?: string }[];
+  source?: { url?: string; commit?: string }; license?: { spdx?: string; attribution?: string };
+}
 export type DayCount = { d: string; n: number };
 export type ActivityItem = { type: 'file' | 'guide' | 'photo' | 'reading'; sub: string; ref: string; title: string; model_id: number | null; at: string };
 
@@ -15,6 +25,12 @@ export interface FmcApi {
   addModel(brandId: number, name: string): Promise<Model>;
   renameModel(id: number, name: string): Promise<void>;
   deleteModel(id: number): Promise<void>;
+  setModelInfo(id: number, info: { series?: string; meta?: string }): Promise<void>;
+  libraryPickFolder(): Promise<string | null>;
+  libraryScan(paths: string[]): Promise<{ entries: LibEntry[]; truncated: boolean }>;
+  libraryImport(entries: LibEntry[]): Promise<{ models: number; files: number; modelIds: number[] }>;
+  libraryFetchIndex(url: string): Promise<LibRemoteModel[]>;
+  libraryDownload(items: { url: string; sha256?: string; brand: string; series: string; model: string; meta?: unknown }[]): Promise<{ models: number; files: number; modelIds: number[] }>;
   listFiles(modelId?: number | null, kind?: string): Promise<LibraryFile[]>;
   pickFiles(filters?: { name: string; extensions: string[] }[]): Promise<string[]>;
   importFiles(req: ImportRequest): Promise<LibraryFile[]>;

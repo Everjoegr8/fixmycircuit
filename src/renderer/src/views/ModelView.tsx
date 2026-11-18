@@ -51,6 +51,7 @@ export default function ModelView(p: Props) {
               )}
             </h1>
           )}
+          {!p.unsorted && model && <ModelMetaLine series={model.series} meta={model.meta} />}
         </div>
         {!p.unsorted && (
           <button className="btn-danger" onClick={async () => { if (confirm(`Delete ${p.title} and all its guides, readings and photos? Library files are kept as unsorted.`)) { await api.deleteModel(p.modelId!); p.onReload(); } }}>
@@ -234,6 +235,21 @@ function Empty({ icon, title, text }: { icon: string; title: string; text: strin
       <div className="mx-auto mb-2 grid h-10 w-10 place-items-center rounded-full bg-bench-800 text-slate-400"><Icon name={icon} size={18} /></div>
       <div className="font-semibold text-slate-200">{title}</div>
       <div className="mx-auto mt-1 max-w-md text-[12px] text-slate-400">{text}</div>
+    </div>
+  );
+}
+
+/** Series, source and licence from the library folder's model.json. */
+function ModelMetaLine({ series, meta }: { series?: string; meta?: string }) {
+  let m: any = null;
+  try { m = meta ? JSON.parse(meta) : null; } catch { m = null; }
+  if (!series && !m) return null;
+  return (
+    <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[12px] text-slate-400" data-testid="model-meta">
+      {series && <span className="chip">{series}</span>}
+      {m?.license?.spdx && <span className="chip border-green-500/40 text-green-300" title={m.license.attribution || ''}>{m.license.spdx}</span>}
+      {m?.license?.attribution && <span className="truncate">{m.license.attribution}</span>}
+      {m?.source?.url && <a className="text-amber-300 hover:underline" href={m.source.url} target="_blank" rel="noreferrer">Source</a>}
     </div>
   );
 }
