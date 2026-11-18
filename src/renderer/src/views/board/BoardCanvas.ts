@@ -887,7 +887,8 @@ export class BoardCanvas {
         const ang = Math.atan2(a[1].y - a[0].y, a[1].x - a[0].x);
         const kind = part.kind || 'other';
         const color = real ? (kind === 'shield' ? MASKS[this.opts.mask].label : BODY[kind]?.text || '#e6e9ec') : COLORS.label;
-        labels.push({ text: part.name, x: sp.x, y: sp.y, w: chip ? bw * 0.46 : bw, h: bh, ang, color });
+        // A shield's name stays small: it labels the can, not the parts under it.
+        labels.push({ text: part.name, x: sp.x, y: sp.y, w: chip ? bw * 0.46 : bw, h: kind === 'shield' ? Math.min(bh, 16) : bh, ang, color });
       }
     }
 

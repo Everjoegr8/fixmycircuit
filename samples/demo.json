@@ -9,8 +9,8 @@
   "photoAlign": {
     "x0": 0,
     "y0": 0,
-    "x1": 2400,
-    "y1": 5200
+    "x1": 1440,
+    "y1": 3120
   },
   "models": [
     {
@@ -54,8 +54,8 @@
           "value": "0.559",
           "type": "diode",
           "note": "Red probe on GND, black on the pin. Synthetic demo value, not measured on a real phone.",
-          "x": 0.46625,
-          "y": 0.04230769230769227
+          "x": 0.44375,
+          "y": 0.038461538461538436
         },
         {
           "part": "F3000",
@@ -64,7 +64,7 @@
           "value": "0.555",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.5583333333333333,
+          "x": 0.5694444444444444,
           "y": 0.11538461538461542
         },
         {
@@ -74,8 +74,8 @@
           "value": "0.514",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.6970833333333334,
-          "y": 0.17211538461538467
+          "x": 0.6756944444444445,
+          "y": 0.16506410256410253
         },
         {
           "part": "U3000",
@@ -84,8 +84,8 @@
           "value": "0.361",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.70625,
-          "y": 0.1975
+          "x": 0.6909722222222222,
+          "y": 0.2073717948717949
         },
         {
           "part": "J2000",
@@ -94,8 +94,8 @@
           "value": "0.376",
           "type": "diode",
           "note": "Battery connector, any VBAT pin. Synthetic demo value, not measured on a real phone.",
-          "x": 0.795,
-          "y": 0.35961538461538467
+          "x": 0.7833333333333333,
+          "y": 0.3557692307692307
         },
         {
           "part": "J2000",
@@ -104,8 +104,8 @@
           "value": "0.599",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.83,
-          "y": 0.35961538461538467
+          "x": 0.8416666666666667,
+          "y": 0.3557692307692307
         },
         {
           "part": "L2001",
@@ -115,7 +115,7 @@
           "type": "diode",
           "note": "Low reading is normal on a CPU core rail. Synthetic demo value, not measured on a real phone.",
           "x": 0.125,
-          "y": 0.1807692307692308
+          "y": 0.1858974358974359
         },
         {
           "part": "L2004",
@@ -125,7 +125,7 @@
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
           "x": 0.275,
-          "y": 0.1807692307692308
+          "y": 0.1858974358974359
         },
         {
           "part": "J1000",
@@ -134,8 +134,8 @@
           "value": "0.675",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.53,
-          "y": 0.8692307692307693
+          "x": 0.55,
+          "y": 0.8653846153846154
         },
         {
           "part": "J1000",
@@ -144,8 +144,8 @@
           "value": "0.476",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.44333333333333336,
-          "y": 0.8692307692307693
+          "x": 0.40555555555555556,
+          "y": 0.8653846153846154
         },
         {
           "part": "J1000",
@@ -154,8 +154,8 @@
           "value": "0.488",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.45666666666666667,
-          "y": 0.8692307692307693
+          "x": 0.42777777777777776,
+          "y": 0.8653846153846154
         },
         {
           "part": "J1000",
@@ -164,8 +164,8 @@
           "value": "0.558",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.5633333333333334,
-          "y": 0.8692307692307693
+          "x": 0.6055555555555555,
+          "y": 0.8653846153846154
         },
         {
           "part": "J1000",
@@ -174,8 +174,8 @@
           "value": "0.448",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.44333333333333336,
-          "y": 0.8807692307692307
+          "x": 0.40555555555555556,
+          "y": 0.8846153846153846
         },
         {
           "part": "J1000",
@@ -184,8 +184,8 @@
           "value": "0.576",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.55,
-          "y": 0.8692307692307693
+          "x": 0.5833333333333334,
+          "y": 0.8653846153846154
         },
         {
           "part": "J6000",
@@ -194,8 +194,8 @@
           "value": "0.549",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.8833333333333333,
-          "y": 0.8326923076923077
+          "x": 0.875,
+          "y": 0.8365384615384616
         },
         {
           "part": "J6000",
@@ -205,7 +205,7 @@
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
           "x": 0.8958333333333334,
-          "y": 0.8326923076923077
+          "y": 0.8365384615384616
         },
         {
           "part": "U5000",
@@ -214,8 +214,8 @@
           "value": "0.519",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.22375,
-          "y": 0.6886538461538462
+          "x": 0.20625,
+          "y": 0.6990384615384615
         },
         {
           "part": "U5000",
@@ -224,8 +224,8 @@
           "value": "0.501",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.27625,
-          "y": 0.6886538461538462
+          "x": 0.29375,
+          "y": 0.6990384615384615
         },
         {
           "part": "U6000",
@@ -234,8 +234,8 @@
           "value": "0.000",
           "type": "diode",
           "note": "Antenna feed reads near 0 to GND through the matching coil. Normal. Synthetic demo value, not measured on a real phone.",
-          "x": 0.76375,
-          "y": 0.5813461538461538
+          "x": 0.7729166666666667,
+          "y": 0.5714743589743589
         },
         {
           "part": "J3000",
@@ -244,8 +244,8 @@
           "value": "0.592",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.48125,
-          "y": 0.05384615384615388
+          "x": 0.46875,
+          "y": 0.05769230769230771
         },
         {
           "part": "J2000",
@@ -350,12 +350,12 @@
               "y": 0.11538461538461542
             },
             {
-              "x": 0.6058333333333333,
-              "y": 0.10461538461538461
+              "x": 0.6008333333333333,
+              "y": 0.10384615384615387
             },
             {
-              "x": 0.61,
-              "y": 0.0938461538461538
+              "x": 0.6,
+              "y": 0.09230769230769231
             }
           ]
         },
@@ -366,15 +366,15 @@
           "note": "Use when the BL_LED_A trace is cut near the connector. Synthetic demo value, not measured on a real phone.",
           "points": [
             {
-              "x": 0.53,
-              "y": 0.8692307692307693
+              "x": 0.55,
+              "y": 0.8653846153846154
             },
             {
-              "x": 0.7095833333333335,
-              "y": 0.7951923076923078
+              "x": 0.725138888888889,
+              "y": 0.7932692307692308
             },
             {
-              "x": 0.8291666666666667,
+              "x": 0.8402777777777778,
               "y": 0.7211538461538461
             }
           ]
@@ -386,16 +386,16 @@
           "note": "Thin enamelled wire; keep it short and away from the coil. Synthetic demo value, not measured on a real phone.",
           "points": [
             {
-              "x": 0.5633333333333334,
-              "y": 0.8692307692307693
+              "x": 0.6055555555555555,
+              "y": 0.8653846153846154
             },
             {
-              "x": 0.545625,
-              "y": 0.6718269230769232
+              "x": 0.6244444444444445,
+              "y": 0.6538461538461539
             },
             {
-              "x": 0.46791666666666665,
-              "y": 0.47442307692307695
+              "x": 0.5833333333333334,
+              "y": 0.4423076923076923
             }
           ]
         },
@@ -406,16 +406,16 @@
           "note": "Speaker lines carry current, use thicker wire. Synthetic demo value, not measured on a real phone.",
           "points": [
             {
-              "x": 0.22375,
-              "y": 0.6886538461538462
+              "x": 0.20625,
+              "y": 0.6990384615384615
             },
             {
-              "x": 0.37124999999999997,
-              "y": 0.37125
+              "x": 0.34875,
+              "y": 0.3783653846153846
             },
             {
-              "x": 0.45875,
-              "y": 0.05384615384615388
+              "x": 0.43125,
+              "y": 0.05769230769230771
             }
           ]
         },
@@ -426,16 +426,16 @@
           "note": "Keep RF jumpers as short as possible. Synthetic demo value, not measured on a real phone.",
           "points": [
             {
-              "x": 0.76375,
-              "y": 0.5813461538461538
+              "x": 0.7729166666666667,
+              "y": 0.5714743589743589
             },
             {
-              "x": 0.819375,
-              "y": 0.6341346153846155
+              "x": 0.8178472222222223,
+              "y": 0.6306089743589743
             },
             {
-              "x": 0.815,
-              "y": 0.686923076923077
+              "x": 0.8027777777777778,
+              "y": 0.6897435897435897
             }
           ]
         },
@@ -446,16 +446,16 @@
           "note": "Reference ground for meter readings. Synthetic demo value, not measured on a real phone.",
           "points": [
             {
-              "x": 0.8066666666666666,
-              "y": 0.37115384615384617
+              "x": 0.8027777777777778,
+              "y": 0.375
             },
             {
-              "x": 0.6627083333333333,
+              "x": 0.647013888888889,
               "y": 0.20673076923076922
             },
             {
-              "x": 0.45875,
-              "y": 0.04230769230769227
+              "x": 0.43125,
+              "y": 0.038461538461538436
             }
           ]
         }
@@ -502,8 +502,8 @@
           "value": "0.553",
           "type": "diode",
           "note": "Red probe on GND, black on the pin. Synthetic demo value, not measured on a real phone.",
-          "x": 0.46625,
-          "y": 0.04230769230769227
+          "x": 0.44375,
+          "y": 0.038461538461538436
         },
         {
           "part": "F3000",
@@ -512,7 +512,7 @@
           "value": "0.549",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.5583333333333333,
+          "x": 0.5694444444444444,
           "y": 0.11538461538461542
         },
         {
@@ -522,8 +522,8 @@
           "value": "0.508",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.6970833333333334,
-          "y": 0.17211538461538467
+          "x": 0.6756944444444445,
+          "y": 0.16506410256410253
         },
         {
           "part": "U3000",
@@ -532,8 +532,8 @@
           "value": "0.357",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.70625,
-          "y": 0.1975
+          "x": 0.6909722222222222,
+          "y": 0.2073717948717949
         },
         {
           "part": "J2000",
@@ -542,8 +542,8 @@
           "value": "0.372",
           "type": "diode",
           "note": "Battery connector, any VBAT pin. Synthetic demo value, not measured on a real phone.",
-          "x": 0.795,
-          "y": 0.35961538461538467
+          "x": 0.7833333333333333,
+          "y": 0.3557692307692307
         },
         {
           "part": "J2000",
@@ -552,8 +552,8 @@
           "value": "0.629",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.83,
-          "y": 0.35961538461538467
+          "x": 0.8416666666666667,
+          "y": 0.3557692307692307
         },
         {
           "part": "L2001",
@@ -563,7 +563,7 @@
           "type": "diode",
           "note": "Low reading is normal on a CPU core rail. Synthetic demo value, not measured on a real phone.",
           "x": 0.125,
-          "y": 0.1807692307692308
+          "y": 0.1858974358974359
         },
         {
           "part": "L2004",
@@ -573,7 +573,7 @@
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
           "x": 0.275,
-          "y": 0.1807692307692308
+          "y": 0.1858974358974359
         },
         {
           "part": "J1000",
@@ -582,8 +582,8 @@
           "value": "0.668",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.53,
-          "y": 0.8692307692307693
+          "x": 0.55,
+          "y": 0.8653846153846154
         },
         {
           "part": "J1000",
@@ -592,8 +592,8 @@
           "value": "0.471",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.44333333333333336,
-          "y": 0.8692307692307693
+          "x": 0.40555555555555556,
+          "y": 0.8653846153846154
         },
         {
           "part": "J1000",
@@ -602,8 +602,8 @@
           "value": "0.483",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.45666666666666667,
-          "y": 0.8692307692307693
+          "x": 0.42777777777777776,
+          "y": 0.8653846153846154
         },
         {
           "part": "J1000",
@@ -612,8 +612,8 @@
           "value": "0.552",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.5633333333333334,
-          "y": 0.8692307692307693
+          "x": 0.6055555555555555,
+          "y": 0.8653846153846154
         },
         {
           "part": "J1000",
@@ -622,8 +622,8 @@
           "value": "0.443",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.44333333333333336,
-          "y": 0.8807692307692307
+          "x": 0.40555555555555556,
+          "y": 0.8846153846153846
         },
         {
           "part": "J1000",
@@ -632,8 +632,8 @@
           "value": "0.606",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.55,
-          "y": 0.8692307692307693
+          "x": 0.5833333333333334,
+          "y": 0.8653846153846154
         },
         {
           "part": "J6000",
@@ -642,8 +642,8 @@
           "value": "0.543",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.8833333333333333,
-          "y": 0.8326923076923077
+          "x": 0.875,
+          "y": 0.8365384615384616
         },
         {
           "part": "J6000",
@@ -653,7 +653,7 @@
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
           "x": 0.8958333333333334,
-          "y": 0.8326923076923077
+          "y": 0.8365384615384616
         },
         {
           "part": "U5000",
@@ -662,8 +662,8 @@
           "value": "0.514",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.22375,
-          "y": 0.6886538461538462
+          "x": 0.20625,
+          "y": 0.6990384615384615
         },
         {
           "part": "U5000",
@@ -672,8 +672,8 @@
           "value": "0.496",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.27625,
-          "y": 0.6886538461538462
+          "x": 0.29375,
+          "y": 0.6990384615384615
         },
         {
           "part": "U6000",
@@ -682,8 +682,8 @@
           "value": "0.000",
           "type": "diode",
           "note": "Antenna feed reads near 0 to GND through the matching coil. Normal. Synthetic demo value, not measured on a real phone.",
-          "x": 0.76375,
-          "y": 0.5813461538461538
+          "x": 0.7729166666666667,
+          "y": 0.5714743589743589
         },
         {
           "part": "J3000",
@@ -692,8 +692,8 @@
           "value": "0.585",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.48125,
-          "y": 0.05384615384615388
+          "x": 0.46875,
+          "y": 0.05769230769230771
         },
         {
           "part": "J2000",
@@ -798,12 +798,12 @@
               "y": 0.11538461538461542
             },
             {
-              "x": 0.6058333333333333,
-              "y": 0.10461538461538461
+              "x": 0.6008333333333333,
+              "y": 0.10384615384615387
             },
             {
-              "x": 0.61,
-              "y": 0.0938461538461538
+              "x": 0.6,
+              "y": 0.09230769230769231
             }
           ]
         },
@@ -814,15 +814,15 @@
           "note": "Use when the BL_LED_A trace is cut near the connector. Synthetic demo value, not measured on a real phone.",
           "points": [
             {
-              "x": 0.53,
-              "y": 0.8692307692307693
+              "x": 0.55,
+              "y": 0.8653846153846154
             },
             {
-              "x": 0.7095833333333335,
-              "y": 0.7951923076923078
+              "x": 0.725138888888889,
+              "y": 0.7932692307692308
             },
             {
-              "x": 0.8291666666666667,
+              "x": 0.8402777777777778,
               "y": 0.7211538461538461
             }
           ]
@@ -834,16 +834,16 @@
           "note": "Thin enamelled wire; keep it short and away from the coil. Synthetic demo value, not measured on a real phone.",
           "points": [
             {
-              "x": 0.5633333333333334,
-              "y": 0.8692307692307693
+              "x": 0.6055555555555555,
+              "y": 0.8653846153846154
             },
             {
-              "x": 0.545625,
-              "y": 0.6718269230769232
+              "x": 0.6244444444444445,
+              "y": 0.6538461538461539
             },
             {
-              "x": 0.46791666666666665,
-              "y": 0.47442307692307695
+              "x": 0.5833333333333334,
+              "y": 0.4423076923076923
             }
           ]
         },
@@ -854,16 +854,16 @@
           "note": "Speaker lines carry current, use thicker wire. Synthetic demo value, not measured on a real phone.",
           "points": [
             {
-              "x": 0.22375,
-              "y": 0.6886538461538462
+              "x": 0.20625,
+              "y": 0.6990384615384615
             },
             {
-              "x": 0.37124999999999997,
-              "y": 0.37125
+              "x": 0.34875,
+              "y": 0.3783653846153846
             },
             {
-              "x": 0.45875,
-              "y": 0.05384615384615388
+              "x": 0.43125,
+              "y": 0.05769230769230771
             }
           ]
         },
@@ -874,16 +874,16 @@
           "note": "Keep RF jumpers as short as possible. Synthetic demo value, not measured on a real phone.",
           "points": [
             {
-              "x": 0.76375,
-              "y": 0.5813461538461538
+              "x": 0.7729166666666667,
+              "y": 0.5714743589743589
             },
             {
-              "x": 0.819375,
-              "y": 0.6341346153846155
+              "x": 0.8178472222222223,
+              "y": 0.6306089743589743
             },
             {
-              "x": 0.815,
-              "y": 0.686923076923077
+              "x": 0.8027777777777778,
+              "y": 0.6897435897435897
             }
           ]
         },
@@ -894,16 +894,16 @@
           "note": "Reference ground for meter readings. Synthetic demo value, not measured on a real phone.",
           "points": [
             {
-              "x": 0.8066666666666666,
-              "y": 0.37115384615384617
+              "x": 0.8027777777777778,
+              "y": 0.375
             },
             {
-              "x": 0.6627083333333333,
+              "x": 0.647013888888889,
               "y": 0.20673076923076922
             },
             {
-              "x": 0.45875,
-              "y": 0.04230769230769227
+              "x": 0.43125,
+              "y": 0.038461538461538436
             }
           ]
         }
@@ -950,8 +950,8 @@
           "value": "0.547",
           "type": "diode",
           "note": "Red probe on GND, black on the pin. Synthetic demo value, not measured on a real phone.",
-          "x": 0.46625,
-          "y": 0.04230769230769227
+          "x": 0.44375,
+          "y": 0.038461538461538436
         },
         {
           "part": "F3000",
@@ -960,7 +960,7 @@
           "value": "0.543",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.5583333333333333,
+          "x": 0.5694444444444444,
           "y": 0.11538461538461542
         },
         {
@@ -970,8 +970,8 @@
           "value": "0.503",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.6970833333333334,
-          "y": 0.17211538461538467
+          "x": 0.6756944444444445,
+          "y": 0.16506410256410253
         },
         {
           "part": "U3000",
@@ -980,8 +980,8 @@
           "value": "0.353",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.70625,
-          "y": 0.1975
+          "x": 0.6909722222222222,
+          "y": 0.2073717948717949
         },
         {
           "part": "J2000",
@@ -990,8 +990,8 @@
           "value": "0.391",
           "type": "diode",
           "note": "Battery connector, any VBAT pin. Synthetic demo value, not measured on a real phone.",
-          "x": 0.795,
-          "y": 0.35961538461538467
+          "x": 0.7833333333333333,
+          "y": 0.3557692307692307
         },
         {
           "part": "J2000",
@@ -1000,8 +1000,8 @@
           "value": "0.623",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.83,
-          "y": 0.35961538461538467
+          "x": 0.8416666666666667,
+          "y": 0.3557692307692307
         },
         {
           "part": "L2001",
@@ -1011,7 +1011,7 @@
           "type": "diode",
           "note": "Low reading is normal on a CPU core rail. Synthetic demo value, not measured on a real phone.",
           "x": 0.125,
-          "y": 0.1807692307692308
+          "y": 0.1858974358974359
         },
         {
           "part": "L2004",
@@ -1021,7 +1021,7 @@
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
           "x": 0.275,
-          "y": 0.1807692307692308
+          "y": 0.1858974358974359
         },
         {
           "part": "J1000",
@@ -1030,8 +1030,8 @@
           "value": "0.661",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.53,
-          "y": 0.8692307692307693
+          "x": 0.55,
+          "y": 0.8653846153846154
         },
         {
           "part": "J1000",
@@ -1040,8 +1040,8 @@
           "value": "0.466",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.44333333333333336,
-          "y": 0.8692307692307693
+          "x": 0.40555555555555556,
+          "y": 0.8653846153846154
         },
         {
           "part": "J1000",
@@ -1050,8 +1050,8 @@
           "value": "0.478",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.45666666666666667,
-          "y": 0.8692307692307693
+          "x": 0.42777777777777776,
+          "y": 0.8653846153846154
         },
         {
           "part": "J1000",
@@ -1060,8 +1060,8 @@
           "value": "0.546",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.5633333333333334,
-          "y": 0.8692307692307693
+          "x": 0.6055555555555555,
+          "y": 0.8653846153846154
         },
         {
           "part": "J1000",
@@ -1070,8 +1070,8 @@
           "value": "0.466",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.44333333333333336,
-          "y": 0.8807692307692307
+          "x": 0.40555555555555556,
+          "y": 0.8846153846153846
         },
         {
           "part": "J1000",
@@ -1080,8 +1080,8 @@
           "value": "0.599",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.55,
-          "y": 0.8692307692307693
+          "x": 0.5833333333333334,
+          "y": 0.8653846153846154
         },
         {
           "part": "J6000",
@@ -1090,8 +1090,8 @@
           "value": "0.537",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.8833333333333333,
-          "y": 0.8326923076923077
+          "x": 0.875,
+          "y": 0.8365384615384616
         },
         {
           "part": "J6000",
@@ -1101,7 +1101,7 @@
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
           "x": 0.8958333333333334,
-          "y": 0.8326923076923077
+          "y": 0.8365384615384616
         },
         {
           "part": "U5000",
@@ -1110,8 +1110,8 @@
           "value": "0.508",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.22375,
-          "y": 0.6886538461538462
+          "x": 0.20625,
+          "y": 0.6990384615384615
         },
         {
           "part": "U5000",
@@ -1120,8 +1120,8 @@
           "value": "0.490",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.27625,
-          "y": 0.6886538461538462
+          "x": 0.29375,
+          "y": 0.6990384615384615
         },
         {
           "part": "U6000",
@@ -1130,8 +1130,8 @@
           "value": "0.000",
           "type": "diode",
           "note": "Antenna feed reads near 0 to GND through the matching coil. Normal. Synthetic demo value, not measured on a real phone.",
-          "x": 0.76375,
-          "y": 0.5813461538461538
+          "x": 0.7729166666666667,
+          "y": 0.5714743589743589
         },
         {
           "part": "J3000",
@@ -1140,8 +1140,8 @@
           "value": "0.615",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.48125,
-          "y": 0.05384615384615388
+          "x": 0.46875,
+          "y": 0.05769230769230771
         },
         {
           "part": "J2000",
@@ -1246,12 +1246,12 @@
               "y": 0.11538461538461542
             },
             {
-              "x": 0.6058333333333333,
-              "y": 0.10461538461538461
+              "x": 0.6008333333333333,
+              "y": 0.10384615384615387
             },
             {
-              "x": 0.61,
-              "y": 0.0938461538461538
+              "x": 0.6,
+              "y": 0.09230769230769231
             }
           ]
         },
@@ -1262,15 +1262,15 @@
           "note": "Use when the BL_LED_A trace is cut near the connector. Synthetic demo value, not measured on a real phone.",
           "points": [
             {
-              "x": 0.53,
-              "y": 0.8692307692307693
+              "x": 0.55,
+              "y": 0.8653846153846154
             },
             {
-              "x": 0.7095833333333335,
-              "y": 0.7951923076923078
+              "x": 0.725138888888889,
+              "y": 0.7932692307692308
             },
             {
-              "x": 0.8291666666666667,
+              "x": 0.8402777777777778,
               "y": 0.7211538461538461
             }
           ]
@@ -1282,16 +1282,16 @@
           "note": "Thin enamelled wire; keep it short and away from the coil. Synthetic demo value, not measured on a real phone.",
           "points": [
             {
-              "x": 0.5633333333333334,
-              "y": 0.8692307692307693
+              "x": 0.6055555555555555,
+              "y": 0.8653846153846154
             },
             {
-              "x": 0.545625,
-              "y": 0.6718269230769232
+              "x": 0.6244444444444445,
+              "y": 0.6538461538461539
             },
             {
-              "x": 0.46791666666666665,
-              "y": 0.47442307692307695
+              "x": 0.5833333333333334,
+              "y": 0.4423076923076923
             }
           ]
         },
@@ -1302,16 +1302,16 @@
           "note": "Speaker lines carry current, use thicker wire. Synthetic demo value, not measured on a real phone.",
           "points": [
             {
-              "x": 0.22375,
-              "y": 0.6886538461538462
+              "x": 0.20625,
+              "y": 0.6990384615384615
             },
             {
-              "x": 0.37124999999999997,
-              "y": 0.37125
+              "x": 0.34875,
+              "y": 0.3783653846153846
             },
             {
-              "x": 0.45875,
-              "y": 0.05384615384615388
+              "x": 0.43125,
+              "y": 0.05769230769230771
             }
           ]
         },
@@ -1322,16 +1322,16 @@
           "note": "Keep RF jumpers as short as possible. Synthetic demo value, not measured on a real phone.",
           "points": [
             {
-              "x": 0.76375,
-              "y": 0.5813461538461538
+              "x": 0.7729166666666667,
+              "y": 0.5714743589743589
             },
             {
-              "x": 0.819375,
-              "y": 0.6341346153846155
+              "x": 0.8178472222222223,
+              "y": 0.6306089743589743
             },
             {
-              "x": 0.815,
-              "y": 0.686923076923077
+              "x": 0.8027777777777778,
+              "y": 0.6897435897435897
             }
           ]
         },
@@ -1342,16 +1342,16 @@
           "note": "Reference ground for meter readings. Synthetic demo value, not measured on a real phone.",
           "points": [
             {
-              "x": 0.8066666666666666,
-              "y": 0.37115384615384617
+              "x": 0.8027777777777778,
+              "y": 0.375
             },
             {
-              "x": 0.6627083333333333,
+              "x": 0.647013888888889,
               "y": 0.20673076923076922
             },
             {
-              "x": 0.45875,
-              "y": 0.04230769230769227
+              "x": 0.43125,
+              "y": 0.038461538461538436
             }
           ]
         }
@@ -1398,8 +1398,8 @@
           "value": "0.541",
           "type": "diode",
           "note": "Red probe on GND, black on the pin. Synthetic demo value, not measured on a real phone.",
-          "x": 0.46625,
-          "y": 0.04230769230769227
+          "x": 0.44375,
+          "y": 0.038461538461538436
         },
         {
           "part": "F3000",
@@ -1408,7 +1408,7 @@
           "value": "0.536",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.5583333333333333,
+          "x": 0.5694444444444444,
           "y": 0.11538461538461542
         },
         {
@@ -1418,8 +1418,8 @@
           "value": "0.497",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.6970833333333334,
-          "y": 0.17211538461538467
+          "x": 0.6756944444444445,
+          "y": 0.16506410256410253
         },
         {
           "part": "U3000",
@@ -1428,8 +1428,8 @@
           "value": "0.371",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.70625,
-          "y": 0.1975
+          "x": 0.6909722222222222,
+          "y": 0.2073717948717949
         },
         {
           "part": "J2000",
@@ -1438,8 +1438,8 @@
           "value": "0.387",
           "type": "diode",
           "note": "Battery connector, any VBAT pin. Synthetic demo value, not measured on a real phone.",
-          "x": 0.795,
-          "y": 0.35961538461538467
+          "x": 0.7833333333333333,
+          "y": 0.3557692307692307
         },
         {
           "part": "J2000",
@@ -1448,8 +1448,8 @@
           "value": "0.616",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.83,
-          "y": 0.35961538461538467
+          "x": 0.8416666666666667,
+          "y": 0.3557692307692307
         },
         {
           "part": "L2001",
@@ -1459,7 +1459,7 @@
           "type": "diode",
           "note": "Low reading is normal on a CPU core rail. Synthetic demo value, not measured on a real phone.",
           "x": 0.125,
-          "y": 0.1807692307692308
+          "y": 0.1858974358974359
         },
         {
           "part": "L2004",
@@ -1469,7 +1469,7 @@
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
           "x": 0.275,
-          "y": 0.1807692307692308
+          "y": 0.1858974358974359
         },
         {
           "part": "J1000",
@@ -1478,8 +1478,8 @@
           "value": "0.653",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.53,
-          "y": 0.8692307692307693
+          "x": 0.55,
+          "y": 0.8653846153846154
         },
         {
           "part": "J1000",
@@ -1488,8 +1488,8 @@
           "value": "0.461",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.44333333333333336,
-          "y": 0.8692307692307693
+          "x": 0.40555555555555556,
+          "y": 0.8653846153846154
         },
         {
           "part": "J1000",
@@ -1498,8 +1498,8 @@
           "value": "0.502",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.45666666666666667,
-          "y": 0.8692307692307693
+          "x": 0.42777777777777776,
+          "y": 0.8653846153846154
         },
         {
           "part": "J1000",
@@ -1508,8 +1508,8 @@
           "value": "0.574",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.5633333333333334,
-          "y": 0.8692307692307693
+          "x": 0.6055555555555555,
+          "y": 0.8653846153846154
         },
         {
           "part": "J1000",
@@ -1518,8 +1518,8 @@
           "value": "0.461",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.44333333333333336,
-          "y": 0.8807692307692307
+          "x": 0.40555555555555556,
+          "y": 0.8846153846153846
         },
         {
           "part": "J1000",
@@ -1528,8 +1528,8 @@
           "value": "0.593",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.55,
-          "y": 0.8692307692307693
+          "x": 0.5833333333333334,
+          "y": 0.8653846153846154
         },
         {
           "part": "J6000",
@@ -1538,8 +1538,8 @@
           "value": "0.531",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.8833333333333333,
-          "y": 0.8326923076923077
+          "x": 0.875,
+          "y": 0.8365384615384616
         },
         {
           "part": "J6000",
@@ -1549,7 +1549,7 @@
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
           "x": 0.8958333333333334,
-          "y": 0.8326923076923077
+          "y": 0.8365384615384616
         },
         {
           "part": "U5000",
@@ -1558,8 +1558,8 @@
           "value": "0.502",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.22375,
-          "y": 0.6886538461538462
+          "x": 0.20625,
+          "y": 0.6990384615384615
         },
         {
           "part": "U5000",
@@ -1568,8 +1568,8 @@
           "value": "0.485",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.27625,
-          "y": 0.6886538461538462
+          "x": 0.29375,
+          "y": 0.6990384615384615
         },
         {
           "part": "U6000",
@@ -1578,8 +1578,8 @@
           "value": "0.000",
           "type": "diode",
           "note": "Antenna feed reads near 0 to GND through the matching coil. Normal. Synthetic demo value, not measured on a real phone.",
-          "x": 0.76375,
-          "y": 0.5813461538461538
+          "x": 0.7729166666666667,
+          "y": 0.5714743589743589
         },
         {
           "part": "J3000",
@@ -1588,8 +1588,8 @@
           "value": "0.609",
           "type": "diode",
           "note": "Synthetic demo value, not measured on a real phone.",
-          "x": 0.48125,
-          "y": 0.05384615384615388
+          "x": 0.46875,
+          "y": 0.05769230769230771
         },
         {
           "part": "J2000",
@@ -1694,12 +1694,12 @@
               "y": 0.11538461538461542
             },
             {
-              "x": 0.6058333333333333,
-              "y": 0.10461538461538461
+              "x": 0.6008333333333333,
+              "y": 0.10384615384615387
             },
             {
-              "x": 0.61,
-              "y": 0.0938461538461538
+              "x": 0.6,
+              "y": 0.09230769230769231
             }
           ]
         },
@@ -1710,15 +1710,15 @@
           "note": "Use when the BL_LED_A trace is cut near the connector. Synthetic demo value, not measured on a real phone.",
           "points": [
             {
-              "x": 0.53,
-              "y": 0.8692307692307693
+              "x": 0.55,
+              "y": 0.8653846153846154
             },
             {
-              "x": 0.7095833333333335,
-              "y": 0.7951923076923078
+              "x": 0.725138888888889,
+              "y": 0.7932692307692308
             },
             {
-              "x": 0.8291666666666667,
+              "x": 0.8402777777777778,
               "y": 0.7211538461538461
             }
           ]
@@ -1730,16 +1730,16 @@
           "note": "Thin enamelled wire; keep it short and away from the coil. Synthetic demo value, not measured on a real phone.",
           "points": [
             {
-              "x": 0.5633333333333334,
-              "y": 0.8692307692307693
+              "x": 0.6055555555555555,
+              "y": 0.8653846153846154
             },
             {
-              "x": 0.545625,
-              "y": 0.6718269230769232
+              "x": 0.6244444444444445,
+              "y": 0.6538461538461539
             },
             {
-              "x": 0.46791666666666665,
-              "y": 0.47442307692307695
+              "x": 0.5833333333333334,
+              "y": 0.4423076923076923
             }
           ]
         },
@@ -1750,16 +1750,16 @@
           "note": "Speaker lines carry current, use thicker wire. Synthetic demo value, not measured on a real phone.",
           "points": [
             {
-              "x": 0.22375,
-              "y": 0.6886538461538462
+              "x": 0.20625,
+              "y": 0.6990384615384615
             },
             {
-              "x": 0.37124999999999997,
-              "y": 0.37125
+              "x": 0.34875,
+              "y": 0.3783653846153846
             },
             {
-              "x": 0.45875,
-              "y": 0.05384615384615388
+              "x": 0.43125,
+              "y": 0.05769230769230771
             }
           ]
         },
@@ -1770,16 +1770,16 @@
           "note": "Keep RF jumpers as short as possible. Synthetic demo value, not measured on a real phone.",
           "points": [
             {
-              "x": 0.76375,
-              "y": 0.5813461538461538
+              "x": 0.7729166666666667,
+              "y": 0.5714743589743589
             },
             {
-              "x": 0.819375,
-              "y": 0.6341346153846155
+              "x": 0.8178472222222223,
+              "y": 0.6306089743589743
             },
             {
-              "x": 0.815,
-              "y": 0.686923076923077
+              "x": 0.8027777777777778,
+              "y": 0.6897435897435897
             }
           ]
         },
@@ -1790,16 +1790,16 @@
           "note": "Reference ground for meter readings. Synthetic demo value, not measured on a real phone.",
           "points": [
             {
-              "x": 0.8066666666666666,
-              "y": 0.37115384615384617
+              "x": 0.8027777777777778,
+              "y": 0.375
             },
             {
-              "x": 0.6627083333333333,
+              "x": 0.647013888888889,
               "y": 0.20673076923076922
             },
             {
-              "x": 0.45875,
-              "y": 0.04230769230769227
+              "x": 0.43125,
+              "y": 0.038461538461538436
             }
           ]
         }

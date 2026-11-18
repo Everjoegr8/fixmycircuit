@@ -2,7 +2,7 @@
 // pins dropped in Contributor mode line up with the real part positions.
 import { W, H } from './board.mjs';
 
-export const PX_PER_MIL = 0.6;
+export const PX_PER_MIL = 1;
 
 export const toPhoto = (x, y) => ({ x: x / W, y: 1 - y / H });
 
@@ -29,7 +29,7 @@ export function photoSvg(board) {
   }
   out += '</g>';
   // mounting holes
-  for (const [x, y] of [[180, 180], [W - 180, 180], [180, H - 180], [W - 180, H - 180], [W / 2, 1900]])
+  for (const [x, y] of [[100, 100], [W - 100, 100], [100, H - 100], [W - 100, H - 100]])
     out += `<circle cx="${X(x)}" cy="${Y(y)}" r="${22 * s}" fill="#060708" stroke="#d6b65a" stroke-width="${12 * s}"/>`;
   for (const p of parts) {
     if (p.side !== 'top') continue;
@@ -38,6 +38,12 @@ export function photoSvg(board) {
     const cx = x + w / 2, cy = y + h / 2;
     const label = (t, dy = 0, size = 9, color = '#e8e8e8') => `<text x="${cx}" y="${cy + dy}" font-family="Arial" font-size="${size}" fill="${color}" text-anchor="middle" dominant-baseline="middle">${t}</text>`;
     switch (m.kind) {
+      case 'shield':
+        out += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="4" fill="none" stroke="url(#sh)" stroke-width="${10 * s}" opacity="0.9"/>`;
+        break;
+      case 'small':
+        out += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="1" fill="#2a2c30" stroke="#55585d" stroke-width="0.6"/>`;
+        break;
       case 'bga':
       case 'qfn':
         out += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="url(#ic)" stroke="#555" stroke-width="1"/>`;

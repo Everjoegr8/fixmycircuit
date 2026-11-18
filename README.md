@@ -15,6 +15,12 @@ is the only feature that goes online, and only with your own API key).
 
 ### New in 0.6: the repair-tool layout, model library
 
+- **A dense demo phone board (0.6.3).** The four demo phones now share a
+  board that looks like a real logic board: about 2,400 parts and 7,200 pins,
+  a 676-ball SoC with RAM beside it, PMIC, charger, RF, Wi-Fi, shields and
+  rows of 0201 capacitors. It is still invented, part for part, and is not
+  any real phone's layout. Demo phones from an older install get the new
+  board on first start; your own notes on them stay.
 - **Big screen when you want it.** Every panel (model library, tabs,
   toolbar, NET/Component panel, part card, repair panel, trial notice and
   status bar) can be hidden from the **View** button at the right of the tab

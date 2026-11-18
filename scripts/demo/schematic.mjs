@@ -85,7 +85,7 @@ export function buildSchematic(board) {
     ops.push(T(36, PH - 66, 'Synthetic sample schematic for FixMyCircuit demo models. Not the schematic of any real phone.', 8));
     ops.push(T(PW - 160, 34, `PAGE ${pi + 1} / ${blocks.length}`, 9, 'F2'));
     // ICs and connectors of this block
-    const icNames = parts.map((p) => p.name).filter((n) => meta.get(n)?.block === block && ['bga', 'qfn', 'conn'].includes(meta.get(n).kind));
+    const icNames = parts.map((p) => p.name).filter((n) => meta.get(n)?.block === block && meta.get(n).sch !== false && ['bga', 'qfn', 'conn'].includes(meta.get(n).kind));
     let x = 140, yTop = PH - 110, colMaxH = 0;
     for (const name of icNames) {
       const idx = parts.findIndex((p) => p.name === name);
@@ -99,7 +99,7 @@ export function buildSchematic(board) {
       colMaxH = Math.max(colMaxH, s2.h);
     }
     // Passives table
-    const passives = parts.map((p, i) => ({ p, i, m: meta.get(p.name) })).filter((x) => x.m?.block === block && !['bga', 'qfn', 'conn'].includes(x.m.kind));
+    const passives = parts.map((p, i) => ({ p, i, m: meta.get(p.name) })).filter((x) => x.m?.block === block && x.m.sch !== false && !['bga', 'qfn', 'conn'].includes(x.m.kind));
     let tx = Math.max(x + 400, 860), ty = PH - 110;
     if (passives.length) ops.push(T(tx, ty + 14, 'PASSIVES', 9, 'F2'));
     for (const { p, i, m } of passives) {
