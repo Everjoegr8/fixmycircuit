@@ -10,6 +10,7 @@ import { pathToFileURL } from 'node:url';
 import { openDb, type DB } from './db';
 import { findTool as findToolAt, installTool, listTools, toolsDir, type ToolId } from './tools';
 import { kindForExt, guessBrand, type FileKind, type ImportRequest } from '../shared/types';
+import { scanFolder, fetchIndex, downloadFile, type ScanEntry } from './library';
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'fmc', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
@@ -195,6 +196,66 @@ function registerIpc() {
   handle('brand:add', (name: string) => db.addBrand(name));
   handle('model:add', (brandId: number, name: string) => db.addModel(brandId, name));
   handle('model:rename', (id: number, name: string) => db.renameModel(id, name));
+  handle('model:info', (id: number, info: { series?: string; meta?: string }) => db.setModelInfo(id, info));
+
+  // --- model library: folder of boards, drag and drop, hosted index ---------
+  handle('library:pickFolder', async () => {
+    const r = await dialog.showOpenDialog(win!, { title: 'Choose a folder of boards', properties: ['openDirectory'] });
+    return r.canceled ? null : r.filePaths[0] || null;
+  });
+  handle('library:scan', (paths: string[]) => {
+    // Folders are walked; loose files are sorted by their name.
+    const entries: ScanEntry[] = [];
+    let truncated = false;
+    for (const p of paths) {
+      let st: fs.Stats;
+      try { st = fs.statSync(p); } catch { continue; }
+      if (st.isDirectory()) {
+        const r = scanFolder(p, (n, size) => db.hasFile(n, size));
+        entries.push(...r.entries);
+        truncated = truncated || r.truncated;
+      } else if (st.isFile()) {
+        const r = scanFolder(path.dirname(p), (n, size) => db.hasFile(n, size));
+        const e = r.entries.find((x) => path.resolve(x.path) === path.resolve(p));
+        if (e) entries.push(e);
+      }
+    }
+    return { entries, truncated };
+  });
+  /** Import scanned entries, creating brands and models (with series and licence notes) as needed. */
+  const importPlaced = (entries: (Pick<ScanEntry, 'path' | 'brand' | 'series' | 'model'> & { meta?: unknown })[]) => {
+    const groups = new Map<string, typeof entries>();
+    for (const e of entries) {
+      const k = e.brand.trim() && e.model.trim() ? `${e.brand.trim()}\u0000${e.model.trim()}` : '';
+      let g = groups.get(k);
+      if (!g) groups.set(k, (g = []));
+      g.push(e);
+    }
+    const modelIds: number[] = [];
+    let files = 0;
+    for (const [k, list] of groups) {
+      let modelId: number | null = null;
+      if (k) {
+        const b = db.addBrand(list[0].brand.trim()) as { id: number };
+        const m = db.addModel(b.id, list[0].model.trim()) as { id: number };
+        modelId = m.id;
+        modelIds.push(m.id);
+        const series = list.find((x) => x.series)?.series;
+        const meta = list.find((x) => x.meta)?.meta;
+        db.setModelInfo(m.id, { series: series || undefined, meta: meta ? JSON.stringify(meta) : undefined });
+      }
+      files += importFiles({ paths: list.map((x) => x.path), model_id: modelId }).length;
+    }
+    return { models: modelIds.length, files, modelIds };
+  };
+  handle('library:import', (entries: ScanEntry[]) => importPlaced(entries));
+  handle('library:fetchIndex', (url: string) => fetchIndex(url, net.fetch as unknown as typeof fetch));
+  handle('library:download', async (items: { url: string; sha256?: string; brand: string; series: string; model: string; meta?: unknown }[]) => {
+    const dir = path.join(app.getPath('userData'), 'downloads', String(Date.now()));
+    const placed: (typeof items[number] & { path: string })[] = [];
+    for (const it of items) placed.push({ ...it, path: await downloadFile(it.url, dir, it.sha256, net.fetch as unknown as typeof fetch) });
+    try { return importPlaced(placed); } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  });
   handle('model:delete', (id: number) => db.deleteModel(id));
 
   handle('files:list', (modelId?: number | null, kind?: string) => db.listFiles(modelId, kind));

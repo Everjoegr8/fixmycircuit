@@ -8,7 +8,7 @@ const APP = path.resolve(__dirname, '../..'); const SM = path.join(APP, 'samples
 const S = process.env.E2E_OUT || fs.mkdtempSync(path.join(os.tmpdir(), 'fmc-e2e-'));
 const shot = (page, n) => page.screenshot({ path: `${S}/${n}.png` });
 (async () => {
-  if (process.env.E2E_ONLY) { await ({ license: licenseRun, tools: toolsRun, formats: formatsRun, demo: demoRun })[process.env.E2E_ONLY](); console.log('E2E OK (' + process.env.E2E_ONLY + ')'); return; }
+  if (process.env.E2E_ONLY) { await ({ license: licenseRun, tools: toolsRun, formats: formatsRun, demo: demoRun, library: libraryRun })[process.env.E2E_ONLY](); console.log('E2E OK (' + process.env.E2E_ONLY + ')'); return; }
   const data = path.join(S, 'data'); fs.rmSync(data, { recursive: true, force: true });
   const app = await _electron.launch({ args: ['--no-sandbox', APP], env: { ...process.env, FMC_DATA_DIR: data, FMC_NO_DEMO: '1' } });
   const page = await app.firstWindow();
@@ -46,7 +46,7 @@ const shot = (page, n) => page.screenshot({ path: `${S}/${n}.png` });
   await shot(page, '03-readings');
   // Open schematic
   await page.click('button:has-text("Schematics/PDF") >> nth=-1');
-  await page.click('button:has-text("Open")');
+  await page.click('button:has-text("Open"):not([data-recent])');
   await page.waitForSelector('.pdfViewer .page canvas, .pdfViewer .page .canvasWrapper', { timeout: 15000 });
   await page.waitForTimeout(800);
   await page.fill('[data-testid="pdf-search"]', 'VBUS'); await page.keyboard.press('Enter');
@@ -56,7 +56,7 @@ const shot = (page, n) => page.screenshot({ path: `${S}/${n}.png` });
   // Open board from library tab
   await page.click('button:has-text("Spark 10 (KI5) ·")');
   await page.click('button:has-text("BoardView") >> nth=-1');
-  await page.click('button:has-text("Open")');
+  await page.click('button:has-text("Open"):not([data-recent])');
   await page.waitForSelector('[data-testid="board-canvas"]');
   await page.waitForTimeout(800);
   await shot(page, '05-board');
@@ -65,7 +65,7 @@ const shot = (page, n) => page.screenshot({ path: `${S}/${n}.png` });
   await page.waitForTimeout(500);
   await shot(page, '06-board-part');
   // click pin row VBUS
-  await page.locator('[data-testid="board-info"] tr:has-text("VBUS")').first().click();
+  await page.locator('[data-testid="pins-part-table"] tr:has-text("VBUS")').first().click();
   await page.waitForTimeout(500);
   const info = await page.textContent('[data-testid="board-info"]'); assert.match(info, /VBUS\S*\d+ pins on \d+ parts/);
   console.log('panel:', (await page.textContent('[data-testid="repair-panel"] >> visible=true')).slice(0, 300));
@@ -111,6 +111,7 @@ const shot = (page, n) => page.screenshot({ path: `${S}/${n}.png` });
   await app.close();
   await demoRun();
   await formatsRun();
+  await libraryRun();
   await licenseRun();
   await toolsRun();
   console.log('E2E OK, screenshots in', S);
@@ -290,7 +291,7 @@ async function openDemo(page, what) {
   if (what === 'board') { await page.locator('button:has-text("Open boardview")').click(); return; }
   await page.locator('[data-testid="device-card"]').first().click();
   await page.locator('button:has-text("Board Photos") >> nth=-1').click();
-  await page.locator('[data-testid="photo-open"], button:has-text("Open")').first().click();
+  await page.locator('[data-testid="photo-open"], button:has-text("Open"):not([data-recent])').first().click();
 }
 
 // Third launch: import every supported format, themes, AI assistant (test mode), About.
@@ -609,4 +610,74 @@ async function toolsRun() {
   await app.close();
   srv.close();
   console.log('tool manager OK');
+}
+
+// Fourth launch: model library (folder scan, sorting, tree, one-click open) and the repair-tool board view.
+async function libraryRun() {
+  const data = path.join(S, 'data-lib'); fs.rmSync(data, { recursive: true, force: true });
+  const lib = path.join(S, 'lib'); fs.rmSync(lib, { recursive: true, force: true });
+  const put = (rel, src) => { const f = path.join(lib, rel); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.copyFileSync(SM + src, f); };
+  put('Tecno/Camon/Camon 30 (CL6)/CL6_board.bvr', 'fmc-demo-x1.bvr');
+  put('Tecno/Camon/Camon 30 (CL6)/CL6_schematic.pdf', 'fmc-demo-x1-schematic.pdf');
+  put('Open Hardware/Feather/Demo X1/board.brd', 'fmc-demo-x1.brd');
+  fs.writeFileSync(path.join(lib, 'Open Hardware/Feather/Demo X1/model.json'), JSON.stringify({ brand: 'Open Hardware', series: 'Feather', model: 'Demo X1', license: { spdx: 'CC0-1.0', attribution: 'Synthetic test board' }, source: { url: 'https://example.com/demo' } }));
+  put('Downloads/Redmi_Note_13_Pro_board.brd', 'fmc-demo-x1.brd');
+  put('Downloads/mystery.brd', 'fmc-demo-x1.brd');
+  const app = await _electron.launch({ args: ['--no-sandbox', APP], env: { ...process.env, FMC_DATA_DIR: data } });
+  const page = await app.firstWindow();
+  await app.evaluate(({ BrowserWindow }) => { BrowserWindow.getAllWindows()[0].setSize(1600, 940); });
+  page.on('pageerror', e => console.log('[pageerror]', e.message));
+  await page.waitForSelector('[data-testid="splash"]', { state: 'detached', timeout: 10000 });
+  await app.evaluate(({ dialog }, dir) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [dir] }); }, lib);
+  await page.click('[data-testid="add-folder"]');
+  await page.click('[data-testid="lib-pick-folder"]');
+  await page.waitForSelector('[data-testid="lib-table"]');
+  const rows = await page.$$eval('[data-testid="lib-table"] tbody tr', (trs) => trs.map((t) => [...t.querySelectorAll('input')].slice(1).map((i) => i.value).concat(t.lastElementChild.textContent).join(' | ')));
+  console.log('library scan:\n  ' + rows.join('\n  '));
+  assert.ok(rows.includes('Tecno | Camon | Camon 30 (CL6) | folders'));
+  assert.ok(rows.includes('Open Hardware | Feather | Demo X1 | model.json'));
+  assert.ok(rows.includes('Xiaomi | Redmi Note | Redmi Note 13 Pro | file name'));
+  assert.ok(rows.includes(' |  |  | not sure'));
+  // The demo board has the same name and size as the folder's copy: offered unticked.
+  await shot(page, '50-library-scan');
+  await page.click('[data-testid="lib-import"]');
+  await page.waitForSelector('[data-testid="board-canvas"] >> visible=true', { timeout: 15000 });
+  // The tree: Brand > Series > Model; picking a model opens its board.
+  await page.fill('[data-testid="model-filter"]', 'camon 30');
+  await page.waitForSelector('[data-series="Camon"]');
+  await page.locator('[data-model="Camon 30 (CL6)"]').click();
+  await page.waitForSelector('text=CL6_board.bvr');
+  await page.waitForTimeout(600);
+  const meta = await page.evaluate(async () => (await window.fmc.tree()).models.find((m) => m.name === 'Demo X1'));
+  assert.equal(meta.series, 'Feather'); assert.match(meta.meta, /CC0-1.0/);
+  // Repair-tool look, both halves side by side, NET and Component tables.
+  await page.click('[data-testid="view-btn"] >> visible=true');
+  await page.click('[data-testid="look-repair"] >> visible=true');
+  await page.mouse.move(700, 700);
+  await page.click('[data-testid="side-split"] >> visible=true');
+  await page.fill('input[placeholder^="Find part or net"] >> visible=true', 'VBUS');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(500);
+  const netRows = await page.locator('[data-testid="pins-net-table"] >> visible=true').locator('tbody tr').count();
+  console.log('NET tab rows for VBUS:', netRows);
+  assert.ok(netRows >= 3);
+  await page.locator('[data-testid="pins-net-table"] >> visible=true').locator('tbody tr').nth(1).click();
+  await page.waitForTimeout(300);
+  await page.click('[data-testid="pins-tab-part"] >> visible=true');
+  assert.ok(await page.locator('[data-testid="pins-part-table"] >> visible=true').locator('tbody tr').count() >= 2);
+  await shot(page, '51-split-repair-net');
+  // Diode map and measurement sheet from the demo model's (synthetic) readings.
+  const demo = await page.evaluate(async () => (await window.fmc.tree()).models.find((m) => m.demo));
+  await page.evaluate(async (id) => { window.__b = (await window.fmc.listFiles(id, 'boardview'))[0]; }, demo.id);
+  await page.locator(`[data-model="${demo.name}"]`).first().click({ trial: true }).catch(() => {});
+  await page.fill('[data-testid="model-filter"]', demo.name.slice(0, 8));
+  await page.locator(`[data-model="${demo.name}"]`).first().click();
+  await page.waitForTimeout(800);
+  await page.click('[data-testid="diode-map-btn"] >> visible=true');
+  await page.waitForTimeout(400);
+  await page.click('[data-testid="pins-tab-sheet"] >> visible=true');
+  const sheet = await page.textContent('[data-testid="pins-sheet"] >> visible=true');
+  assert.match(sheet, /VBUS/); assert.match(sheet, /synthetic demo data/);
+  await shot(page, '52-diode-map-sheet');
+  await app.close();
 }

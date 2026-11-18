@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Brand, LibraryFile } from '@shared/types';
 import { api, type TreeModel } from '../api';
+import { guessSeries } from '@shared/libsort';
 import { CATEGORIES, TOOLS, categoryLabel, type Nav } from '../types';
 import { Icon } from './Icon';
 import { AppMark, EraBadge } from '../brand/Logo';
@@ -16,6 +17,10 @@ interface Props {
   onSettings: () => void;
   onAbout: () => void;
   onOpenFile: (f: LibraryFile) => void;
+  /** Open a model: its board if it has one (like picking the phone in a repair tool), else its page. */
+  onOpenModel: (m: TreeModel) => void;
+  onAddFolder: () => void;
+  recent: LibraryFile[];
   onOpenPhoto: (id: number, title: string, modelId: number | null) => void;
   modelLabel: (id: number | null) => string;
 }
@@ -27,6 +32,9 @@ export default function Sidebar(p: Props) {
     try { return JSON.parse(localStorage.getItem('fmc.tree') || '{}'); } catch { return {}; }
   });
   const [openModels, setOpenModels] = useState<Record<number, boolean>>({});
+  const [seriesOpen, setSeriesOpen] = useState<Record<string, boolean>>({});
+  const [recentOpen, setRecentOpen] = useState(true);
+  const [mq, setMq] = useState('');
   const [adding, setAdding] = useState<number | 'brand' | null>(null);
   const [name, setName] = useState('');
   const [q, setQ] = useState('');
@@ -123,10 +131,80 @@ export default function Sidebar(p: Props) {
             <Icon name={t.icon} size={13} /> {t.label}
           </button>
         ))}
-        <div className="px-2 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Library</div>
+        <div className="flex items-center px-2 pb-1 pt-3">
+          <span className="flex-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Model library</span>
+        </div>
+        <button className="mx-1 mb-1.5 flex w-[calc(100%-8px)] items-center justify-center gap-1.5 rounded-md border border-dashed border-amber-500/50 px-2 py-1.5 text-[12.5px] text-amber-200 hover:bg-amber-500/10" onClick={p.onAddFolder} data-testid="add-folder" title="Scan a folder (and its sub-folders) and sort every board into Brand, Series and Model. You can also drop folders anywhere on the window.">
+          <Icon name="folder" size={13} /> Add a folder of boards
+        </button>
+        <div className="relative mx-1 mb-1">
+          <input className="input py-0.5 pl-6 text-[12px]" placeholder="Find a model, e.g. Camon 20" value={mq} onChange={(e) => setMq(e.target.value)} onKeyDown={(e) => e.key === 'Escape' && setMq('')} data-testid="model-filter" />
+          <span className="pointer-events-none absolute left-2 top-[6px] text-slate-500"><Icon name="search" size={11} /></span>
+        </div>
+        {!mq && p.recent.length > 0 && (
+          <div className="mb-1">
+            <button className="flex w-full items-center gap-1.5 rounded px-1.5 py-1 text-left font-medium text-slate-300 hover:bg-bench-800" onClick={() => setRecentOpen((x) => !x)} data-recent="1">
+              <Icon name={recentOpen ? 'chevDown' : 'chevRight'} size={12} /> <Icon name="clock" size={12} /> Recently opened
+            </button>
+            {recentOpen && (
+              <div className="ml-3 border-l border-bench-700 pl-1" data-testid="recent-list">
+                {p.recent.map((f) => (
+                  <button key={f.id} className="flex w-full items-center gap-1.5 truncate rounded px-1.5 py-[3px] text-left text-[12px] text-slate-400 hover:bg-bench-800 hover:text-slate-200" onClick={() => p.onOpenFile(f)} title={`${p.modelLabel(f.model_id)} · ${f.name}`}>
+                    <Icon name={f.kind === 'schematic' ? 'doc' : 'board'} size={11} />
+                    <span className="truncate">{p.modelLabel(f.model_id) !== 'Unsorted' ? p.modelLabel(f.model_id) : f.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {p.brands.map((b) => {
-          const ms = p.models.filter((m) => m.brand_id === b.id);
-          const isOpen = !!open[b.id];
+          const all = p.models.filter((m) => m.brand_id === b.id);
+          const t = mq.trim().toLowerCase();
+          const ms = t ? all.filter((m) => `${b.name} ${m.series || ''} ${m.name}`.toLowerCase().includes(t)) : all;
+          if (t && !ms.length) return null;
+          const isOpen = !!t || !!open[b.id];
+          // Group by series (from the library folder / model.json, else worked out from the name).
+          const groups = new Map<string, TreeModel[]>();
+          for (const m of ms) {
+            const sr = m.series || guessSeries(b.name, m.name) || '';
+            let g = groups.get(sr);
+            if (!g) groups.set(sr, (g = []));
+            g.push(m);
+          }
+          const allSeries = new Set(all.map((m) => m.series || guessSeries(b.name, m.name) || ''));
+          const useSeries = allSeries.size > 1 || (allSeries.size === 1 && !allSeries.has('') && all.length > 1);
+          const modelRow = (m: TreeModel) => (
+            <div key={m.id}>
+              <div className={`group flex items-center rounded ${p.nav?.kind === 'model' && (p.nav as any).modelId === m.id ? 'bg-bench-800' : 'hover:bg-bench-800'}`}>
+                <button className="px-1 py-1 text-slate-500 hover:text-slate-200" title="Show this model's folders" onClick={() => setOpenModels({ ...openModels, [m.id]: !openModels[m.id] })}>
+                  <Icon name={openModels[m.id] ? 'chevDown' : 'chevRight'} size={11} />
+                </button>
+                <button className="flex min-w-0 flex-1 items-center gap-1.5 py-1 pr-1.5 text-left text-slate-300" onClick={() => p.onOpenModel(m)} title={m.boardviews ? 'Open the board' : 'Open this model'} data-model={m.name}>
+                  <span className="truncate">{m.name}</span>
+                  {m.boardviews > 0 && <Icon name="board" size={11} className="shrink-0 text-amber-300/70" />}
+                </button>
+              </div>
+              {openModels[m.id] && (
+                <div className="ml-3 pl-1">
+                  {CATEGORIES.map((c) => {
+                    const count = c === 'faults' ? m.guides : c === 'readings' ? m.readings : c === 'photos' ? m.photos : undefined;
+                    return (
+                      <button
+                        key={c}
+                        className={`flex w-full items-center gap-2 rounded px-2 py-[3px] text-left text-[12px] ${isNav(m.id, c) ? 'bg-amber-500/15 text-amber-200' : 'text-slate-400 hover:bg-bench-800 hover:text-slate-200'}`}
+                        onClick={() => p.onNav({ kind: 'model', modelId: m.id, category: c })}
+                      >
+                        <Icon name={catIcon[c]} size={12} />
+                        <span className="flex-1">{categoryLabel(c)}</span>
+                        {count ? <span className="text-[10px] text-slate-500">{count}</span> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
           return (
             <div key={b.id}>
               <div className="group flex items-center rounded px-1.5 py-1 hover:bg-bench-800">
@@ -147,32 +225,21 @@ export default function Sidebar(p: Props) {
                   {!ms.length && adding !== b.id && (
                     <button className="px-2 py-1 text-[12px] text-slate-500 hover:text-amber-300" onClick={() => setAdding(b.id)}>+ Add a model</button>
                   )}
-                  {ms.map((m) => (
-                    <div key={m.id}>
-                      <button className="flex w-full items-center gap-1.5 rounded px-1.5 py-1 text-left text-slate-300 hover:bg-bench-800" onClick={() => setOpenModels({ ...openModels, [m.id]: !openModels[m.id] })}>
-                        <Icon name={openModels[m.id] ? 'chevDown' : 'chevRight'} size={11} />
-                        <span className="truncate">{m.name}</span>
-                      </button>
-                      {openModels[m.id] && (
-                        <div className="ml-3 pl-1">
-                          {CATEGORIES.map((c) => {
-                            const count = c === 'faults' ? m.guides : c === 'readings' ? m.readings : c === 'photos' ? m.photos : undefined;
-                            return (
-                              <button
-                                key={c}
-                                className={`flex w-full items-center gap-2 rounded px-2 py-[3px] text-left text-[12px] ${isNav(m.id, c) ? 'bg-amber-500/15 text-amber-200' : 'text-slate-400 hover:bg-bench-800 hover:text-slate-200'}`}
-                                onClick={() => p.onNav({ kind: 'model', modelId: m.id, category: c })}
-                              >
-                                <Icon name={catIcon[c]} size={12} />
-                                <span className="flex-1">{categoryLabel(c)}</span>
-                                {count ? <span className="text-[10px] text-slate-500">{count}</span> : null}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  {useSeries
+                    ? [...groups.entries()].sort((x, y) => (x[0] || '~').localeCompare(y[0] || '~', undefined, { numeric: true })).map(([sr, list]) => {
+                        const key = `${b.id}:${sr}`;
+                        const so = !!t || seriesOpen[key] !== false;
+                        return (
+                          <div key={key} data-series={sr || 'Other'}>
+                            <button className="flex w-full items-center gap-1.5 rounded px-1.5 py-[3px] text-left text-[12.5px] text-slate-300 hover:bg-bench-800" onClick={() => setSeriesOpen({ ...seriesOpen, [key]: !so })}>
+                              <Icon name={so ? 'chevDown' : 'chevRight'} size={11} /> <Icon name="folder" size={11} className="text-slate-500" /> {sr || 'Other'}
+                              <span className="text-[10.5px] text-slate-500">{list.length}</span>
+                            </button>
+                            {so && <div className="ml-3 border-l border-bench-800 pl-1">{list.map(modelRow)}</div>}
+                          </div>
+                        );
+                      })
+                    : ms.map(modelRow)}
                 </div>
               )}
             </div>

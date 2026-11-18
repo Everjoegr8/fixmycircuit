@@ -131,6 +131,8 @@ export interface Settings {
   /** Key for encrypted CAE boardviews (same 44-word form as FZ). */
   caeKey?: string;
   xzzKey: string;
+  /** Optional hosted model library: an https address of a library-index.json. */
+  libraryUrl?: string;
   author: string;
   /** Optional AI assistant: the user's own Claude API key (stored only on this PC). */
   anthropicKey?: string;

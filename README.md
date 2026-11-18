@@ -13,6 +13,35 @@ is the only feature that goes online, and only with your own API key).
 
 ## Features
 
+### New in 0.6: the repair-tool layout, model library
+
+- **Model library tree.** Brand, then series, then model, with a "Find a model"
+  box and a Recently opened list. Pick a model and its board opens straight
+  away.
+- **Add a folder of boards.** One button (or drop folders anywhere on the
+  window) scans a folder and its sub-folders. It sorts every boardview,
+  schematic and photo into Brand / Series / Model using a `model.json`, a root
+  `library-index.json`, the folder names (`Brand/Series/Model/`) or the file
+  name. You can check and fix every row before importing, and files already in
+  the library are skipped.
+- **Online library.** Load a hosted `library-index.json`. By default this is
+  FixMyCircuit's open library of open-hardware boards that may be shared, each
+  with its licence. Downloads are checked against their SHA-256. FixMyCircuit
+  does not include or host phone makers' boards.
+- **Black & red look.** A black background with red pads, teal shields and
+  connectors, a pink board edge and the picked part in yellow.
+- **Side by side.** Both halves of the board next to each other, with the
+  bottom mirrored on the right.
+- **Pins panel.** A NET tab (No, Code, PAD, Side) lists every pad on the
+  picked net. A Component tab has a part lookup and the part's pins and nets.
+  Click any row to jump to that pad.
+- **Diode map.** Your shop's diode values are written beside the board, with
+  a leader line to a pad of each rail. Click a label to select the rail.
+- **Measurement sheet.** Each signal shows what it is, its volts and its diode
+  value, plus the model's common faults. Everything comes from your own
+  readings and fault solutions. A voltage read from a net's name is marked,
+  and demo values are labelled as synthetic.
+
 ### New in 0.4: real copper, licence keys, your own AI
 
 - **Real copper traces, not just computed lines.** Boardview files only hold pins and nets, so the lines between pins are computed. Now you can see the real routing:

@@ -15,6 +15,7 @@ import { TOOLS, categoryLabel, type Doc, type Focus, type Nav } from './types';
 
 // Heavy views load on first use so the app starts fast.
 const ImportDialog = lazy(() => import('./components/ImportDialog'));
+const LibraryDialog = lazy(() => import('./components/LibraryDialog'));
 const SettingsDialog = lazy(() => import('./components/SettingsDialog'));
 const PdfViewer = lazy(() => import('./views/PdfViewer'));
 const BoardViewer = lazy(() => import('./views/BoardViewer'));
@@ -41,6 +42,8 @@ export default function App() {
   const [showPanel, setShowPanel] = useState(true);
   const [importOpen, setImportOpen] = useState<{ paths?: string[]; modelId?: number | null } | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState<{ paths?: string[] } | null>(null);
+  const [recent, setRecent] = useState<LibraryFile[]>(() => { try { return JSON.parse(localStorage.getItem('fmc.recent') || '[]'); } catch { return []; } });
   const [aboutOpen, setAboutOpen] = useState(false);
   const [splash, setSplash] = useState(() => !(window as any).__fmcNoSplash);
   const [version, setVersion] = useState('');
@@ -83,9 +86,37 @@ export default function App() {
       const key = `${type}:${f.id}`;
       setDocs((d) => (d.some((x) => x.key === key) ? d : [...d, { key, type, id: f.id, title: f.name, modelId: f.model_id }]));
       setActiveKey(key);
+      // Recently opened (sidebar), newest first.
+      setRecent((r) => {
+        const next = [{ id: f.id, kind: f.kind, name: f.name, model_id: f.model_id } as LibraryFile, ...r.filter((x) => x.id !== f.id)].slice(0, 8);
+        try { localStorage.setItem('fmc.recent', JSON.stringify(next)); } catch { /* private mode */ }
+        return next;
+      });
     },
     [],
   );
+
+  /** Pick a phone in the library: its board opens straight away (else its page). */
+  const openModel = useCallback(async (m: TreeModel) => {
+    const boards = m.boardviews ? await api.listFiles(m.id, 'boardview') : [];
+    setNav({ kind: 'model', modelId: m.id, category: boards.length ? 'boardview' : 'faults' });
+    if (boards.length) openFile(boards[0]);
+    else setActiveKey(null);
+  }, [openFile]);
+
+  // Drop folders or files anywhere on the window: they go to the model library sorter.
+  useEffect(() => {
+    const over = (e: DragEvent) => { if (e.dataTransfer?.types.includes('Files')) e.preventDefault(); };
+    const drop = (e: DragEvent) => {
+      if (e.defaultPrevented || !e.dataTransfer?.files.length) return;
+      e.preventDefault();
+      const paths = Array.from(e.dataTransfer.files).map((f) => api.pathForFile(f)).filter(Boolean);
+      if (paths.length) setLibraryOpen({ paths });
+    };
+    window.addEventListener('dragover', over);
+    window.addEventListener('drop', drop);
+    return () => { window.removeEventListener('dragover', over); window.removeEventListener('drop', drop); };
+  }, []);
 
   const openPhoto = useCallback((photoId: number, title: string, modelId: number | null) => {
     const key = `photo:${photoId}`;
@@ -238,6 +269,9 @@ export default function App() {
         onOpenFile={openFile}
         onOpenPhoto={openPhoto}
         modelLabel={modelLabel}
+        onOpenModel={openModel}
+        onAddFolder={() => setLibraryOpen({})}
+        recent={recent}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <TabBar
@@ -406,6 +440,18 @@ export default function App() {
       )}
       </Suspense>
       <Suspense fallback={null}>
+        {libraryOpen && (
+          <LibraryDialog
+            initialPaths={libraryOpen.paths}
+            onClose={() => setLibraryOpen(null)}
+            onDone={async (r) => {
+              setLibraryOpen(null);
+              await reload();
+              alertMsg(`Added ${r.files} file${r.files === 1 ? '' : 's'} to ${r.models} model${r.models === 1 ? '' : 's'}.`);
+              if (r.modelIds.length) { const t = await api.tree(); const m = t.models.find((x) => x.id === r.modelIds[0]); if (m) openModel(m as TreeModel); }
+            }}
+          />
+        )}
         {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} onReload={reload} />}
         {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
       </Suspense>
