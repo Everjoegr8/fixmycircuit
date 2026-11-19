@@ -87,7 +87,7 @@ The ERA Technologiz mark (src/renderer/src/brand/eraLogo.ts) is a trademark of E
 
 `library/catalog.json` and `library/library-index.hosted.json` list open-hardware
 boards by their authors, each under its own licence (Apache-2.0, MIT, CC BY 4.0,
-CC BY-SA 3.0 US / 4.0, CERN-OHL-P/W/S 2.0, GPL-3.0). The board files themselves are
+CC BY-SA 3.0 US / 4.0, CERN-OHL-P/W/S 2.0, GPL-3.0, GPL-3.0-or-later). The board files themselves are
 not in this repository or in the installer. They are downloaded from the authors'
 repositories at a pinned commit, or come in the separate library pack, where every
 model folder carries its LICENSE.txt and the pack root carries NOTICE.md.

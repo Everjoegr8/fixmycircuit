@@ -1,8 +1,8 @@
 {
   "name": "FixMyCircuit open board library",
   "version": 1,
-  "generated": "2026-11-18",
-  "count": 30,
+  "generated": "2026-11-19",
+  "count": 36,
   "excluded": [
     {
       "name": "M17 LinHT handheld radio",
@@ -25,11 +25,6 @@
       "reason": "PINE64 publishes schematic PDFs for reference but no layout or boardview under an open licence. Link only."
     },
     {
-      "name": "Librem 5 phone and devkit",
-      "url": "https://source.puri.sm/Librem5",
-      "reason": "Devkit KiCad files are GPL-3.0 on source.puri.sm, which the build server could not reach. Add later by running the build script from a machine that can reach it."
-    },
-    {
       "name": "MNT Reform / Pocket Reform",
       "url": "https://source.mnt.re/reform",
       "reason": "CERN-OHL-S-2.0 KiCad files on source.mnt.re, which the build server could not reach. Add later the same way."
@@ -48,6 +43,16 @@
       "name": "Inkplate 6",
       "url": "https://github.com/SolderedElectronics/Inkplate-6-hardware",
       "reason": "Main board is published as schematic and Gerbers only, no layout file the app can open."
+    },
+    {
+      "name": "Librem 5 phone (production board)",
+      "url": "https://source.puri.sm/Librem5",
+      "reason": "Purism published schematics for the phone but not its layout under an open licence. The Developer Kit baseboard is included instead."
+    },
+    {
+      "name": "Openmoko Neo FreeRunner (GTA02)",
+      "url": "https://github.com/libresmartphone/libresmartphone",
+      "reason": "Layout is a binary PADS file with no open reader, and the copy found does not state its licence clearly. Not included."
     }
   ],
   "models": [
@@ -89,7 +94,7 @@
         "parts": 138,
         "pins": 838,
         "nets": 449,
-        "parseMs": 229
+        "parseMs": 215
       }
     },
     {
@@ -130,7 +135,7 @@
         "parts": 595,
         "pins": 2274,
         "nets": 656,
-        "parseMs": 3955
+        "parseMs": 4147
       }
     },
     {
@@ -171,7 +176,7 @@
         "parts": 616,
         "pins": 2213,
         "nets": 667,
-        "parseMs": 4403
+        "parseMs": 3920
       }
     },
     {
@@ -212,7 +217,7 @@
         "parts": 453,
         "pins": 2118,
         "nets": 474,
-        "parseMs": 150
+        "parseMs": 111
       }
     },
     {
@@ -253,7 +258,7 @@
         "parts": 46,
         "pins": 127,
         "nets": 27,
-        "parseMs": 7
+        "parseMs": 4
       }
     },
     {
@@ -287,7 +292,7 @@
         "parts": 78,
         "pins": 217,
         "nets": 43,
-        "parseMs": 13
+        "parseMs": 15
       }
     },
     {
@@ -328,7 +333,7 @@
         "parts": 459,
         "pins": 2913,
         "nets": 447,
-        "parseMs": 656
+        "parseMs": 698
       }
     },
     {
@@ -369,7 +374,7 @@
         "parts": 170,
         "pins": 654,
         "nets": 132,
-        "parseMs": 313
+        "parseMs": 324
       }
     },
     {
@@ -410,7 +415,7 @@
         "parts": 143,
         "pins": 603,
         "nets": 119,
-        "parseMs": 387
+        "parseMs": 347
       }
     },
     {
@@ -444,7 +449,7 @@
         "parts": 437,
         "pins": 1639,
         "nets": 379,
-        "parseMs": 115
+        "parseMs": 107
       }
     },
     {
@@ -478,7 +483,7 @@
         "parts": 132,
         "pins": 566,
         "nets": 149,
-        "parseMs": 410
+        "parseMs": 332
       }
     },
     {
@@ -512,7 +517,7 @@
         "parts": 100,
         "pins": 356,
         "nets": 84,
-        "parseMs": 222
+        "parseMs": 183
       }
     },
     {
@@ -553,7 +558,7 @@
         "parts": 34,
         "pins": 165,
         "nets": 38,
-        "parseMs": 21
+        "parseMs": 10
       }
     },
     {
@@ -587,7 +592,7 @@
         "parts": 90,
         "pins": 332,
         "nets": 101,
-        "parseMs": 42
+        "parseMs": 27
       }
     },
     {
@@ -628,7 +633,7 @@
         "parts": 52,
         "pins": 195,
         "nets": 56,
-        "parseMs": 63
+        "parseMs": 42
       }
     },
     {
@@ -669,7 +674,7 @@
         "parts": 87,
         "pins": 321,
         "nets": 96,
-        "parseMs": 97
+        "parseMs": 94
       }
     },
     {
@@ -703,7 +708,7 @@
         "parts": 391,
         "pins": 1528,
         "nets": 488,
-        "parseMs": 2960
+        "parseMs": 3256
       }
     },
     {
@@ -737,7 +742,7 @@
         "parts": 1125,
         "pins": 4862,
         "nets": 1387,
-        "parseMs": 10999
+        "parseMs": 10746
       }
     },
     {
@@ -778,7 +783,7 @@
         "parts": 112,
         "pins": 633,
         "nets": 220,
-        "parseMs": 500
+        "parseMs": 428
       }
     },
     {
@@ -812,7 +817,7 @@
         "parts": 71,
         "pins": 428,
         "nets": 95,
-        "parseMs": 371
+        "parseMs": 394
       }
     },
     {
@@ -846,7 +851,7 @@
         "parts": 210,
         "pins": 655,
         "nets": 156,
-        "parseMs": 263
+        "parseMs": 294
       }
     },
     {
@@ -887,7 +892,7 @@
         "parts": 86,
         "pins": 312,
         "nets": 84,
-        "parseMs": 98
+        "parseMs": 57
       }
     },
     {
@@ -928,7 +933,7 @@
         "parts": 55,
         "pins": 213,
         "nets": 60,
-        "parseMs": 26
+        "parseMs": 16
       }
     },
     {
@@ -969,7 +974,7 @@
         "parts": 61,
         "pins": 226,
         "nets": 56,
-        "parseMs": 87
+        "parseMs": 86
       }
     },
     {
@@ -1010,7 +1015,7 @@
         "parts": 64,
         "pins": 287,
         "nets": 71,
-        "parseMs": 97
+        "parseMs": 75
       }
     },
     {
@@ -1044,7 +1049,7 @@
         "parts": 41,
         "pins": 252,
         "nets": 84,
-        "parseMs": 48
+        "parseMs": 22
       }
     },
     {
@@ -1085,7 +1090,7 @@
         "parts": 100,
         "pins": 418,
         "nets": 118,
-        "parseMs": 58
+        "parseMs": 81
       }
     },
     {
@@ -1119,7 +1124,7 @@
         "parts": 348,
         "pins": 1472,
         "nets": 375,
-        "parseMs": 742
+        "parseMs": 651
       }
     },
     {
@@ -1160,7 +1165,7 @@
         "parts": 681,
         "pins": 2827,
         "nets": 799,
-        "parseMs": 4055
+        "parseMs": 4290
       }
     },
     {
@@ -1201,7 +1206,232 @@
         "parts": 660,
         "pins": 2728,
         "nets": 804,
-        "parseMs": 6172
+        "parseMs": 6655
+      }
+    },
+    {
+      "id": "purism-librem5-devkit",
+      "brand": "Purism",
+      "series": "Librem 5",
+      "model": "Librem 5 Developer Kit baseboard",
+      "device": "smartphone dev kit",
+      "files": [
+        {
+          "path": "https://raw.githubusercontent.com/gralco/dvk-mx8m-bsb/4fc10923ebaa50d5375b1cace5943f5251fcb5fd/dvk-mx8m-bsb.kicad_pcb",
+          "kind": "board",
+          "bytes": 5736892,
+          "sha256": "20c925039019c3f382139e3c557f60d5517bad45f7fdf39ebf5af8b19c01ccc4"
+        },
+        {
+          "path": "https://raw.githubusercontent.com/gralco/dvk-mx8m-bsb/4fc10923ebaa50d5375b1cace5943f5251fcb5fd/dvk-mx8m-bsb.pdf",
+          "kind": "schematic",
+          "bytes": 2709676,
+          "sha256": "ac9862236a46321dd8bfca83faaf3dbcc646add79018f27fd39b7296fb004b5e"
+        }
+      ],
+      "source": {
+        "url": "https://github.com/gralco/dvk-mx8m-bsb",
+        "commit": "4fc10923ebaa50d5375b1cace5943f5251fcb5fd",
+        "paths": [
+          "dvk-mx8m-bsb.kicad_pcb",
+          "dvk-mx8m-bsb.pdf"
+        ]
+      },
+      "license": {
+        "spdx": "GPL-3.0-or-later",
+        "attribution": "Credit: Purism SPC, Librem 5 Developer Kit (dvk-mx8m-bsb). Original at https://source.puri.sm/Librem5/dvk-mx8m-bsb, taken from the GitHub mirror https://github.com/gralco/dvk-mx8m-bsb",
+        "url": "https://github.com/gralco/dvk-mx8m-bsb/blob/4fc10923ebaa50d5375b1cace5943f5251fcb5fd/LICENSE"
+      },
+      "notes": "The board Purism built to develop the Librem 5 phone: i.MX 8M SoM, cellular modem slot, GNSS, Wi-Fi, display, cameras, audio and charger. Closest open layout to the Librem 5 phone itself.",
+      "check": {
+        "parts": 684,
+        "pins": 2611,
+        "nets": 613,
+        "parseMs": 721
+      }
+    },
+    {
+      "id": "pulsephone-main",
+      "brand": "PulsePhone",
+      "series": "Modular phone",
+      "model": "PulsePhone main board (MCM-iMX93)",
+      "device": "smartphone",
+      "files": [
+        {
+          "path": "https://raw.githubusercontent.com/pulseopen/PulsePhone/f2ea944fd6f78a45bbbac9f1541ca7666ca4e6e1/main_board/pulsephone_main_board.kicad_pcb",
+          "kind": "board",
+          "bytes": 1672556,
+          "sha256": "4860f2d257ab6c770a789ad2086eb1aae384cb38dde609f431cff9ae8a55f677"
+        },
+        {
+          "path": "https://raw.githubusercontent.com/pulseopen/PulsePhone/f2ea944fd6f78a45bbbac9f1541ca7666ca4e6e1/main_board/pulsephone_main_board.pdf",
+          "kind": "schematic",
+          "bytes": 458224,
+          "sha256": "f9b5ca18e27dc9b935964a5429c4fbc1489b7663f24cf4ef24b39083815f1c83"
+        }
+      ],
+      "source": {
+        "url": "https://github.com/pulseopen/PulsePhone",
+        "commit": "f2ea944fd6f78a45bbbac9f1541ca7666ca4e6e1",
+        "paths": [
+          "main_board/pulsephone_main_board.kicad_pcb",
+          "main_board/pulsephone_main_board.pdf"
+        ]
+      },
+      "license": {
+        "spdx": "GPL-3.0-only",
+        "attribution": "Credit: PulsePhone project (pulseopen). https://github.com/pulseopen/PulsePhone",
+        "url": "https://github.com/pulseopen/PulsePhone/blob/f2ea944fd6f78a45bbbac9f1541ca7666ca4e6e1/LICENSE"
+      },
+      "notes": "Modular open smartphone. Main board carries the i.MX 93 SoM and connects display, camera, audio and modem modules over DF40 connectors. Work in progress upstream.",
+      "check": {
+        "parts": 94,
+        "pins": 545,
+        "nets": 217,
+        "parseMs": 186
+      }
+    },
+    {
+      "id": "mokyalora-reva",
+      "brand": "MokyaLora",
+      "series": "Feature phone",
+      "model": "MokyaLora Rev A",
+      "device": "feature phone",
+      "files": [
+        {
+          "path": "https://raw.githubusercontent.com/tengigabytes/MokyaLora/0783a3b35bac10aaf543a4bca7461335d860629f/hardware/kicad/MokyaLora.kicad_pcb",
+          "kind": "board",
+          "bytes": 7690704,
+          "sha256": "45c7c90f21c8a905c93893c83a3cb2f0d36bd5c28bc78569e91242531804bcaa"
+        },
+        {
+          "path": "https://raw.githubusercontent.com/tengigabytes/MokyaLora/0783a3b35bac10aaf543a4bca7461335d860629f/hardware/production/rev-a/pdf/MokyaLora.pdf",
+          "kind": "schematic",
+          "bytes": 1817080,
+          "sha256": "b135577c848ab7b7cdc61c5d3945c645d69aeb88af58b90c83fe4193c8303834"
+        }
+      ],
+      "source": {
+        "url": "https://github.com/tengigabytes/MokyaLora",
+        "commit": "0783a3b35bac10aaf543a4bca7461335d860629f",
+        "paths": [
+          "hardware/kicad/MokyaLora.kicad_pcb",
+          "hardware/production/rev-a/pdf/MokyaLora.pdf"
+        ]
+      },
+      "license": {
+        "spdx": "CERN-OHL-S-2.0",
+        "attribution": "Credit: MokyaLora project (tengigabytes). https://github.com/tengigabytes/MokyaLora",
+        "url": "https://github.com/tengigabytes/MokyaLora/blob/0783a3b35bac10aaf543a4bca7461335d860629f/LICENSE-CERN-OHL-S-2.0.txt"
+      },
+      "notes": "Open feature phone with keypad, display, battery charger and LoRa radio (RP2350B, SX1262). Good for learning keypad, charging and power rails on a candybar phone board.",
+      "check": {
+        "parts": 443,
+        "pins": 1262,
+        "nets": 287,
+        "parseMs": 935
+      }
+    },
+    {
+      "id": "zerophone-delta-front",
+      "brand": "ZeroPhone",
+      "series": "Pi Zero phone (Delta)",
+      "model": "ZeroPhone Delta front board",
+      "device": "phone",
+      "files": [
+        {
+          "path": "https://raw.githubusercontent.com/ZeroPhone/ZeroPhone-PCBs/e6696c636204e45b03c0736a434b7f4f8f222a6c/front_pcb/front_prototype.kicad_pcb",
+          "kind": "board",
+          "bytes": 632412,
+          "sha256": "74a8517e1c2e3a876d269259dff3723974e86be0e0013c3359980acc6e67f524"
+        }
+      ],
+      "source": {
+        "url": "https://github.com/ZeroPhone/ZeroPhone-PCBs",
+        "commit": "e6696c636204e45b03c0736a434b7f4f8f222a6c",
+        "paths": [
+          "front_pcb/front_prototype.kicad_pcb"
+        ]
+      },
+      "license": {
+        "spdx": "GPL-3.0-only",
+        "attribution": "Credit: ZeroPhone project (Arsenijs Picugins and contributors). https://github.com/ZeroPhone/ZeroPhone-PCBs",
+        "url": "https://github.com/ZeroPhone/ZeroPhone-PCBs/blob/e6696c636204e45b03c0736a434b7f4f8f222a6c/LICENSE.md"
+      },
+      "notes": "Front board (display, keypad side). ZeroPhone is an open phone built on a Raspberry Pi Zero with a SIM800 GSM modem.",
+      "check": {
+        "parts": 97,
+        "pins": 356,
+        "nets": 85,
+        "parseMs": 24
+      }
+    },
+    {
+      "id": "zerophone-delta-back",
+      "brand": "ZeroPhone",
+      "series": "Pi Zero phone (Delta)",
+      "model": "ZeroPhone Delta back board",
+      "device": "phone",
+      "files": [
+        {
+          "path": "https://raw.githubusercontent.com/ZeroPhone/ZeroPhone-PCBs/e6696c636204e45b03c0736a434b7f4f8f222a6c/back_pcb/back_pcb.kicad_pcb",
+          "kind": "board",
+          "bytes": 675620,
+          "sha256": "47381fed91088dea9b2d8eb600d7243b73b0cce1526c299149bcd412ccaba1f0"
+        }
+      ],
+      "source": {
+        "url": "https://github.com/ZeroPhone/ZeroPhone-PCBs",
+        "commit": "e6696c636204e45b03c0736a434b7f4f8f222a6c",
+        "paths": [
+          "back_pcb/back_pcb.kicad_pcb"
+        ]
+      },
+      "license": {
+        "spdx": "GPL-3.0-only",
+        "attribution": "Credit: ZeroPhone project (Arsenijs Picugins and contributors). https://github.com/ZeroPhone/ZeroPhone-PCBs",
+        "url": "https://github.com/ZeroPhone/ZeroPhone-PCBs/blob/e6696c636204e45b03c0736a434b7f4f8f222a6c/LICENSE.md"
+      },
+      "notes": "Back board (Pi Zero, GSM modem, power). ZeroPhone is an open phone built on a Raspberry Pi Zero with a SIM800 GSM modem.",
+      "check": {
+        "parts": 118,
+        "pins": 369,
+        "nets": 82,
+        "parseMs": 24
+      }
+    },
+    {
+      "id": "zerophone-delta-keypad",
+      "brand": "ZeroPhone",
+      "series": "Pi Zero phone (Delta)",
+      "model": "ZeroPhone Delta keypad board",
+      "device": "phone",
+      "files": [
+        {
+          "path": "https://raw.githubusercontent.com/ZeroPhone/ZeroPhone-PCBs/e6696c636204e45b03c0736a434b7f4f8f222a6c/keypad_pcb/keypad_pcb.kicad_pcb",
+          "kind": "board",
+          "bytes": 140345,
+          "sha256": "30ef9a8038473f72eb81a214a584d7dc0f1de5ef284b797dd4df4d5a582f6120"
+        }
+      ],
+      "source": {
+        "url": "https://github.com/ZeroPhone/ZeroPhone-PCBs",
+        "commit": "e6696c636204e45b03c0736a434b7f4f8f222a6c",
+        "paths": [
+          "keypad_pcb/keypad_pcb.kicad_pcb"
+        ]
+      },
+      "license": {
+        "spdx": "GPL-3.0-only",
+        "attribution": "Credit: ZeroPhone project (Arsenijs Picugins and contributors). https://github.com/ZeroPhone/ZeroPhone-PCBs",
+        "url": "https://github.com/ZeroPhone/ZeroPhone-PCBs/blob/e6696c636204e45b03c0736a434b7f4f8f222a6c/LICENSE.md"
+      },
+      "notes": "Keypad board. ZeroPhone is an open phone built on a Raspberry Pi Zero with a SIM800 GSM modem.",
+      "check": {
+        "parts": 32,
+        "pins": 132,
+        "nets": 18,
+        "parseMs": 4
       }
     }
   ]

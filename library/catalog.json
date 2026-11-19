@@ -694,6 +694,147 @@
         "file": "LICENSE",
         "attribution": "Copyright (c) Antmicro. https://github.com/antmicro/kria-k26-devboard"
       }
+    },
+    {
+      "id": "purism-librem5-devkit",
+      "brand": "Purism",
+      "series": "Librem 5",
+      "model": "Librem 5 Developer Kit baseboard",
+      "device": "smartphone dev kit",
+      "repo": "https://github.com/gralco/dvk-mx8m-bsb",
+      "commit": "4fc10923ebaa50d5375b1cace5943f5251fcb5fd",
+      "files": [
+        {
+          "src": "dvk-mx8m-bsb.kicad_pcb",
+          "kind": "board"
+        },
+        {
+          "src": "dvk-mx8m-bsb.pdf",
+          "as": "dvk-mx8m-bsb-schematic.pdf",
+          "kind": "schematic"
+        }
+      ],
+      "license": {
+        "spdx": "GPL-3.0-or-later",
+        "file": "LICENSE",
+        "attribution": "Credit: Purism SPC, Librem 5 Developer Kit (dvk-mx8m-bsb). Original at https://source.puri.sm/Librem5/dvk-mx8m-bsb, taken from the GitHub mirror https://github.com/gralco/dvk-mx8m-bsb"
+      },
+      "notes": "The board Purism built to develop the Librem 5 phone: i.MX 8M SoM, cellular modem slot, GNSS, Wi-Fi, display, cameras, audio and charger. Closest open layout to the Librem 5 phone itself."
+    },
+    {
+      "id": "pulsephone-main",
+      "brand": "PulsePhone",
+      "series": "Modular phone",
+      "model": "PulsePhone main board (MCM-iMX93)",
+      "device": "smartphone",
+      "repo": "https://github.com/pulseopen/PulsePhone",
+      "commit": "f2ea944fd6f78a45bbbac9f1541ca7666ca4e6e1",
+      "files": [
+        {
+          "src": "main_board/pulsephone_main_board.kicad_pcb",
+          "kind": "board"
+        },
+        {
+          "src": "main_board/pulsephone_main_board.pdf",
+          "as": "pulsephone_main_board-schematic.pdf",
+          "kind": "schematic"
+        }
+      ],
+      "license": {
+        "spdx": "GPL-3.0-only",
+        "file": "LICENSE",
+        "attribution": "Credit: PulsePhone project (pulseopen). https://github.com/pulseopen/PulsePhone"
+      },
+      "notes": "Modular open smartphone. Main board carries the i.MX 93 SoM and connects display, camera, audio and modem modules over DF40 connectors. Work in progress upstream."
+    },
+    {
+      "id": "mokyalora-reva",
+      "brand": "MokyaLora",
+      "series": "Feature phone",
+      "model": "MokyaLora Rev A",
+      "device": "feature phone",
+      "repo": "https://github.com/tengigabytes/MokyaLora",
+      "commit": "0783a3b35bac10aaf543a4bca7461335d860629f",
+      "files": [
+        {
+          "src": "hardware/kicad/MokyaLora.kicad_pcb",
+          "kind": "board"
+        },
+        {
+          "src": "hardware/production/rev-a/pdf/MokyaLora.pdf",
+          "as": "MokyaLora-schematic.pdf",
+          "kind": "schematic"
+        }
+      ],
+      "license": {
+        "spdx": "CERN-OHL-S-2.0",
+        "file": "LICENSE-CERN-OHL-S-2.0.txt",
+        "attribution": "Credit: MokyaLora project (tengigabytes). https://github.com/tengigabytes/MokyaLora"
+      },
+      "notes": "Open feature phone with keypad, display, battery charger and LoRa radio (RP2350B, SX1262). Good for learning keypad, charging and power rails on a candybar phone board."
+    },
+    {
+      "id": "zerophone-delta-front",
+      "brand": "ZeroPhone",
+      "series": "Pi Zero phone (Delta)",
+      "model": "ZeroPhone Delta front board",
+      "device": "phone",
+      "repo": "https://github.com/ZeroPhone/ZeroPhone-PCBs",
+      "commit": "e6696c636204e45b03c0736a434b7f4f8f222a6c",
+      "files": [
+        {
+          "src": "front_pcb/front_prototype.kicad_pcb",
+          "kind": "board"
+        }
+      ],
+      "license": {
+        "spdx": "GPL-3.0-only",
+        "file": "LICENSE.md",
+        "attribution": "Credit: ZeroPhone project (Arsenijs Picugins and contributors). https://github.com/ZeroPhone/ZeroPhone-PCBs"
+      },
+      "notes": "Front board (display, keypad side). ZeroPhone is an open phone built on a Raspberry Pi Zero with a SIM800 GSM modem."
+    },
+    {
+      "id": "zerophone-delta-back",
+      "brand": "ZeroPhone",
+      "series": "Pi Zero phone (Delta)",
+      "model": "ZeroPhone Delta back board",
+      "device": "phone",
+      "repo": "https://github.com/ZeroPhone/ZeroPhone-PCBs",
+      "commit": "e6696c636204e45b03c0736a434b7f4f8f222a6c",
+      "files": [
+        {
+          "src": "back_pcb/back_pcb.kicad_pcb",
+          "kind": "board"
+        }
+      ],
+      "license": {
+        "spdx": "GPL-3.0-only",
+        "file": "LICENSE.md",
+        "attribution": "Credit: ZeroPhone project (Arsenijs Picugins and contributors). https://github.com/ZeroPhone/ZeroPhone-PCBs"
+      },
+      "notes": "Back board (Pi Zero, GSM modem, power). ZeroPhone is an open phone built on a Raspberry Pi Zero with a SIM800 GSM modem."
+    },
+    {
+      "id": "zerophone-delta-keypad",
+      "brand": "ZeroPhone",
+      "series": "Pi Zero phone (Delta)",
+      "model": "ZeroPhone Delta keypad board",
+      "device": "phone",
+      "repo": "https://github.com/ZeroPhone/ZeroPhone-PCBs",
+      "commit": "e6696c636204e45b03c0736a434b7f4f8f222a6c",
+      "files": [
+        {
+          "src": "keypad_pcb/keypad_pcb.kicad_pcb",
+          "kind": "board"
+        }
+      ],
+      "license": {
+        "spdx": "GPL-3.0-only",
+        "file": "LICENSE.md",
+        "attribution": "Credit: ZeroPhone project (Arsenijs Picugins and contributors). https://github.com/ZeroPhone/ZeroPhone-PCBs"
+      },
+      "notes": "Keypad board. ZeroPhone is an open phone built on a Raspberry Pi Zero with a SIM800 GSM modem."
     }
   ],
   "excluded": [
@@ -718,11 +859,6 @@
       "reason": "PINE64 publishes schematic PDFs for reference but no layout or boardview under an open licence. Link only."
     },
     {
-      "name": "Librem 5 phone and devkit",
-      "url": "https://source.puri.sm/Librem5",
-      "reason": "Devkit KiCad files are GPL-3.0 on source.puri.sm, which the build server could not reach. Add later by running the build script from a machine that can reach it."
-    },
-    {
       "name": "MNT Reform / Pocket Reform",
       "url": "https://source.mnt.re/reform",
       "reason": "CERN-OHL-S-2.0 KiCad files on source.mnt.re, which the build server could not reach. Add later the same way."
@@ -741,6 +877,16 @@
       "name": "Inkplate 6",
       "url": "https://github.com/SolderedElectronics/Inkplate-6-hardware",
       "reason": "Main board is published as schematic and Gerbers only, no layout file the app can open."
+    },
+    {
+      "name": "Librem 5 phone (production board)",
+      "url": "https://source.puri.sm/Librem5",
+      "reason": "Purism published schematics for the phone but not its layout under an open licence. The Developer Kit baseboard is included instead."
+    },
+    {
+      "name": "Openmoko Neo FreeRunner (GTA02)",
+      "url": "https://github.com/libresmartphone/libresmartphone",
+      "reason": "Layout is a binary PADS file with no open reader, and the copy found does not state its licence clearly. Not included."
     }
   ]
 }
