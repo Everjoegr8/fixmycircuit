@@ -24,7 +24,7 @@ upstream commit and keeps its licence and attribution.
 3. Run `npm run library -- out/open-library` and `npm test`, then copy the regenerated
    `library-index.hosted.json` into this folder.
 
-## Boards (30)
+## Boards (36)
 
 | Brand | Series | Model | Device | Licence | Source |
 |---|---|---|---|---|---|
@@ -58,6 +58,12 @@ upstream commit and keeps its licence and attribution.
 | Great Scott Gadgets | USB tools | Cynthion | USB analyzer | CERN-OHL-P-2.0 | [source](https://github.com/greatscottgadgets/cynthion-hardware) |
 | Antmicro | Jetson baseboards | Jetson Orin baseboard | embedded computer | Apache-2.0 | [source](https://github.com/antmicro/jetson-orin-baseboard) |
 | Antmicro | FPGA boards | Kria K26 devboard | embedded computer | Apache-2.0 | [source](https://github.com/antmicro/kria-k26-devboard) |
+| Purism | Librem 5 | Librem 5 Developer Kit baseboard | smartphone dev kit | GPL-3.0-or-later | [source](https://github.com/gralco/dvk-mx8m-bsb) |
+| PulsePhone | Modular phone | PulsePhone main board (MCM-iMX93) | smartphone | GPL-3.0-only | [source](https://github.com/pulseopen/PulsePhone) |
+| MokyaLora | Feature phone | MokyaLora Rev A | feature phone | CERN-OHL-S-2.0 | [source](https://github.com/tengigabytes/MokyaLora) |
+| ZeroPhone | Pi Zero phone (Delta) | ZeroPhone Delta front board | phone | GPL-3.0-only | [source](https://github.com/ZeroPhone/ZeroPhone-PCBs) |
+| ZeroPhone | Pi Zero phone (Delta) | ZeroPhone Delta back board | phone | GPL-3.0-only | [source](https://github.com/ZeroPhone/ZeroPhone-PCBs) |
+| ZeroPhone | Pi Zero phone (Delta) | ZeroPhone Delta keypad board | phone | GPL-3.0-only | [source](https://github.com/ZeroPhone/ZeroPhone-PCBs) |
 
 ## Looked at and left out
 
@@ -65,11 +71,12 @@ upstream commit and keeps its licence and attribution.
 - **M17_3310 (Nokia 3310 replacement mainboard)**: CC BY-NC-SA 4.0: non-commercial only. Techs can still download it themselves and open it in the app.
 - **StickHub (KiCad demo)**: CC BY-NC-SA 4.0: non-commercial only.
 - **PinePhone / PinePhone Pro**: PINE64 publishes schematic PDFs for reference but no layout or boardview under an open licence. Link only.
-- **Librem 5 phone and devkit**: Devkit KiCad files are GPL-3.0 on source.puri.sm, which the build server could not reach. Add later by running the build script from a machine that can reach it.
 - **MNT Reform / Pocket Reform**: CERN-OHL-S-2.0 KiCad files on source.mnt.re, which the build server could not reach. Add later the same way.
 - **Fairphone**: Fairphone publishes repair guides and spare parts, not open board layouts.
 - **Apple, Samsung, Xiaomi, Tecno, Infinix, Itel boardviews**: The files that circulate online are leaked manufacturer data. They are not redistributable.
 - **Inkplate 6**: Main board is published as schematic and Gerbers only, no layout file the app can open.
+- **Librem 5 phone (production board)**: Purism published schematics for the phone but not its layout under an open licence. The Developer Kit baseboard is included instead.
+- **Openmoko Neo FreeRunner (GTA02)**: Layout is a binary PADS file with no open reader, and the copy found does not state its licence clearly. Not included.
 
 ## Community shares
 

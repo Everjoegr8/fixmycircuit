@@ -169,9 +169,13 @@ const DEG = Math.PI / 180;
 function estimatePart(part, pins, smallPad) {
   const n = pins.length;
   const kind = part.kind;
+  // No guessed pad is bigger than a few mm (about 12 small chip pads): parts with
+  // a few pins far apart (module mounting pads, shield clips, antenna feeds)
+  // would otherwise get pads the size of their pin spacing.
+  const maxPad = smallPad * 12;
   const setPad = (p, w, h, a, shape) => {
     if (p.pw > 0) return; // real pad from the file
-    p.pw = w; p.ph = h; p.pa = a; p.shape = shape;
+    p.pw = Math.min(w, maxPad); p.ph = Math.min(h, maxPad); p.pa = a; p.shape = shape;
   };
 
   if (n === 1) {
@@ -246,8 +250,11 @@ function estimatePart(part, pins, smallPad) {
   if (regular) {
     const lr = sides.L + sides.R, bt = sides.B + sides.T;
     const fourSided = sides.L >= 2 && sides.R >= 2 && sides.B >= 2 && sides.T >= 2 && n >= 8;
-    const padLen = n <= 6 ? pitch * 0.95 : Math.max(pitch * 1.25, Math.min(W, H) * (fourSided ? 0.1 : 0.18));
-    const padThk = pitch * 0.55;
+    // A few pins far apart (tact switches, DC jacks, module mounting pads) have
+    // small pads at the corners, not pads as long as the gap between them.
+    const spread = n <= 6 && pitch > smallPad * 5;
+    const padLen = spread ? Math.max(pitch * 0.3, smallPad * 2.5) : n <= 6 ? pitch * 0.95 : Math.max(pitch * 1.25, Math.min(W, H) * (fourSided ? 0.1 : 0.18));
+    const padThk = spread ? padLen * 0.8 : pitch * 0.55;
     // Which axis are the rows on? For 2-sided parts pads point across the gap.
     const rowsVertical = lr >= bt; // pins on left/right edges -> pads along x
     local.forEach((q, i) => {

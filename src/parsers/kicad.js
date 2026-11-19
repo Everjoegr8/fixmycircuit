@@ -173,6 +173,20 @@ export function parseKiCad(bytes) {
     } else if (g[0] === 'gr_arc' && kid(g, 'mid')) {
       const pts = arcPoints(a, xy(g, 'mid'), b);
       for (let i = 1; i < pts.length; i++) outlineSegments.push([P(pts[i - 1].x, pts[i - 1].y), P(pts[i].x, pts[i].y)]);
+    } else if (g[0] === 'gr_arc') {
+      // KiCad 5 and older: (start) is the centre, (end) is where the arc starts, (angle) its sweep in degrees.
+      const sweep = (num((kid(g, 'angle') || [])[1]) || 0) * Math.PI / 180;
+      const r = Math.hypot(b.x - a.x, b.y - a.y);
+      if (!sweep || !r) continue;
+      const t0 = Math.atan2(b.y - a.y, b.x - a.x);
+      const steps = Math.max(4, Math.ceil(Math.abs(sweep) / (Math.PI / 16)));
+      let prev = P(b.x, b.y);
+      for (let i = 1; i <= steps; i++) {
+        const t = t0 + (sweep * i) / steps;
+        const next = P(a.x + r * Math.cos(t), a.y + r * Math.sin(t));
+        outlineSegments.push([prev, next]);
+        prev = next;
+      }
     } else {
       outlineSegments.push([P(a.x, a.y), P(b.x, b.y)]);
     }
